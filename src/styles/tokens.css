@@ -1,0 +1,24 @@
+:root {
+  --color-bg-deep: #0A0907;
+  --color-bg-panel: #13100C;
+  --color-bg-raised: #1C1814;
+  --color-border-subtle: #2A2520;
+  --color-border-accent: #8B6F47;
+  --color-border-accent-bright: #C9A961;
+  --color-text-primary: #E8E0D4;
+  --color-text-secondary: #9A8F7F;
+  --color-text-muted: #5A5248;
+  --color-accent-crimson: #8B2028;
+
+  --shadow-panel: 0 12px 40px rgba(0, 0, 0, 0.6);
+  --shadow-brass-glow: 0 0 12px rgba(201, 169, 97, 0.2);
+
+  --radius-none: 0px;
+  --radius-sharp: 2px;
+
+  --font-display: "Cinzel", serif;
+  --font-body: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --letter-spacing-display: 0.1em;
+}
