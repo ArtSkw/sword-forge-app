@@ -13,7 +13,7 @@ export function Footer() {
   const [muted, setMuted] = useState(false);
   const [hovered, setHovered] = useState(false);
 
-  useEffect(() => audioState.subscribe((m) => setMuted(m)), []);
+  useEffect(() => { const unsub = audioState.subscribe((m) => setMuted(m)); return () => { unsub(); }; }, []);
 
   const border = `1px solid ${hovered ? tokens.color.borderAccent : tokens.color.borderSubtle}`;
 

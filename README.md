@@ -1,73 +1,40 @@
-# React + TypeScript + Vite
+# Gustav's Forge
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+An interactive 3D sword configurator set in a medieval forge atmosphere. Choose from seven historical sword archetypes and customize the blade finish, metal tone, guard style, and grip to craft your own weapon.
 
-Currently, two official plugins are available:
+**Live demo:** https://artskw.github.io/sword-forge-app/
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+---
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Seven sword archetypes** — Arming Sword, Longsword, Bastard Sword, Viking Sword, Falchion, Estoc, Greatsword
+- **Real-time 3D rendering** via Three.js with animated forge lighting
+- **Customizable finish** — blade condition, metal tone, guard style, grip length and color
+- **Immersive atmosphere** — blurred video background, ambient forge sounds, medieval background music, and subtle per-sword cling sounds on selection
+- **Export** — copy current configuration as JSON; take a screenshot of the scene
+- **Responsive layout** — full panel on wide screens, slide-out drawer on narrow viewports
 
-## Expanding the ESLint configuration
+## Tech Stack
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- React 19 + TypeScript (strict)
+- Three.js + @react-three/fiber + @react-three/drei
+- Zustand (state management)
+- Vite
+- Web Audio API (pitch-shifted cling sounds, ambient layering)
+- GitHub Pages (deployment)
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Getting Started
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Deployment
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run deploy
 ```
+
+Builds and publishes to GitHub Pages via `gh-pages`.
