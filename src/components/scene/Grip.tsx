@@ -27,12 +27,18 @@ const CORD_TURNS: Record<GripLength, number> = {
 // A helix sweeping from -halfH to +halfH around the Y axis.
 // chirality: 1 = counter-clockwise from above, -1 = clockwise.
 class HelixCurve extends THREE.Curve<THREE.Vector3> {
-  constructor(
-    private r: number,
-    private halfH: number,
-    private turns: number,
-    private chirality: 1 | -1,
-  ) { super(); }
+  private r: number;
+  private halfH: number;
+  private turns: number;
+  private chirality: 1 | -1;
+
+  constructor(r: number, halfH: number, turns: number, chirality: 1 | -1) {
+    super();
+    this.r = r;
+    this.halfH = halfH;
+    this.turns = turns;
+    this.chirality = chirality;
+  }
 
   getPoint(t: number, target = new THREE.Vector3()): THREE.Vector3 {
     const theta = this.chirality * t * Math.PI * 2 * this.turns;
