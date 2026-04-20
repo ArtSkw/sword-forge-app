@@ -1,4 +1,4 @@
-# Gustav's Forge
+# Sword Forge
 
 An interactive 3D sword configurator set in a medieval forge atmosphere. Choose from seven historical sword archetypes and customize the blade finish, metal tone, guard style, and grip to craft your own weapon.
 
