@@ -2,6 +2,21 @@ import { useState } from 'react';
 import { tokens } from '../../styles/tokens';
 import { useConfigStore, type ArchetypeKey } from '../../store/configStore';
 import { SWORD_TYPES, SWORD_TYPE_ORDER } from '../../presets/swordTypes';
+import { playCling, type ClingParams } from '../../lib/audio';
+
+const CLING_SRC = `${import.meta.env.BASE_URL}sounds/sword-cling.mp3`;
+
+// Subtle per-sword colouring — same base sound, just lightly shifted in pitch and tone.
+// playbackRate stays within ±8% so the variation feels natural rather than artificial.
+const CLING_PARAMS: Record<ArchetypeKey, ClingParams> = {
+  armingSword:  { playbackRate: 1.00, filterType: 'peaking', filterFreq: 4000, volume: 0.40 },
+  longsword:    { playbackRate: 0.98, filterType: 'lowpass', filterFreq: 7000, volume: 0.41 },
+  bastardSword: { playbackRate: 0.99, filterType: 'lowpass', filterFreq: 6500, volume: 0.41 },
+  vikingSword:  { playbackRate: 1.01, filterType: 'lowpass', filterFreq: 6000, volume: 0.41 },
+  falchion:     { playbackRate: 1.00, filterType: 'lowpass', filterFreq: 6500, volume: 0.41 },
+  estoc:        { playbackRate: 1.03, filterType: 'peaking', filterFreq: 5000, volume: 0.38 },
+  greatsword:   { playbackRate: 0.98, filterType: 'lowpass', filterFreq: 5500, volume: 0.41 },
+};
 
 
 type CornerBracketProps = { corner: 'tl' | 'br' };
@@ -58,7 +73,7 @@ function TypeCard({ archetypeKey, isSelected, onClick }: TypeCardProps) {
       style={{
         position: 'relative',
         width: 120,
-        height: 140,
+        height: 124,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -87,9 +102,9 @@ function TypeCard({ archetypeKey, isSelected, onClick }: TypeCardProps) {
       >
         <div style={{ background: tokens.color.bgPanel, borderRadius: 2 }}>
           <img
-            src={`/sword-icons/${archetypeKey}.png`}
+            src={`${import.meta.env.BASE_URL}sword-icons/${archetypeKey}.png`}
             alt={preset.name}
-            style={{ width: 72, height: 72, objectFit: 'contain', display: 'block' }}
+            style={{ width: 70, height: 70, objectFit: 'contain', display: 'block' }}
           />
         </div>
       </div>
@@ -135,7 +150,7 @@ export function TypeSelector() {
           key={key}
           archetypeKey={key}
           isSelected={config.archetype === key}
-          onClick={() => setArchetype(key)}
+          onClick={() => { setArchetype(key); playCling(CLING_SRC, CLING_PARAMS[key]); }}
         />
       ))}
     </div>
