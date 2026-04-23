@@ -16,7 +16,7 @@ const CAMERA_POSITION: [number, number, number] = [1.8, 1.5, 3.0];
 
 const MIN_POLAR = Math.PI * 0.10;
 const MAX_POLAR = Math.PI * 0.85;
-const AUTO_ROTATE_RESUME_MS = 3000;
+const AUTO_ROTATE_RESUME_MS = 10000;
 
 function useShadowY() {
   const { config } = useConfigStore();
