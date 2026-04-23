@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { tokens } from '../../styles/tokens';
 import { TypeSelector } from './TypeSelector';
 import { ControlPanel } from './ControlPanel';
@@ -6,7 +6,7 @@ import { Footer } from './Footer';
 import { ViewportFrame } from './ViewportFrame';
 import { NoiseOverlay } from './NoiseOverlay';
 import { useConfigStore } from '../../store/configStore';
-import { audioState } from '../../lib/audio';
+import { makeAudioLayer } from '../../lib/audio';
 
 const TOP_BAND_HEIGHT = 64;
 const BRACKET_SIZE = 14;
@@ -94,68 +94,9 @@ export function AppShell({ children }: AppShellProps) {
   const archetype = useConfigStore((s) => s.config.archetype);
   const isNarrow = useNarrowScreen();
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const ambientRef = useRef<HTMLAudioElement | null>(null);
-  const musicRef = useRef<HTMLAudioElement | null>(null);
 
-  function makeAudioLayer(src: string, target: number, delayMs: number) {
-    const audio = new Audio(src);
-    audio.loop = true;
-    audio.volume = 0;
-
-    const startDelay = setTimeout(() => {
-      if (audioState.muted) return;
-
-      const steps = 40;
-      let step = 0;
-      const ramp = setInterval(() => {
-        step++;
-        audio.volume = Math.min(target, (step / steps) * target);
-        if (step >= steps) clearInterval(ramp);
-      }, 2000 / steps);
-
-      audio.play().catch(() => {
-        clearInterval(ramp);
-        audio.volume = 0;
-        step = 0;
-        const resume = () => {
-          if (audioState.muted) return;
-          audio.play().catch(() => {});
-          const retryRamp = setInterval(() => {
-            step++;
-            audio.volume = Math.min(target, (step / steps) * target);
-            if (step >= steps) clearInterval(retryRamp);
-          }, 2000 / steps);
-          window.removeEventListener('pointerdown', resume);
-        };
-        window.addEventListener('pointerdown', resume);
-      });
-    }, delayMs);
-
-    const unsub = audioState.subscribe((m) => {
-      if (m) audio.pause();
-      else audio.play().catch(() => {});
-    });
-
-    return { audio, startDelay, unsub };
-  }
-
-  // Ambient forge sound — starts at t=2s, ramps to 0.3
-  useEffect(() => {
-    const { audio, startDelay, unsub } = makeAudioLayer(
-      `${import.meta.env.BASE_URL}sounds/ambient.mp3`, 0.3, 2000
-    );
-    ambientRef.current = audio;
-    return () => { clearTimeout(startDelay); unsub(); audio.pause(); };
-  }, []);
-
-  // Background music — starts at t=4s (slightly after ambient), ramps to 0.08
-  useEffect(() => {
-    const { audio, startDelay, unsub } = makeAudioLayer(
-      `${import.meta.env.BASE_URL}sounds/music.mp3`, 0.08, 4000
-    );
-    musicRef.current = audio;
-    return () => { clearTimeout(startDelay); unsub(); audio.pause(); };
-  }, []);
+  useEffect(() => makeAudioLayer(`${import.meta.env.BASE_URL}sounds/ambient.mp3`, 0.3, 2000), []);
+  useEffect(() => makeAudioLayer(`${import.meta.env.BASE_URL}sounds/music.mp3`, 0.08, 4000), []);
 
   // Close drawer when switching archetype
   useEffect(() => { setDrawerOpen(false); }, [archetype]);

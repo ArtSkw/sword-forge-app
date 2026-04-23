@@ -10,7 +10,7 @@ export function Footer() {
   const config        = useConfigStore((s) => s.config);
   const bumpResetTick = useConfigStore((s) => s.bumpResetTick);
   const [copied, setCopied] = useState(false);
-  const [muted, setMuted] = useState(false);
+  const [muted, setMuted] = useState(audioState.muted);
   const [hovered, setHovered] = useState(false);
 
   useEffect(() => { const unsub = audioState.subscribe((m) => setMuted(m)); return () => { unsub(); }; }, []);
