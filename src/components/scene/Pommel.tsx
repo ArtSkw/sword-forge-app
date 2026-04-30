@@ -35,11 +35,12 @@ type PommelProps = {
   color: string;
   emissive: string;
   emissiveIntensity: number;
+  roughness: number;
   gemstone: GemstoneType;
   position: [number, number, number];
 };
 
-export function Pommel({ style, color, emissive, emissiveIntensity, gemstone, position }: PommelProps) {
+export function Pommel({ style, color, emissive, emissiveIntensity, roughness, gemstone, position }: PommelProps) {
   const points   = POMMEL_PROFILES[style];
   const bottomY  = POMMEL_GEM_BOTTOM_Y[style];
   const gemColor = gemstone !== 'none' ? GEM_COLORS[gemstone] : null;
@@ -59,7 +60,7 @@ export function Pommel({ style, color, emissive, emissiveIntensity, gemstone, po
       <mesh>
         <latheGeometry args={[points, LATHE_SEGMENTS]} />
         <meshStandardMaterial
-          color={color} metalness={1.0} roughness={0.36}
+          color={color} metalness={1.0} roughness={roughness}
           emissive={emissive} emissiveIntensity={emissiveIntensity}
           polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1}
         />

@@ -53,10 +53,11 @@ class HelixCurve extends THREE.Curve<THREE.Vector3> {
 type GripProps = {
   length: GripLength;
   color: string;
+  roughness: number;
   position: [number, number, number];
 };
 
-export function Grip({ length, color, position }: GripProps) {
+export function Grip({ length, color, roughness, position }: GripProps) {
   const gripLen = GRIP_LENGTHS[length];
   const halfH   = gripLen / 2;
   const turns   = CORD_TURNS[length];
@@ -74,17 +75,19 @@ export function Grip({ length, color, position }: GripProps) {
       {/* Grip core — slightly recessed so cord wrapping sits proud */}
       <mesh>
         <cylinderGeometry args={[GRIP_RADIUS_TOP, GRIP_RADIUS_BOT, gripLen, GRIP_SEGMENTS]} />
-        <meshStandardMaterial color={color} metalness={0} roughness={0.88} />
+        <meshStandardMaterial color={color} metalness={0} roughness={roughness} />
       </mesh>
 
       {/* Cross-wrapped cord — two helices of opposite chirality form a diamond pattern */}
       <mesh geometry={cordGeo1}>
-        <meshStandardMaterial color={color} metalness={0} roughness={0.78} />
+        <meshStandardMaterial color={color} metalness={0} roughness={Math.max(0.72, roughness - 0.08)} />
       </mesh>
       <mesh geometry={cordGeo2}>
         {/* polygonOffset pushes this helix slightly back so cord1 wins at crossings */}
         <meshStandardMaterial
-          color={color} metalness={0} roughness={0.78}
+          color={color}
+          metalness={0}
+          roughness={Math.max(0.72, roughness - 0.08)}
           polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1}
         />
       </mesh>

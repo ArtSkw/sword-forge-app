@@ -1,146 +1,376 @@
-# Gustav's Forge — v2 Rendering Roadmap
+# Sword Forge — Production-Style 3D Roadmap
 
-A prioritized plan for the next tier of visual improvements to the 3D sword model.
-Items are ordered by impact-to-effort ratio within each tier.
+This roadmap is the active development plan for raising Sword Forge from a
+good interactive prototype into a medieval/fantasy game-like sword generator.
+The goal is not CAD precision or a Blender-style asset pipeline. The goal is a
+feasible **procedural game-asset pipeline** inside the current Codex + Vite +
+React Three Fiber project.
 
----
-
-## Tier 1 — High Impact, Low Complexity
-
-### 1.1 Blade Normal Map Upgrade
-**File:** `src/components/scene/Blade.tsx`
-
-Upgrade the current 64×64 random-grain normal map to a 512×512 procedural map with:
-- Directional grind lines running along the blade length (horizontal streaks)
-- Finer, tighter grain near the edge, coarser near the fuller
-- Separate edge bevel normal so each edge catches light as a distinct bright line
-
-**Expected result:** Blade reads as real dressed steel under directional forge light.
+The core rule: keep the sword parametric, but improve it in layers —
+geometry first, then materials, then controls, then cinematic presentation.
 
 ---
 
-### 1.2 Positional Roughness Variation
-**File:** `src/components/scene/Blade.tsx`
+## Target Quality
 
-Replace the single roughness constant per finish with a UV-driven roughness gradient:
-- Ricasso (near guard) — slightly duller, shows handling wear
-- Mid-blade — polished, specular highlight zone
-- Edge — near-zero roughness for maximum sharpness
+The app should produce screenshot-worthy swords that feel like inspectable RPG
+weapon assets:
 
-Achieved by encoding a 1D gradient into a canvas roughness map using existing UV coords.
+- distinct historical/fantasy archetypes, not just resized versions of one mesh
+- believable blade geometry with proper taper, fullers, bevels, and cross-sections
+- fittings that feel built from parts: guard, collars, grip, pommel, rivets, terminals
+- material response that reads as steel, brass/bronze, leather, wood, and cord
+- finish/condition changes that affect the whole sword coherently
+- cinematic lighting, atmosphere, and camera framing
 
-**Expected result:** Blade looks polished where it should be and dull where it wears.
-
----
-
-### 1.3 Finish-Specific Blade Color Gradient
-**File:** `src/components/scene/Blade.tsx` + `src/components/scene/Sword.tsx`
-
-For `battleWorn` and `ancient` finishes, apply a UV-based color gradient instead of a flat color:
-- Dark / patinated at the base (near guard)
-- Lighter, more polished toward the tip
-- Edge zone slightly brighter than the flat
-
-**Expected result:** Aging reads as authentic and positional rather than a uniform tint.
+We will avoid broad, fake procedural texture patterns unless the UV strategy
+supports them cleanly. Subtle surface response is better than noisy detail.
 
 ---
 
-## Tier 2 — Medium Impact, Moderate Complexity
+## Current Baseline
 
-### 2.1 Grip Texture Normal Map
-**File:** `src/components/scene/Grip.tsx`
+Implemented foundations:
 
-Add a tiled canvas normal map to both the grip core cylinder and cord helices:
-- Leather grain for the core (subtle diagonal fiber pattern)
-- Braided cord micro-surface for the TubeGeometry wrap
+- 7 archetypes: arming sword, longsword, bastard sword, Viking sword, falchion, estoc, greatsword
+- Zustand config store and Leva controls
+- full-screen R3F scene with orbit controls, animated forge lighting, environment reflections
+- video/audio atmosphere, cling sounds, export config, screenshot capture
+- per-archetype blade body taper fields:
+  - `bodyTaperEnd`
+  - `bodyTaperMidWidth`
+  - `tipShoulderRound`
+  - `crossSection`
+  - `edgeBow`
+  - `spineClipT`
+- blade cross-section families:
+  - lenticular
+  - diamond
+  - hexagonal
+- improved blade mesh:
+  - 144 longitudinal segments
+  - explicit smooth cross-section normals
+  - secondary edge bevels
+  - directional steel-grain normal map
+  - `MeshPhysicalMaterial` blade shader
+- finish now affects the whole sword at a basic level:
+  - blade color and physical response
+  - hardware color/roughness
+  - grip darkening/roughness
+- Viking default reset to `Used + Steel` rather than `Ancient + Darkened`
 
-**Expected result:** Grip has tactile surface believability instead of perfectly smooth surfaces.
+Known rough edges:
 
----
-
-### 2.2 Blade Edge Geometry Sharpening
-**File:** `src/components/scene/Blade.tsx` + `src/presets/bladeProfiles.ts`
-
-Add a narrow flat bevel face at each blade edge in the cross-section profile:
-- Two extra vertices per edge in the profile ring
-- Creates a thin specular highlight face that catches directional light as a bright line along the full blade length
-
-**Expected result:** The defining visual of a real sword — a sharp bright edge line — becomes visible.
-
----
-
-### 2.3 Gem Refraction via MeshPhysicalMaterial
-**File:** `src/components/scene/Pommel.tsx`
-
-Replace `MeshStandardMaterial` on gems with `MeshPhysicalMaterial`:
-- `transmission: 0.9` — light passes through the stone
-- `ior: 1.76` — refractive index of corundum (ruby/sapphire)
-- `thickness: 0.008` — depth for absorption
-- `roughness: 0.02` — near-perfect facet polish
-
-**Expected result:** Gems glow with genuine internal light refraction rather than flat emissive color.
-
----
-
-### 2.4 Ambient Occlusion Detail
-**Files:** `src/components/scene/Blade.tsx`, `Crossguard.tsx`, `Grip.tsx`
-
-Bake positional AO as a canvas texture or vertex color:
-- Blade base darkened where it enters the crossguard slot
-- Inside crossguard scroll terminals and ornate details
-- Cord wrap overlaps on the grip core
-
-**Expected result:** Depth and shadow where surfaces meet — removes the "floating parts" feel.
+- controls still call the global condition `Blade` under the `Finish` folder
+- guard and pommel styles are still generic rather than archetype-authored
+- grip has good helical geometry, but weak material detail
+- no collars/spacers/rivets as dedicated construction details
+- postprocessing component exists but is not yet part of the active scene
+- lint currently has Fast Refresh / React hook rule issues from existing structure
 
 ---
 
-## Tier 3 — High Complexity, Transformative Results
+## Pipeline Principles
 
-### 3.1 MeshPhysicalMaterial for the Blade
-**File:** `src/components/scene/Blade.tsx`
+1. **Geometry Before Texture**
+   If a feature changes silhouette or catches light at asset scale, model it as
+   geometry. Examples: collars, bevels, fuller lips, pommel rims, guard terminals.
 
-Upgrade blade material from `MeshStandardMaterial` to `MeshPhysicalMaterial`:
-- `clearcoat: 0.3–0.6` — thin oil/polish layer on pristine/used finishes (0 on ancient)
-- `clearcoatRoughness: 0.05–0.15` — controls sharpness of the clearcoat reflection
-- `iridescence: 0.1–0.2` — subtle spectral shimmer at edge zones (heat-treat rainbow)
+2. **Subtle Procedural Materials**
+   Use procedural maps for fine-grain response only: brushed steel, leather grain,
+   roughness variation, tiny scratches. Avoid large blocky color maps.
 
-Tie values to the existing `BladeFinish` variants so pristine gets full clearcoat, ancient gets none.
+3. **Global Condition, Local Materials**
+   A sword should not have an ancient blade with pristine hardware unless that is
+   a deliberate special mode. Condition should affect blade, fittings, and grip.
 
-**Expected result:** Pristine blades look exhibition-quality; ancient blades look genuinely dead and corroded.
+4. **Hero Pass, Then Generalize**
+   Upgrade one archetype end-to-end before broadening the system. Viking is first
+   because it has obvious historical identity and strong visual references.
 
----
-
-### 3.2 Procedural Scratch/Wear Mask for battleWorn & ancient
-**File:** `src/components/scene/Blade.tsx`
-
-Generate a canvas scratch mask at runtime:
-- Thin random streaks oriented along the blade length (grinding direction)
-- Heavier density near the edge and tip (impact zones)
-- Composite into roughness map: base roughness + mask elevation
-
-**Expected result:** `battleWorn` and `ancient` finishes show real surface damage, not just higher roughness.
+5. **Stay In-Repo**
+   Prefer TypeScript, Three.js geometry, generated canvas textures, and existing
+   assets. No dependency on Blender, Substance, external modeling tools, or paid
+   asset pipelines for the planned work.
 
 ---
 
-### 3.3 Fuller Light-Catch Normal
-**File:** `src/components/scene/Blade.tsx` + `src/presets/bladeProfiles.ts`
+## Milestone 1 — Control Model Refactor
 
-Build a fuller-specific normal map channel that follows the groove profile:
-- Sharp outward normals at the fuller rim (catches rim light)
-- Inward normals at the channel base (shadows the channel floor)
-- Blended into the existing normal map only in the fuller UV zone
+**Goal:** make controls match the actual mental model before adding more detail.
 
-**Expected result:** The fuller reads as a physically distinct groove with its own light response, not just a surface dent.
+Current `finish.blade` is really a sword-wide condition. Refactor naming and UI
+without changing behavior too broadly.
+
+Suggested config direction:
+
+```ts
+finish: {
+  condition: 'pristine' | 'used' | 'battleWorn' | 'ancient';
+  steelFinish: 'polished' | 'satin' | 'darkened' | 'patternWelded';
+  hardwareTone: 'steel' | 'brass' | 'bronze' | 'darkIron';
+  gripColor: string;
+}
+```
+
+Practical first step:
+
+- keep existing values for compatibility
+- relabel Leva UI from `Blade` to `Condition`
+- consider `metalTone` -> `Steel Finish` or `Hardware Tone` after reviewing usage
+
+Files:
+
+- `src/store/configStore.ts`
+- `src/components/ui/ControlPanel.tsx`
+- `src/components/scene/Sword.tsx`
+- `src/presets/swordTypes.ts`
+- `src/lib/exportConfig.ts`
+
+Acceptance criteria:
+
+- user can understand the controls without guessing
+- condition affects the whole sword
+- existing presets still load correctly
 
 ---
 
-## Reference — Current State (v1 Baseline)
+## Milestone 2 — Hero Viking Sword Quality Pass
 
-| Component | Material | Textures | Notes |
-|-----------|----------|----------|-------|
-| Blade | MeshStandardMaterial, metalness 1.0, roughness 0.15–0.65 | 64×64 noise normal map | 48-segment swept profile, 4 finish variants |
-| Crossguard | MeshStandardMaterial, metalness 1.0, roughness 0.42 | None | Parametric swept octagon |
-| Grip | MeshStandardMaterial, metalness 0, roughness 0.88 | None | Helical cord TubeGeometry |
-| Pommel | MeshStandardMaterial, metalness 1.0, roughness 0.36 | None | LatheGeometry, 8-facet gem |
-| Gems | MeshStandardMaterial, emissive, flatShading | None | 8-facet brilliant cut |
-| Lighting | 2 animated point lights + 2 directional | — | Flicker + env rotation |
+**Goal:** use Viking as the first production-style benchmark.
+
+Viking should read closer to references: broad bright steel blade, wide fuller,
+near-parallel edges, short rounded tip, compact guard, darker grip, brazil-nut
+pommel, and warm bronze/brass hardware options.
+
+Work items:
+
+- tune Viking proportions:
+  - blade width and fuller width
+  - shoulder/tip roundness
+  - guard length/thickness
+  - grip and pommel scale
+- add Viking-specific fittings:
+  - short chunky guard
+  - brazil-nut pommel refinement
+  - optional bronze/brass hardware tone
+  - small collars/spacers at grip ends
+- add subtle Viking blade detail:
+  - clean steel default
+  - optional pattern-welded steel as a controlled `steelFinish`
+  - avoid noisy aged blade color maps
+- adjust default preset:
+  - condition: `used`
+  - steel/hardware: bright steel or bronze fittings
+  - grip: dark leather/wood tone
+
+Files:
+
+- `src/presets/swordTypes.ts`
+- `src/components/scene/Sword.tsx`
+- `src/components/scene/Blade.tsx`
+- `src/components/scene/Crossguard.tsx`
+- `src/components/scene/Pommel.tsx`
+- `src/components/scene/Grip.tsx`
+
+Acceptance criteria:
+
+- Viking is recognizable at a glance
+- blade stays bright steel, not black or muddy
+- fittings and grip visually belong to the same condition
+- no large artificial texture bands
+
+---
+
+## Milestone 3 — Modular Construction Details
+
+**Goal:** make all swords feel assembled from real parts.
+
+Add reusable procedural modules:
+
+- guard-side collars / langets
+- grip-end spacers
+- pommel rivets or caps
+- guard terminal caps
+- optional wire rings around grip
+- simple decorative bands for ornate/fantasy variants
+
+Files:
+
+- new `src/components/scene/Collar.tsx` or integrated modules in `Sword.tsx`
+- `src/components/scene/Crossguard.tsx`
+- `src/components/scene/Pommel.tsx`
+- `src/components/scene/Grip.tsx`
+
+Acceptance criteria:
+
+- hilt no longer looks like four primitives touching
+- transitions between blade, guard, grip, and pommel have depth
+- details are reusable across archetypes
+
+---
+
+## Milestone 4 — Archetype Identity Pass
+
+**Goal:** each sword should be identifiable from silhouette and fittings.
+
+Per-archetype improvements:
+
+- **Arming sword:** simple straight guard, wheel pommel, balanced medium taper
+- **Longsword:** longer grip, longer guard, cleaner knightly profile
+- **Bastard sword:** hand-and-a-half grip, slight guard curve, scent-stopper pommel
+- **Viking sword:** broad blade, wide fuller, compact guard, brazil-nut pommel
+- **Falchion:** single-edged plan view, clip tip, no fuller by default
+- **Estoc:** narrow rigid diamond/needle profile, minimal fuller, thrusting identity
+- **Greatsword:** broad/long blade, side-ring or parrying-loop option, larger fittings
+
+Files:
+
+- `src/presets/swordTypes.ts`
+- `src/presets/bladeProfiles.ts`
+- `src/presets/pommelProfiles.ts`
+- `src/components/scene/Crossguard.tsx`
+- `src/components/scene/Sword.tsx`
+
+Acceptance criteria:
+
+- switching archetypes changes identity, not only size
+- presets feel historically/plausibly distinct
+- custom controls still let the user explore variants
+
+---
+
+## Milestone 5 — Material System Pass
+
+**Goal:** make material changes believable without fake texture noise.
+
+Planned material controls:
+
+- **Condition:** Pristine / Used / Battle-Worn / Ancient
+- **Steel Finish:** Polished / Satin / Darkened / Pattern-Welded
+- **Hardware Tone:** Steel / Brass / Bronze / Dark Iron
+- **Grip Material:** Leather / Wood / Cord / Wire-Wrapped
+
+Implementation ideas:
+
+- shared material recipe tables in a dedicated module
+- blade physical parameters stay in `Blade.tsx` or move to `src/styles/materials.ts`
+- small generated normal maps:
+  - brushed steel grain
+  - leather grain
+  - wood grain
+  - cord fibers
+- condition affects:
+  - metal roughness
+  - clearcoat
+  - base color darkening
+  - grip darkening
+  - hardware roughness
+
+Avoid for now:
+
+- broad color-map weathering
+- random rectangular stains
+- high-contrast procedural dirt without UV discipline
+
+Acceptance criteria:
+
+- pristine looks clean and sharp
+- used looks handled but maintained
+- battle-worn looks rougher/duller but still metal
+- ancient looks aged, not painted black or chalky
+
+---
+
+## Milestone 6 — Surface Detail Pass
+
+**Goal:** add high-frequency detail in places where it helps.
+
+Work items:
+
+- leather grain normal map for grip core
+- cord/wire normal or geometry refinement
+- subtle blade roughness gradient:
+  - duller ricasso/base
+  - cleaner mid-blade
+  - sharper edge highlights
+- tiny edge nicks for battle-worn/ancient as sparse geometry or very subtle masks
+- ambient occlusion at part intersections:
+  - blade entering guard
+  - grip under collars
+  - pommel cap/rivet
+
+Acceptance criteria:
+
+- close views reward inspection
+- details do not look like UI-generated patterns
+- performance remains smooth
+
+---
+
+## Milestone 7 — Cinematic Rendering Pass
+
+**Goal:** make the scene feel more like a game weapon preview.
+
+Work items:
+
+- mount `Postprocessing.tsx`
+- tune bloom without washing out steel
+- add subtle vignette and film grain
+- consider depth of field focused on sword centroid
+- set/tune renderer tone mapping and exposure
+- improve environment/reflection setup
+- add optional dust motes once main sword read is strong
+
+Files:
+
+- `src/components/scene/Scene.tsx`
+- `src/components/scene/Postprocessing.tsx`
+- `src/components/scene/Lighting.tsx`
+- `src/styles/globals.css`
+
+Acceptance criteria:
+
+- blade reflections look controlled
+- hilt remains readable against background
+- screenshots feel cinematic without hiding model flaws
+
+---
+
+## Milestone 8 — UI, Export, And Performance
+
+Lower priority, but useful once model quality improves:
+
+- quality toggle: low / medium / high
+- share URL with encoded config
+- saved gallery in LocalStorage
+- code-split heavy Three/postprocessing modules
+- import config from JSON
+- polish screenshot capture for high-resolution output
+
+---
+
+## Suggested Execution Order
+
+1. **Control Model Refactor**
+2. **Hero Viking Sword Quality Pass**
+3. **Modular Construction Details**
+4. **Archetype Identity Pass**
+5. **Material System Pass**
+6. **Surface Detail Pass**
+7. **Cinematic Rendering Pass**
+8. **UI, Export, And Performance**
+
+Work in small increments. After each milestone, visually review the app before
+continuing.
+
+---
+
+## Development Notes
+
+- Keep edits scoped and reversible.
+- Prefer named constants for proportions and material values.
+- Use generated canvas textures only for subtle surface response.
+- Avoid large procedural texture patterns until UVs are intentionally designed.
+- Run `npm run build` after meaningful code changes.
+- Use browser screenshots for visual QA when WebGL capture works in the current environment.

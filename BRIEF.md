@@ -17,6 +17,12 @@ enough craft that a single screenshot feels like it could be from a game.
 This is a personal project. Not shipping, not commercial. Optimize for
 iteration speed and fun.
 
+> Planning note: this brief captures the original product direction and remains
+> useful for tone, UI, and scene goals. The current implementation plan lives in
+> `ROADMAP.md` and supersedes the older build-order and finish-control wording
+> where they differ. In particular, finish is evolving from a blade-only setting
+> into a whole-sword condition/material system.
+
 ---
 
 ## Stack

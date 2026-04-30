@@ -132,28 +132,29 @@ type CrossguardProps = {
   color: string;
   emissive: string;
   emissiveIntensity: number;
+  roughness: number;
   position: [number, number, number];
 };
 
-export function Crossguard({ style, color, emissive, emissiveIntensity, position }: CrossguardProps) {
+export function Crossguard({ style, color, emissive, emissiveIntensity, roughness, position }: CrossguardProps) {
   const geo    = useMemo(() => buildGuardGeometry(style), [style]);
   const halfW  = GUARD_PARAMS[style].width / 2;
 
   return (
     <group position={position}>
       <mesh geometry={geo}>
-        <meshStandardMaterial color={color} metalness={1.0} roughness={0.42} emissive={emissive} emissiveIntensity={emissiveIntensity} />
+        <meshStandardMaterial color={color} metalness={1.0} roughness={roughness} emissive={emissive} emissiveIntensity={emissiveIntensity} />
       </mesh>
 
       {style === 'ornate' && (
         <>
           <mesh position={[-halfW, 0, 0]} rotation={[0, 0,  Math.PI / 2]}>
             <latheGeometry args={[SCROLL_PROFILE, 20]} />
-            <meshStandardMaterial color={color} metalness={1.0} roughness={0.38} emissive={emissive} emissiveIntensity={emissiveIntensity} />
+            <meshStandardMaterial color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
           </mesh>
           <mesh position={[ halfW, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
             <latheGeometry args={[SCROLL_PROFILE, 20]} />
-            <meshStandardMaterial color={color} metalness={1.0} roughness={0.38} emissive={emissive} emissiveIntensity={emissiveIntensity} />
+            <meshStandardMaterial color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
           </mesh>
         </>
       )}
