@@ -1,6 +1,6 @@
 # Sword Forge
 
-An interactive 3D sword configurator set in a medieval forge atmosphere. Choose from seven historical sword archetypes and customize the blade finish, metal tone, guard style, and grip to craft your own weapon.
+An interactive 3D sword configurator set in a medieval forge atmosphere. Choose from seven historical sword archetypes and customize the sword's condition, steel, fittings, guard style, and grip to craft your own weapon.
 
 **Live demo:** https://artskw.github.io/sword-forge-app/
 
@@ -10,7 +10,7 @@ An interactive 3D sword configurator set in a medieval forge atmosphere. Choose 
 
 - **Seven sword archetypes** — Arming Sword, Longsword, Bastard Sword, Viking Sword, Falchion, Estoc, Greatsword
 - **Real-time 3D rendering** via Three.js with animated forge lighting
-- **Customizable finish** — blade condition, metal tone, guard style, grip length and color
+- **Customizable sword build** — condition, steel/hardware tone, guard style, grip length and color
 - **Immersive atmosphere** — blurred video background, ambient forge sounds, medieval background music, and subtle per-sword cling sounds on selection
 - **Export** — copy current configuration as JSON; take a screenshot of the scene
 - **Responsive layout** — full panel on wide screens, slide-out drawer on narrow viewports
@@ -30,6 +30,10 @@ An interactive 3D sword configurator set in a medieval forge atmosphere. Choose 
 npm install
 npm run dev
 ```
+
+## Development Direction
+
+The active plan is documented in [`ROADMAP.md`](./ROADMAP.md). Current focus is a feasible procedural game-asset pipeline: improve geometry first, refactor finish controls into whole-sword condition/material controls, then use the Viking sword as the first hero-quality benchmark before generalizing improvements to the remaining archetypes.
 
 ## Deployment
 
