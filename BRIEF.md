@@ -429,8 +429,9 @@ interface SwordConfig {
   guard: { style: GuardStyle };
   pommel: { style: PommelStyle };
   finish: {
-    blade: BladeFinish;
-    metalTone: MetalTone;
+    condition: SwordCondition;
+    steelFinish: SteelFinish;
+    hardwareTone: HardwareTone;
     gripColor: string;
   };
   fantasy: {

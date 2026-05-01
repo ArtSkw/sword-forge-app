@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { useMemo } from 'react';
-import type { GuardStyle } from '../../store/configStore';
+import type { ArchetypeKey, GuardStyle } from '../../store/configStore';
 
 // Central slot height used by Sword.tsx for assembly positioning.
 export const GUARD_HEIGHT = 0.018;
@@ -27,6 +27,7 @@ interface GuardParams {
   tipY:     number; // path Y offset at tip (positive = toward blade)
   tipZ:     number; // path Z offset at tip (positive = toward viewer)
   segments: number;
+  sectionScale?: number;
 }
 
 const GUARD_PARAMS: Record<GuardStyle, GuardParams> = {
@@ -40,6 +41,22 @@ const GUARD_PARAMS: Record<GuardStyle, GuardParams> = {
   fantasy:  { width: 0.260, tipScale: 1.25, tipY:  0.030, tipZ: 0.012,  segments: 28 },
 };
 
+const VIKING_GUARD_PARAMS: GuardParams = {
+  width: 0.165,
+  tipScale: 0.82,
+  tipY: 0,
+  tipZ: 0,
+  segments: 18,
+  sectionScale: 1.28,
+};
+
+function getGuardParams(style: GuardStyle, archetype: ArchetypeKey): GuardParams {
+  if (archetype === 'vikingSword' && style === 'straight') {
+    return VIKING_GUARD_PARAMS;
+  }
+  return GUARD_PARAMS[style];
+}
+
 // Onion/scroll finial profile for the ornate terminal (LatheGeometry, Y = axis).
 const SCROLL_PROFILE = [
   new THREE.Vector2(0.000,  0),
@@ -52,8 +69,8 @@ const SCROLL_PROFILE = [
   new THREE.Vector2(0,      0.026),
 ];
 
-function buildGuardGeometry(style: GuardStyle): THREE.BufferGeometry {
-  const { width, tipScale, tipY, tipZ, segments } = GUARD_PARAMS[style];
+function buildGuardGeometry(style: GuardStyle, archetype: ArchetypeKey): THREE.BufferGeometry {
+  const { width, tipScale, tipY, tipZ, segments, sectionScale = 1 } = getGuardParams(style, archetype);
 
   const rings: THREE.Vector3[][] = [];
 
@@ -66,8 +83,8 @@ function buildGuardGeometry(style: GuardStyle): THREE.BufferGeometry {
     const py = tipY * u2;
     const pz = tipZ * u2;
     const sc = 1.0 - u * (1.0 - tipScale);
-    const sy = SECTION_HALF_SPAN  * sc;
-    const sz = SECTION_HALF_REACH * sc;
+    const sy = SECTION_HALF_SPAN  * sectionScale * sc;
+    const sz = SECTION_HALF_REACH * sectionScale * sc;
 
     const ring = CROSS_SECTION.map(([yn, zn]) =>
       new THREE.Vector3(x, py + yn * sy, pz + zn * sz)
@@ -128,6 +145,7 @@ function buildGuardGeometry(style: GuardStyle): THREE.BufferGeometry {
 }
 
 type CrossguardProps = {
+  archetype: ArchetypeKey;
   style: GuardStyle;
   color: string;
   emissive: string;
@@ -136,9 +154,10 @@ type CrossguardProps = {
   position: [number, number, number];
 };
 
-export function Crossguard({ style, color, emissive, emissiveIntensity, roughness, position }: CrossguardProps) {
-  const geo    = useMemo(() => buildGuardGeometry(style), [style]);
-  const halfW  = GUARD_PARAMS[style].width / 2;
+export function Crossguard({ archetype, style, color, emissive, emissiveIntensity, roughness, position }: CrossguardProps) {
+  const params = getGuardParams(style, archetype);
+  const geo    = useMemo(() => buildGuardGeometry(style, archetype), [style, archetype]);
+  const halfW  = params.width / 2;
 
   return (
     <group position={position}>
