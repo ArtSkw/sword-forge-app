@@ -3,7 +3,7 @@ import { useConfigStore } from '../../store/configStore';
 import type {
   BladeLength, BladeWidth, FullerStyle,
   GuardStyle, PommelStyle,
-  BladeFinish, MetalTone, GemstoneType,
+  GemstoneType, HardwareTone, SteelFinish, SwordCondition,
 } from '../../store/configStore';
 import { levaTheme } from '../../styles/levaTheme';
 
@@ -12,8 +12,9 @@ const BLADE_WIDTH_OPTIONS  = { Narrow: 'narrow', Standard: 'standard', Wide: 'wi
 const FULLER_OPTIONS       = { None: 'none', Single: 'single', Double: 'double', Decorative: 'decorative' };
 const GUARD_OPTIONS        = { Straight: 'straight', Curved: 'curved', Ornate: 'ornate', Fantasy: 'fantasy' };
 const POMMEL_OPTIONS       = { Wheel: 'wheel', Disc: 'disc', 'Scent Stopper': 'scentStopper', 'Brazil Nut': 'brazilNut', Fishtail: 'fishtail', Ornate: 'ornate', Fantasy: 'fantasy' };
-const FINISH_OPTIONS       = { Pristine: 'pristine', Used: 'used', 'Battle-Worn': 'battleWorn', Ancient: 'ancient' };
-const TONE_OPTIONS         = { Steel: 'steel', Darkened: 'darkened', 'Golden Accents': 'goldenAccents' };
+const CONDITION_OPTIONS    = { Pristine: 'pristine', Used: 'used', 'Battle-Worn': 'battleWorn', Ancient: 'ancient' };
+const STEEL_FINISH_OPTIONS = { Polished: 'polished', Satin: 'satin', Darkened: 'darkened', 'Pattern-Welded': 'patternWelded' };
+const HARDWARE_TONE_OPTIONS = { Steel: 'steel', Brass: 'brass', Bronze: 'bronze', 'Dark Iron': 'darkIron' };
 const GEM_OPTIONS          = { None: 'none', Ruby: 'ruby', Sapphire: 'sapphire', Emerald: 'emerald', Amber: 'amber' };
 
 // This component is mounted with key={archetype} in AppShell.
@@ -61,17 +62,23 @@ export function ControlPanel({ flat = false }: { flat?: boolean }) {
     }),
 
     Finish: folder({
-      bladeFinish: {
-        label: 'Blade',
-        value: config.finish.blade,
-        options: FINISH_OPTIONS,
-        onChange: (v: BladeFinish) => update('finish', { blade: v }),
+      condition: {
+        label: 'Condition',
+        value: config.finish.condition,
+        options: CONDITION_OPTIONS,
+        onChange: (v: SwordCondition) => update('finish', { condition: v }),
       },
-      metalTone: {
-        label: 'Metal Tone',
-        value: config.finish.metalTone,
-        options: TONE_OPTIONS,
-        onChange: (v: MetalTone) => update('finish', { metalTone: v }),
+      steelFinish: {
+        label: 'Steel',
+        value: config.finish.steelFinish,
+        options: STEEL_FINISH_OPTIONS,
+        onChange: (v: SteelFinish) => update('finish', { steelFinish: v }),
+      },
+      hardwareTone: {
+        label: 'Hardware',
+        value: config.finish.hardwareTone,
+        options: HARDWARE_TONE_OPTIONS,
+        onChange: (v: HardwareTone) => update('finish', { hardwareTone: v }),
       },
       gripColor: {
         label: 'Grip Color',

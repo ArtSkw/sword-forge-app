@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { useMemo } from 'react';
-import type { PommelStyle, GemstoneType } from '../../store/configStore';
+import type { ArchetypeKey, PommelStyle, GemstoneType } from '../../store/configStore';
 import { POMMEL_PROFILES, POMMEL_HALF_HEIGHTS, POMMEL_GEM_BOTTOM_Y } from '../../presets/pommelProfiles';
 
 export { POMMEL_HALF_HEIGHTS };
@@ -31,6 +31,7 @@ const GEM_COLORS: Record<Exclude<GemstoneType, 'none'>, string> = {
 };
 
 type PommelProps = {
+  archetype: ArchetypeKey;
   style: PommelStyle;
   color: string;
   emissive: string;
@@ -40,10 +41,11 @@ type PommelProps = {
   position: [number, number, number];
 };
 
-export function Pommel({ style, color, emissive, emissiveIntensity, roughness, gemstone, position }: PommelProps) {
+export function Pommel({ archetype, style, color, emissive, emissiveIntensity, roughness, gemstone, position }: PommelProps) {
   const points   = POMMEL_PROFILES[style];
   const bottomY  = POMMEL_GEM_BOTTOM_Y[style];
   const gemColor = gemstone !== 'none' ? GEM_COLORS[gemstone] : null;
+  const isVikingBrazilNut = archetype === 'vikingSword' && style === 'brazilNut';
 
   // Girdle sits flush with the pommel bottom face; pavilion goes inside, crown protrudes below.
   // polygonOffset pushes the pommel surface back in depth so the gem wins where they overlap.
@@ -76,6 +78,18 @@ export function Pommel({ style, color, emissive, emissiveIntensity, roughness, g
             flatShading
           />
         </mesh>
+      )}
+      {isVikingBrazilNut && !gemColor && (
+        <>
+          <mesh position={[0, bottomY - 0.0006, 0]}>
+            <cylinderGeometry args={[0.0075, 0.0105, 0.0025, 24]} />
+            <meshStandardMaterial color={color} metalness={1} roughness={Math.max(0.3, roughness - 0.08)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
+          </mesh>
+          <mesh position={[0, -0.0002, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.0335, 0.0007, 6, 48]} />
+            <meshStandardMaterial color={color} metalness={1} roughness={Math.max(0.34, roughness - 0.05)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
+          </mesh>
+        </>
       )}
     </group>
   );

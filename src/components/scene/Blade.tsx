@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { useMemo } from 'react';
-import type { BladeFinish, BladeLength, BladeWidth, FullerStyle } from '../../store/configStore';
+import type { ArchetypeKey, BladeLength, BladeWidth, FullerStyle, SteelFinish, SwordCondition } from '../../store/configStore';
 
 // 9 rune patterns — each is a rotation in radians applied to the main stroke mark.
 // Secondary entries add a crossing stroke at a different angle.
@@ -38,16 +38,19 @@ function Runes({ length, halfThick, bodyTaperEnd, bodyTaperMidWidth, halfWidth }
         rotations.map((rot, j) => (
           <mesh
             key={`${i}-${j}`}
-            position={[0, y, halfThick * 1.06]}
+            position={[0, y, halfThick * 1.18]}
             rotation={[0, 0, rot]}
           >
-            <boxGeometry args={[hw * 0.18, 0.0055, 0.0003]} />
-            <meshStandardMaterial
+            <planeGeometry args={[hw * 0.12, 0.0015]} />
+            <meshBasicMaterial
               color="#90C8FF"
-              emissive="#90C8FF"
-              emissiveIntensity={1.2}
-              metalness={0}
-              roughness={0.4}
+              transparent
+              opacity={0.78}
+              depthWrite={false}
+              polygonOffset
+              polygonOffsetFactor={-2}
+              polygonOffsetUnits={-2}
+              side={THREE.DoubleSide}
             />
           </mesh>
         ))
@@ -55,7 +58,7 @@ function Runes({ length, halfThick, bodyTaperEnd, bodyTaperMidWidth, halfWidth }
     </>
   );
 }
-import { PROFILE_FAMILIES, buildFullProfile, lerpProfiles } from '../../presets/bladeProfiles';
+import { PROFILE_FAMILIES, VIKING_LENTICULAR_SINGLE, buildFullProfile, lerpProfiles } from '../../presets/bladeProfiles';
 import type { ProfileFamily } from '../../presets/bladeProfiles';
 
 export const BLADE_LENGTHS: Record<BladeLength, number> = {
@@ -128,6 +131,7 @@ function edgeHalfWidth(t: number, halfWidth: number, bodyTaperEnd: number, midWi
 }
 
 function buildBladeGeometry(
+  archetype: ArchetypeKey,
   length: number,
   halfWidth: number,
   halfThick: number,
@@ -141,7 +145,9 @@ function buildBladeGeometry(
 ): THREE.BufferGeometry {
   const family      = PROFILE_FAMILIES[crossSection];
   const baseUpper   = family.none;
-  const fullerUpper = family[fuller];
+  const fullerUpper = archetype === 'vikingSword' && crossSection === 'lenticular' && fuller === 'single'
+    ? VIKING_LENTICULAR_SINGLE
+    : family[fuller];
 
   const rings: THREE.Vector3[][] = [];
   for (let i = 0; i <= SEGMENTS; i++) {
@@ -168,18 +174,24 @@ function buildBladeGeometry(
   const indexArr: number[]  = [];
 
   // Ring vertices with UV coords (u = around cross-section, v = along blade).
-  // Normals are derived from each ring's cross-section instead of from the
-  // triangulated side faces. This keeps mirror-bright steel from revealing the
-  // quad split pattern as triangular bands in the highlight.
+  // Normals are derived from the cross-section tangent and the blade-length
+  // tangent. This keeps mirror-bright steel smooth while still accounting for
+  // aggressive tip taper and rounded Viking shoulders.
   for (let i = 0; i <= SEGMENTS; i++) {
     const vCoord = i / SEGMENTS;
     for (let j = 0; j < N; j++) {
       const v = rings[i][j];
       const prev = rings[i][(j - 1 + N) % N];
       const next = rings[i][(j + 1) % N];
-      const tx = next.x - prev.x;
-      const tz = next.z - prev.z;
-      const normal = new THREE.Vector3(-tz, 0, tx).normalize();
+      const prevRing = rings[Math.max(0, i - 1)][j];
+      const nextRing = rings[Math.min(SEGMENTS, i + 1)][j];
+      const around = new THREE.Vector3().subVectors(next, prev);
+      const along = new THREE.Vector3().subVectors(nextRing, prevRing);
+      let normal = new THREE.Vector3().crossVectors(around, along).normalize();
+      const outward = new THREE.Vector3(v.x, 0, v.z);
+      if (outward.lengthSq() > 0.0000001 && normal.dot(outward) < 0) {
+        normal = normal.negate();
+      }
       positions.push(v.x, v.y, v.z);
       normals.push(normal.x, normal.y, normal.z);
       uvs.push(j / N, vCoord);
@@ -271,28 +283,63 @@ function makeBladeNormalMap(): THREE.CanvasTexture {
   return tex;
 }
 
+function makePatternWeldedMap(): THREE.CanvasTexture {
+  const W = 512, H = 1024;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+  const img = ctx.createImageData(W, H);
+
+  for (let y = 0; y < H; y++) {
+    const v = y / H;
+    for (let x = 0; x < W; x++) {
+      const u = x / W;
+      const waveA = Math.sin((u * 9.0 + Math.sin(v * Math.PI * 11) * 0.22) * Math.PI * 2);
+      const waveB = Math.sin((u * 17.0 - Math.cos(v * Math.PI * 7) * 0.13) * Math.PI * 2);
+      const lengthBreakup = Math.sin(v * Math.PI * 31 + waveA * 0.8) * 0.18;
+      const value = 187 + Math.round((waveA * 0.55 + waveB * 0.22 + lengthBreakup) * 16);
+      const i = (y * W + x) * 4;
+      img.data[i] = value;
+      img.data[i + 1] = value + 2;
+      img.data[i + 2] = value + 5;
+      img.data[i + 3] = 255;
+    }
+  }
+
+  ctx.putImageData(img, 0, 0);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.magFilter = THREE.LinearFilter;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(1, 1);
+  tex.anisotropy = 8;
+  return tex;
+}
+
 // Shared — generated once for the app lifetime
 const BLADE_NORMAL_MAP   = makeBladeNormalMap();
 const BLADE_NORMAL_SCALE = new THREE.Vector2(0.045, 0.025);
+const PATTERN_WELDED_MAP = makePatternWeldedMap();
 
-// Per-finish material recipe. Roughness drives the base specular response;
-// clearcoat + anisotropy + iridescence (B1 — MeshPhysicalMaterial) push the
-// blade away from "plastic" toward forged steel. Anisotropy direction is
-// rotated by π/2 so the streaks run along the blade length, not across it.
-export const BLADE_PHYSICAL: Record<BladeFinish, {
+// Per-condition material recipe. Roughness drives the base specular response;
+// clearcoat and anisotropy push the blade away from "plastic" toward forged
+// steel. We avoid iridescence for ordinary steel because it creates oil-slick
+// color bands on sharp reflections.
+export const BLADE_PHYSICAL: Record<SwordCondition, {
   roughness: number;
   clearcoat: number;
   clearcoatRoughness: number;
   anisotropy: number;
-  iridescence: number;
 }> = {
-  pristine:   { roughness: 0.15, clearcoat: 0.55, clearcoatRoughness: 0.08, anisotropy: 0.65, iridescence: 0.15 },
-  used:       { roughness: 0.28, clearcoat: 0.30, clearcoatRoughness: 0.16, anisotropy: 0.52, iridescence: 0.07 },
-  battleWorn: { roughness: 0.42, clearcoat: 0.16, clearcoatRoughness: 0.24, anisotropy: 0.42, iridescence: 0.03 },
-  ancient:    { roughness: 0.56, clearcoat: 0.04, clearcoatRoughness: 0.36, anisotropy: 0.30, iridescence: 0.00 },
+  pristine:   { roughness: 0.16, clearcoat: 0.50, clearcoatRoughness: 0.10, anisotropy: 0.60 },
+  used:       { roughness: 0.28, clearcoat: 0.30, clearcoatRoughness: 0.16, anisotropy: 0.50 },
+  battleWorn: { roughness: 0.42, clearcoat: 0.16, clearcoatRoughness: 0.24, anisotropy: 0.40 },
+  ancient:    { roughness: 0.56, clearcoat: 0.04, clearcoatRoughness: 0.36, anisotropy: 0.28 },
 };
 
 type BladeProps = {
+  archetype: ArchetypeKey;
   length: BladeLength;
   width: BladeWidth;
   fuller: FullerStyle;
@@ -303,19 +350,21 @@ type BladeProps = {
   edgeBow: number;
   spineClipT: number;
   color: string;
-  finish: BladeFinish;
+  steelFinish: SteelFinish;
+  condition: SwordCondition;
   runes: boolean;
   position: [number, number, number];
 };
 
-export function Blade({ length, width, fuller, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT, color, finish, runes, position }: BladeProps) {
+export function Blade({ archetype, length, width, fuller, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT, color, steelFinish, condition, runes, position }: BladeProps) {
   const bladeLen  = BLADE_LENGTHS[length];
   const halfWidth = BLADE_HALF_WIDTHS[width];
-  const phys      = BLADE_PHYSICAL[finish];
+  const phys      = BLADE_PHYSICAL[condition];
+  const steelMap  = steelFinish === 'patternWelded' ? PATTERN_WELDED_MAP : null;
 
   const geo = useMemo(
-    () => buildBladeGeometry(bladeLen, halfWidth, BLADE_HALF_THICKNESS, fuller, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT),
-    [bladeLen, halfWidth, fuller, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT],
+    () => buildBladeGeometry(archetype, bladeLen, halfWidth, BLADE_HALF_THICKNESS, fuller, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT),
+    [archetype, bladeLen, halfWidth, fuller, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT],
   );
 
   return (
@@ -323,6 +372,7 @@ export function Blade({ length, width, fuller, bodyTaperEnd, bodyTaperMidWidth, 
       <mesh geometry={geo}>
         <meshPhysicalMaterial
           color={color}
+          map={steelMap}
           metalness={1.0}
           roughness={phys.roughness}
           normalMap={BLADE_NORMAL_MAP}
@@ -331,9 +381,6 @@ export function Blade({ length, width, fuller, bodyTaperEnd, bodyTaperMidWidth, 
           clearcoatRoughness={phys.clearcoatRoughness}
           anisotropy={phys.anisotropy}
           anisotropyRotation={Math.PI / 2}
-          iridescence={phys.iridescence}
-          iridescenceIOR={1.3}
-          iridescenceThicknessRange={[100, 400]}
         />
       </mesh>
       {runes && (

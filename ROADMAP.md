@@ -47,9 +47,10 @@ Implemented foundations:
   - lenticular
   - diamond
   - hexagonal
+- Viking-specific broad fuller profile for the lenticular single-fuller blade
 - improved blade mesh:
   - 144 longitudinal segments
-  - explicit smooth cross-section normals
+  - explicit smooth tangent-based normals for blade taper and tip highlights
   - secondary edge bevels
   - directional steel-grain normal map
   - `MeshPhysicalMaterial` blade shader
@@ -61,10 +62,12 @@ Implemented foundations:
 
 Known rough edges:
 
-- controls still call the global condition `Blade` under the `Finish` folder
-- guard and pommel styles are still generic rather than archetype-authored
+- `steelFinish` and `hardwareTone` are now separate controls, but the material
+  recipes are still simple color/roughness tables
+- guard and pommel styles are still mostly generic rather than archetype-authored,
+  though Viking now has its first dedicated guard proportions and hilt spacers
 - grip has good helical geometry, but weak material detail
-- no collars/spacers/rivets as dedicated construction details
+- collars/spacers exist for Viking, but are not yet generalized across archetypes
 - postprocessing component exists but is not yet part of the active scene
 - lint currently has Fast Refresh / React hook rule issues from existing structure
 
@@ -99,8 +102,10 @@ Known rough edges:
 
 **Goal:** make controls match the actual mental model before adding more detail.
 
-Current `finish.blade` is really a sword-wide condition. Refactor naming and UI
-without changing behavior too broadly.
+Current status: the practical refactor is complete. `finish.blade` has become
+`finish.condition`, the exported type is now `SwordCondition`, and the old
+overloaded `metalTone` control has been split into `steelFinish` and
+`hardwareTone`.
 
 Suggested config direction:
 
@@ -115,9 +120,10 @@ finish: {
 
 Practical first step:
 
-- keep existing values for compatibility
-- relabel Leva UI from `Blade` to `Condition`
-- consider `metalTone` -> `Steel Finish` or `Hardware Tone` after reviewing usage
+- ✅ rename `finish.blade` to `finish.condition`
+- ✅ rename `BladeFinish` to `SwordCondition`
+- ✅ relabel Leva UI from `Blade` to `Condition`
+- ✅ split `metalTone` into `steelFinish` and `hardwareTone`
 
 Files:
 
@@ -146,18 +152,19 @@ pommel, and warm bronze/brass hardware options.
 Work items:
 
 - tune Viking proportions:
-  - blade width and fuller width
+  - ✅ blade width and fuller width
   - shoulder/tip roundness
-  - guard length/thickness
-  - grip and pommel scale
+  - ✅ guard length/thickness
+  - ✅ grip and pommel scale
 - add Viking-specific fittings:
-  - short chunky guard
-  - brazil-nut pommel refinement
+  - ✅ short chunky guard
+  - ✅ brazil-nut pommel refinement
   - optional bronze/brass hardware tone
-  - small collars/spacers at grip ends
+  - ✅ small collars/spacers at grip ends
 - add subtle Viking blade detail:
   - clean steel default
-  - optional pattern-welded steel as a controlled `steelFinish`
+  - ✅ optional pattern-welded steel as a controlled `steelFinish`
+  - ✅ remove iridescent color banding from ordinary steel
   - avoid noisy aged blade color maps
 - adjust default preset:
   - condition: `used`

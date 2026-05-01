@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { useMemo } from 'react';
-import type { GripLength } from '../../store/configStore';
+import type { ArchetypeKey, GripLength } from '../../store/configStore';
 
 export const GRIP_LENGTHS: Record<GripLength, number> = {
   short: 0.112,
@@ -14,7 +14,6 @@ const GRIP_SEGMENTS   = 12;
 
 // Cord wrap geometry
 const CORD_TUBE_RADIUS   = 0.0016; // 1.6mm cord cross-section
-const CORD_HELIX_RADIUS  = (GRIP_RADIUS_TOP + GRIP_RADIUS_BOT) / 2 + CORD_TUBE_RADIUS;
 const CORD_TUBE_SIDES    = 7;
 const CORD_SEGS_PER_TURN = 24;
 
@@ -22,6 +21,11 @@ const CORD_SEGS_PER_TURN = 24;
 const CORD_TURNS: Record<GripLength, number> = {
   short: 9,
   long:  16,
+};
+
+const VIKING_BAND_COUNT: Record<GripLength, number> = {
+  short: 12,
+  long:  18,
 };
 
 // A helix sweeping from -halfH to +halfH around the Y axis.
@@ -51,46 +55,67 @@ class HelixCurve extends THREE.Curve<THREE.Vector3> {
 }
 
 type GripProps = {
+  archetype: ArchetypeKey;
   length: GripLength;
   color: string;
   roughness: number;
   position: [number, number, number];
 };
 
-export function Grip({ length, color, roughness, position }: GripProps) {
+export function Grip({ archetype, length, color, roughness, position }: GripProps) {
   const gripLen = GRIP_LENGTHS[length];
   const halfH   = gripLen / 2;
   const turns   = CORD_TURNS[length];
+  const isViking = archetype === 'vikingSword';
+  const radiusTop = isViking ? 0.013 : GRIP_RADIUS_TOP;
+  const radiusBot = isViking ? 0.0135 : GRIP_RADIUS_BOT;
+  const wrapRadius = (radiusTop + radiusBot) / 2 + CORD_TUBE_RADIUS;
 
   const [cordGeo1, cordGeo2] = useMemo(() => {
     const segs = turns * CORD_SEGS_PER_TURN;
     return [
-      new THREE.TubeGeometry(new HelixCurve(CORD_HELIX_RADIUS, halfH, turns,  1), segs, CORD_TUBE_RADIUS, CORD_TUBE_SIDES, false),
-      new THREE.TubeGeometry(new HelixCurve(CORD_HELIX_RADIUS, halfH, turns, -1), segs, CORD_TUBE_RADIUS, CORD_TUBE_SIDES, false),
+      new THREE.TubeGeometry(new HelixCurve(wrapRadius, halfH, turns,  1), segs, CORD_TUBE_RADIUS, CORD_TUBE_SIDES, false),
+      new THREE.TubeGeometry(new HelixCurve(wrapRadius, halfH, turns, -1), segs, CORD_TUBE_RADIUS, CORD_TUBE_SIDES, false),
     ];
-  }, [halfH, turns]);
+  }, [halfH, turns, wrapRadius]);
+
+  const vikingBands = useMemo(() => {
+    const count = VIKING_BAND_COUNT[length];
+    return Array.from({ length: count }, (_, i) => -halfH + ((i + 0.5) / count) * gripLen);
+  }, [gripLen, halfH, length]);
 
   return (
     <group position={position}>
       {/* Grip core — slightly recessed so cord wrapping sits proud */}
       <mesh>
-        <cylinderGeometry args={[GRIP_RADIUS_TOP, GRIP_RADIUS_BOT, gripLen, GRIP_SEGMENTS]} />
+        <cylinderGeometry args={[radiusTop, radiusBot, gripLen, GRIP_SEGMENTS]} />
         <meshStandardMaterial color={color} metalness={0} roughness={roughness} />
       </mesh>
 
-      {/* Cross-wrapped cord — two helices of opposite chirality form a diamond pattern */}
-      <mesh geometry={cordGeo1}>
-        <meshStandardMaterial color={color} metalness={0} roughness={Math.max(0.72, roughness - 0.08)} />
-      </mesh>
-      <mesh geometry={cordGeo2}>
-        {/* polygonOffset pushes this helix slightly back so cord1 wins at crossings */}
-        <meshStandardMaterial
-          color={color}
-          metalness={0}
-          roughness={Math.max(0.72, roughness - 0.08)}
-          polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1}
-        />
-      </mesh>
+      {isViking ? (
+        vikingBands.map((y, i) => (
+          <mesh key={i} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[wrapRadius, 0.00075, 6, 28]} />
+            <meshStandardMaterial color={color} metalness={0} roughness={Math.max(0.78, roughness - 0.05)} />
+          </mesh>
+        ))
+      ) : (
+        <>
+          {/* Cross-wrapped cord — two helices of opposite chirality form a diamond pattern */}
+          <mesh geometry={cordGeo1}>
+            <meshStandardMaterial color={color} metalness={0} roughness={Math.max(0.72, roughness - 0.08)} />
+          </mesh>
+          <mesh geometry={cordGeo2}>
+            {/* polygonOffset pushes this helix slightly back so cord1 wins at crossings */}
+            <meshStandardMaterial
+              color={color}
+              metalness={0}
+              roughness={Math.max(0.72, roughness - 0.08)}
+              polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1}
+            />
+          </mesh>
+        </>
+      )}
     </group>
   );
 }

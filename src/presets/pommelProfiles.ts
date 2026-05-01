@@ -74,16 +74,18 @@ export const POMMEL_PROFILES: Record<PommelStyle, THREE.Vector2[]> = {
     v(0,      0.025),
   ],
 
-  // Smooth oblate oval — common on Viking and early medieval swords.
+  // Flattened oblate oval — common on Viking and early medieval swords. The
+  // broad equator and compressed height make it read less like a generic bead
+  // and closer to a brazil-nut counterweight.
   brazilNut: [
     v(0,     -0.018),
-    v(0.010, -0.017),
-    v(0.020, -0.012),
-    v(0.025, -0.004),
-    v(0.026,  0.002),
-    v(0.024,  0.009),
-    v(0.018,  0.015),
-    v(0.008,  0.018),
+    v(0.011, -0.017),
+    v(0.023, -0.013),
+    v(0.032, -0.006),
+    v(0.035,  0),
+    v(0.032,  0.006),
+    v(0.023,  0.013),
+    v(0.011,  0.017),
     v(0,      0.018),
   ],
 

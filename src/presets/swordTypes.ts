@@ -37,8 +37,9 @@ const finish = (
   gripColor: string,
   overrides: Partial<Omit<SwordConfig['finish'], 'gripColor'>> = {},
 ): SwordConfig['finish'] => ({
-  blade: 'pristine',
-  metalTone: 'steel',
+  condition: 'pristine',
+  steelFinish: 'polished',
+  hardwareTone: 'steel',
   gripColor,
   ...overrides,
 });
@@ -116,7 +117,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
       guard: { style: 'straight' },
       grip: { length: 'short' },
       pommel: { style: 'brazilNut' },
-      finish: finish('#5A351C', { blade: 'used', metalTone: 'steel' }), // dark wood/leather grip with a lightly used bright steel blade
+      finish: finish('#5A351C', { condition: 'used', steelFinish: 'satin', hardwareTone: 'bronze' }), // dark wood/leather grip with a lightly used bright steel blade
       fantasy: DEFAULT_FANTASY,
     },
   },

@@ -86,6 +86,27 @@ const LENTICULAR_DECORATIVE: ProfilePoint[] = [
   [ 1.000, 0.000],
 ];
 
+// Broader, shallower center channel for Viking swords. Historical Viking blades
+// often read as wide, bright flats with a broad fuller, not the narrower
+// knightly channel used by arming swords and longswords.
+export const VIKING_LENTICULAR_SINGLE: ProfilePoint[] = [
+  [-1.000, 0.000],
+  [-0.970, 0.022],
+  [-0.880, 0.090],
+  [-0.740, 0.410],
+  [-0.560, 0.690],
+  [-0.360, 0.760],
+  [-0.180, 0.520],
+  [ 0.000, 0.400],
+  [ 0.180, 0.520],
+  [ 0.360, 0.760],
+  [ 0.560, 0.690],
+  [ 0.740, 0.410],
+  [ 0.880, 0.090],
+  [ 0.970, 0.022],
+  [ 1.000, 0.000],
+];
+
 // ─── Diamond (estoc) ───
 // Four flat faces meeting at a central ridge — rigid, needle-like.
 // Linear z = 1 - |x| base shape; fuller variants apply a shallow channel.

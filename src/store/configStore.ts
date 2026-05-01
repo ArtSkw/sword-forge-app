@@ -23,8 +23,9 @@ export type PommelStyle =
   | 'fishtail'
   | 'ornate'
   | 'fantasy';
-export type BladeFinish = 'pristine' | 'used' | 'battleWorn' | 'ancient';
-export type MetalTone = 'steel' | 'darkened' | 'goldenAccents';
+export type SwordCondition = 'pristine' | 'used' | 'battleWorn' | 'ancient';
+export type SteelFinish = 'polished' | 'satin' | 'darkened' | 'patternWelded';
+export type HardwareTone = 'steel' | 'brass' | 'bronze' | 'darkIron';
 export type GemstoneType = 'none' | 'ruby' | 'sapphire' | 'emerald' | 'amber';
 
 export interface SwordConfig {
@@ -33,7 +34,12 @@ export interface SwordConfig {
   guard: { style: GuardStyle };
   grip: { length: GripLength };
   pommel: { style: PommelStyle };
-  finish: { blade: BladeFinish; metalTone: MetalTone; gripColor: string };
+  finish: {
+    condition: SwordCondition;
+    steelFinish: SteelFinish;
+    hardwareTone: HardwareTone;
+    gripColor: string;
+  };
   fantasy: { enabled: boolean; runes: boolean; gemstone: GemstoneType };
 }
 
