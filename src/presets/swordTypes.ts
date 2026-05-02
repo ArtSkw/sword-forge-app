@@ -24,6 +24,9 @@ export type SwordPreset = {
   // Fraction of blade length where the spine starts its angular clip-drop to
   // the tip. 1.0 = spine follows the default symmetric taper (no clip).
   spineClipT: number;
+  // Optional fuller span along blade length. Defaults live in Blade.tsx.
+  fullerStart?: number;
+  fullerEnd?: number;
   defaults: Omit<SwordConfig, 'archetype'>;
 };
 
@@ -49,12 +52,14 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     key: 'armingSword',
     name: 'Arming Sword',
     description: 'The quintessential knightly sword — balanced, versatile, deadly.',
-    bodyTaperEnd: 0.80, // classic gradual double-taper
-    bodyTaperMidWidth: 0.34,
+    bodyTaperEnd: 0.84, // reference-like fuller section with deliberate terminal taper
+    bodyTaperMidWidth: 0.42,
     tipShoulderRound: 0,
     crossSection: 'lenticular',
     edgeBow: 0,
     spineClipT: 1,
+    fullerStart: 0.075,
+    fullerEnd: 0.76,
     defaults: {
       blade: { length: 'medium', width: 'standard', fuller: 'single' },
       guard: { style: 'straight' },
@@ -68,18 +73,20 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     key: 'longsword',
     name: 'Longsword',
     description: 'A two-handed weapon favored by knights and men-at-arms.',
-    bodyTaperEnd: 0.84, // parallel section slightly longer than arming sword
-    bodyTaperMidWidth: 0.38,
+    bodyTaperEnd: 0.87, // long, steady blade body before the final acute point
+    bodyTaperMidWidth: 0.44,
     tipShoulderRound: 0,
     crossSection: 'lenticular',
     edgeBow: 0,
     spineClipT: 1,
+    fullerStart: 0.080,
+    fullerEnd: 0.735,
     defaults: {
       blade: { length: 'long', width: 'standard', fuller: 'single' },
       guard: { style: 'straight' },
       grip: { length: 'long' },
-      pommel: { style: 'wheel' },
-      finish: finish('#6B1E1E'), // oxblood red leather — documented on high-status examples
+      pommel: { style: 'scentStopper' },
+      finish: finish('#4A2B22'), // dark brown leather, matching restrained two-hand reproductions
       fantasy: DEFAULT_FANTASY,
     },
   },
@@ -87,18 +94,20 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     key: 'bastardSword',
     name: 'Bastard Sword',
     description: 'The hand-and-a-half sword — adaptable, powerful, elegant.',
-    bodyTaperEnd: 0.82,
-    bodyTaperMidWidth: 0.36,
+    bodyTaperEnd: 0.83,
+    bodyTaperMidWidth: 0.34,
     tipShoulderRound: 0,
     crossSection: 'lenticular',
     edgeBow: 0,
     spineClipT: 1,
+    fullerStart: 0.070,
+    fullerEnd: 0.800,
     defaults: {
       blade: { length: 'long', width: 'standard', fuller: 'single' },
       guard: { style: 'curved' },
       grip: { length: 'long' },
-      pommel: { style: 'scentStopper' },
-      finish: finish('#1A2B3C'), // midnight blue leather — specifically documented 13th-c. examples
+      pommel: { style: 'fishtail' },
+      finish: finish('#101A2C'), // deep navy leather, distinct from longsword and greatsword grips
       fantasy: DEFAULT_FANTASY,
     },
   },
@@ -117,7 +126,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
       guard: { style: 'straight' },
       grip: { length: 'short' },
       pommel: { style: 'brazilNut' },
-      finish: finish('#5A351C', { condition: 'used', steelFinish: 'satin', hardwareTone: 'bronze' }), // dark wood/leather grip with a lightly used bright steel blade
+      finish: finish('#80755c', { condition: 'used', steelFinish: 'satin', hardwareTone: 'darkIron' }), // aged ivory grip with a lightly used bright steel blade
       fantasy: DEFAULT_FANTASY,
     },
   },
@@ -125,18 +134,20 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     key: 'falchion',
     name: 'Falchion',
     description: 'Single-edged and curved, delivering brutal chopping power.',
-    bodyTaperEnd: 0.74, // broad blade, abrupt terminal taper
-    bodyTaperMidWidth: 0.55,
-    tipShoulderRound: 0,
+    bodyTaperEnd: 0.70, // broad chopping body with a clipped, forward-leaning point
+    bodyTaperMidWidth: 0.50,
+    tipShoulderRound: 0.035,
     crossSection: 'lenticular',
-    edgeBow: 0.70,     // cutting edge bows outward mid-blade; spine stays straight
-    spineClipT: 0.85,  // spine drops diagonally over last 15% for the clip tip
+    edgeBow: 0.95,     // strong cutting-edge belly; spine stays straighter
+    spineClipT: 0.78,  // spine drops over the last fifth for the falchion clip tip
+    fullerStart: 0.120,
+    fullerEnd: 0.690,
     defaults: {
-      blade: { length: 'medium', width: 'wide', fuller: 'none' },
+      blade: { length: 'medium', width: 'standard', fuller: 'decorative' },
       guard: { style: 'curved' },
       grip: { length: 'short' },
       pommel: { style: 'disc' },
-      finish: finish('#3D1F0E'), // dark oily brown leather — soldier's practical weapon
+      finish: finish('#11100E', { condition: 'used', steelFinish: 'satin', hardwareTone: 'darkIron' }), // blackened leather and muted fittings for a practical chopping sword
       fantasy: DEFAULT_FANTASY,
     },
   },
@@ -144,8 +155,8 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     key: 'estoc',
     name: 'Estoc',
     description: 'A rigid thrusting sword built to pierce plate armor.',
-    bodyTaperEnd: 0.91, // nearly parallel its entire length, very late sharp point
-    bodyTaperMidWidth: 0.55,
+    bodyTaperEnd: 0.86, // long rigid spike tapering steadily into a needle point
+    bodyTaperMidWidth: 0.34,
     tipShoulderRound: 0,
     crossSection: 'diamond',
     edgeBow: 0,
@@ -155,7 +166,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
       guard: { style: 'straight' },
       grip: { length: 'long' },
       pommel: { style: 'wheel' },
-      finish: finish('#2C2018'), // dark espresso leather — late medieval professional/court use
+      finish: finish('#2A1710', { condition: 'used', steelFinish: 'satin' }), // dark brown grip, subdued steel for a utilitarian armor-piercer
       fantasy: DEFAULT_FANTASY,
     },
   },
@@ -163,18 +174,20 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     key: 'greatsword',
     name: 'Greatsword',
     description: 'A monument in steel — the weapon of champions and legends.',
-    bodyTaperEnd: 0.78, // broad and long, taper starts moderately early
-    bodyTaperMidWidth: 0.40,
+    bodyTaperEnd: 0.82, // long cutting body with a controlled two-handed taper
+    bodyTaperMidWidth: 0.46,
     tipShoulderRound: 0,
     crossSection: 'hexagonal',
     edgeBow: 0,
     spineClipT: 1,
+    fullerStart: 0.085,
+    fullerEnd: 0.650,
     defaults: {
-      blade: { length: 'extraLong', width: 'wide', fuller: 'double' },
+      blade: { length: 'extraLong', width: 'standard', fuller: 'double' },
       guard: { style: 'curved' },
       grip: { length: 'long' },
       pommel: { style: 'fishtail' },
-      finish: finish('#5C1818'), // deep burgundy leather — ceremonial high-status, long wrapping surface
+      finish: finish('#4A1118', { condition: 'used', steelFinish: 'satin', hardwareTone: 'darkIron' }), // maroon leather grip with subdued war-sword fittings
       fantasy: DEFAULT_FANTASY,
     },
   },

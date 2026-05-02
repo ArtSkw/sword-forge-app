@@ -20,8 +20,8 @@ type RunesProps = { length: number; halfThick: number; bodyTaperEnd: number; bod
 
 function Runes({ length, halfThick, bodyTaperEnd, bodyTaperMidWidth, halfWidth }: RunesProps) {
   const marks = useMemo(() => {
-    const startT = FULLER_START + 0.04;
-    const endT   = FULLER_END   - 0.04;
+    const startT = DEFAULT_FULLER_START + 0.04;
+    const endT   = DEFAULT_FULLER_END   - 0.04;
     const n      = RUNE_ROTATIONS.length;
     return RUNE_ROTATIONS.map((rotations, i) => {
       const t  = startT + (i / (n - 1)) * (endT - startT);
@@ -104,14 +104,14 @@ function widthScale(
   return body * (1 - w) + tip * w;
 }
 
-const FULLER_START  = 0.10;
-const FULLER_END    = 0.68;
+const DEFAULT_FULLER_START = 0.10;
+const DEFAULT_FULLER_END   = 0.68;
 const FULLER_BLEND  = 0.05;
 
-function fullerBlend(t: number, fuller: FullerStyle): number {
+function fullerBlend(t: number, fuller: FullerStyle, fullerStart: number, fullerEnd: number): number {
   if (fuller === 'none') return 0;
-  const rampIn  = Math.min(1, Math.max(0, (t - FULLER_START) / FULLER_BLEND));
-  const rampOut = Math.min(1, Math.max(0, (FULLER_END - t) / FULLER_BLEND));
+  const rampIn  = Math.min(1, Math.max(0, (t - fullerStart) / FULLER_BLEND));
+  const rampOut = Math.min(1, Math.max(0, (fullerEnd - t) / FULLER_BLEND));
   return Math.min(rampIn, rampOut);
 }
 
@@ -142,6 +142,8 @@ function buildBladeGeometry(
   crossSection: ProfileFamily,
   edgeBow: number,
   spineClipT: number,
+  fullerStart: number,
+  fullerEnd: number,
 ): THREE.BufferGeometry {
   const family      = PROFILE_FAMILIES[crossSection];
   const baseUpper   = family.none;
@@ -157,7 +159,7 @@ function buildBladeGeometry(
     const edgeW  = edgeHalfWidth(t, halfWidth, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, edgeBow);
     const tScale = halfThick * (1 - t * (1 - TIP_THICK_T));
 
-    const ft    = fullerBlend(t, fuller);
+    const ft    = fullerBlend(t, fuller, fullerStart, fullerEnd);
     const upper = ft > 0 ? lerpProfiles(baseUpper, fullerUpper, ft) : baseUpper;
     const perim = buildFullProfile(upper);
 
@@ -349,6 +351,8 @@ type BladeProps = {
   crossSection: ProfileFamily;
   edgeBow: number;
   spineClipT: number;
+  fullerStart?: number;
+  fullerEnd?: number;
   color: string;
   steelFinish: SteelFinish;
   condition: SwordCondition;
@@ -356,15 +360,15 @@ type BladeProps = {
   position: [number, number, number];
 };
 
-export function Blade({ archetype, length, width, fuller, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT, color, steelFinish, condition, runes, position }: BladeProps) {
+export function Blade({ archetype, length, width, fuller, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT, fullerStart = DEFAULT_FULLER_START, fullerEnd = DEFAULT_FULLER_END, color, steelFinish, condition, runes, position }: BladeProps) {
   const bladeLen  = BLADE_LENGTHS[length];
   const halfWidth = BLADE_HALF_WIDTHS[width];
   const phys      = BLADE_PHYSICAL[condition];
   const steelMap  = steelFinish === 'patternWelded' ? PATTERN_WELDED_MAP : null;
 
   const geo = useMemo(
-    () => buildBladeGeometry(archetype, bladeLen, halfWidth, BLADE_HALF_THICKNESS, fuller, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT),
-    [archetype, bladeLen, halfWidth, fuller, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT],
+    () => buildBladeGeometry(archetype, bladeLen, halfWidth, BLADE_HALF_THICKNESS, fuller, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT, fullerStart, fullerEnd),
+    [archetype, bladeLen, halfWidth, fuller, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT, fullerStart, fullerEnd],
   );
 
   return (

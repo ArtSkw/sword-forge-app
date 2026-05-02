@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { useMemo } from 'react';
 import type { ArchetypeKey, GuardStyle } from '../../store/configStore';
+import { getGuardTerminalRecipe } from '../../presets/archetypeDetails';
 
 // Central slot height used by Sword.tsx for assembly positioning.
 export const GUARD_HEIGHT = 0.018;
@@ -50,7 +51,79 @@ const VIKING_GUARD_PARAMS: GuardParams = {
   sectionScale: 1.28,
 };
 
+const ARMING_GUARD_PARAMS: GuardParams = {
+  width: 0.205,
+  tipScale: 0.68,
+  tipY: 0.010,
+  tipZ: 0,
+  segments: 22,
+  sectionScale: 0.92,
+};
+
+const LONGSWORD_GUARD_PARAMS: GuardParams = {
+  width: 0.238,
+  tipScale: 0.56,
+  tipY: 0.012,
+  tipZ: 0,
+  segments: 24,
+  sectionScale: 0.96,
+};
+
+const BASTARD_GUARD_PARAMS: GuardParams = {
+  width: 0.232,
+  tipScale: 0.48,
+  tipY: 0.029,
+  tipZ: 0,
+  segments: 26,
+  sectionScale: 0.90,
+};
+
+const FALCHION_GUARD_PARAMS: GuardParams = {
+  width: 0.206,
+  tipScale: 0.52,
+  tipY: 0.026,
+  tipZ: 0,
+  segments: 24,
+  sectionScale: 0.88,
+};
+
+const ESTOC_GUARD_PARAMS: GuardParams = {
+  width: 0.228,
+  tipScale: 0.42,
+  tipY: 0.006,
+  tipZ: 0,
+  segments: 24,
+  sectionScale: 0.58,
+};
+
+const GREATSWORD_GUARD_PARAMS: GuardParams = {
+  width: 0.285,
+  tipScale: 0.50,
+  tipY: 0.034,
+  tipZ: 0,
+  segments: 30,
+  sectionScale: 1.04,
+};
+
 function getGuardParams(style: GuardStyle, archetype: ArchetypeKey): GuardParams {
+  if (archetype === 'armingSword' && style === 'straight') {
+    return ARMING_GUARD_PARAMS;
+  }
+  if (archetype === 'longsword' && style === 'straight') {
+    return LONGSWORD_GUARD_PARAMS;
+  }
+  if (archetype === 'bastardSword' && style === 'curved') {
+    return BASTARD_GUARD_PARAMS;
+  }
+  if (archetype === 'falchion' && style === 'curved') {
+    return FALCHION_GUARD_PARAMS;
+  }
+  if (archetype === 'estoc' && style === 'straight') {
+    return ESTOC_GUARD_PARAMS;
+  }
+  if (archetype === 'greatsword' && style === 'curved') {
+    return GREATSWORD_GUARD_PARAMS;
+  }
   if (archetype === 'vikingSword' && style === 'straight') {
     return VIKING_GUARD_PARAMS;
   }
@@ -158,6 +231,9 @@ export function Crossguard({ archetype, style, color, emissive, emissiveIntensit
   const params = getGuardParams(style, archetype);
   const geo    = useMemo(() => buildGuardGeometry(style, archetype), [style, archetype]);
   const halfW  = params.width / 2;
+  const terminalY = params.tipY;
+  const terminalZ = params.tipZ;
+  const terminal = getGuardTerminalRecipe(archetype, style);
 
   return (
     <group position={position}>
@@ -173,6 +249,34 @@ export function Crossguard({ archetype, style, color, emissive, emissiveIntensit
           </mesh>
           <mesh position={[ halfW, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
             <latheGeometry args={[SCROLL_PROFILE, 20]} />
+            <meshStandardMaterial color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
+          </mesh>
+        </>
+      )}
+      {terminal.kind !== 'none' && style !== 'ornate' && (
+        <>
+          <mesh
+            position={[-halfW, terminalY, terminalZ]}
+            scale={[terminal.scaleX ?? 0.72, terminal.scaleY ?? 1, 1]}
+            rotation={terminal.kind === 'disc' ? [0, 0, Math.PI / 2] : [0, 0, 0]}
+          >
+            {terminal.kind === 'disc' ? (
+              <cylinderGeometry args={[terminal.radius ?? 0.01, terminal.radius ?? 0.01, terminal.depth ?? 0.004, 24]} />
+            ) : (
+              <sphereGeometry args={[terminal.radius ?? 0.01, 24, 12]} />
+            )}
+            <meshStandardMaterial color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
+          </mesh>
+          <mesh
+            position={[halfW, terminalY, terminalZ]}
+            scale={[terminal.scaleX ?? 0.72, terminal.scaleY ?? 1, 1]}
+            rotation={terminal.kind === 'disc' ? [0, 0, Math.PI / 2] : [0, 0, 0]}
+          >
+            {terminal.kind === 'disc' ? (
+              <cylinderGeometry args={[terminal.radius ?? 0.01, terminal.radius ?? 0.01, terminal.depth ?? 0.004, 24]} />
+            ) : (
+              <sphereGeometry args={[terminal.radius ?? 0.01, 24, 12]} />
+            )}
             <meshStandardMaterial color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
           </mesh>
         </>

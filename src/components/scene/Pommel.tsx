@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { useMemo } from 'react';
 import type { ArchetypeKey, PommelStyle, GemstoneType } from '../../store/configStore';
+import { getPommelDetailRecipe } from '../../presets/archetypeDetails';
 import { POMMEL_PROFILES, POMMEL_HALF_HEIGHTS, POMMEL_GEM_BOTTOM_Y } from '../../presets/pommelProfiles';
 
 export { POMMEL_HALF_HEIGHTS };
@@ -45,7 +46,7 @@ export function Pommel({ archetype, style, color, emissive, emissiveIntensity, r
   const points   = POMMEL_PROFILES[style];
   const bottomY  = POMMEL_GEM_BOTTOM_Y[style];
   const gemColor = gemstone !== 'none' ? GEM_COLORS[gemstone] : null;
-  const isVikingBrazilNut = archetype === 'vikingSword' && style === 'brazilNut';
+  const pommelDetail = getPommelDetailRecipe(archetype, style);
 
   // Girdle sits flush with the pommel bottom face; pavilion goes inside, crown protrudes below.
   // polygonOffset pushes the pommel surface back in depth so the gem wins where they overlap.
@@ -59,38 +60,77 @@ export function Pommel({ archetype, style, color, emissive, emissiveIntensity, r
 
   return (
     <group position={position}>
-      <mesh>
-        <latheGeometry args={[points, LATHE_SEGMENTS]} />
-        <meshStandardMaterial
-          color={color} metalness={1.0} roughness={roughness}
-          emissive={emissive} emissiveIntensity={emissiveIntensity}
-          polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1}
-        />
-      </mesh>
-      {gemColor && (
-        <mesh position={[0, gemY, 0]} geometry={gemGeo}>
+      {(() => {
+        const metalDetailMaterial = (
           <meshStandardMaterial
-            color={gemColor}
-            emissive={gemColor}
-            emissiveIntensity={0.9}
-            metalness={0.1}
-            roughness={0.05}
-            flatShading
+            color={color}
+            metalness={1}
+            roughness={Math.max(0.3, roughness - 0.08)}
+            emissive={emissive}
+            emissiveIntensity={emissiveIntensity}
           />
-        </mesh>
-      )}
-      {isVikingBrazilNut && !gemColor && (
-        <>
-          <mesh position={[0, bottomY - 0.0006, 0]}>
-            <cylinderGeometry args={[0.0075, 0.0105, 0.0025, 24]} />
-            <meshStandardMaterial color={color} metalness={1} roughness={Math.max(0.3, roughness - 0.08)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
-          </mesh>
-          <mesh position={[0, -0.0002, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[0.0335, 0.0007, 6, 48]} />
-            <meshStandardMaterial color={color} metalness={1} roughness={Math.max(0.34, roughness - 0.05)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
-          </mesh>
-        </>
-      )}
+        );
+
+        return (
+          <>
+            <mesh>
+              <latheGeometry args={[points, LATHE_SEGMENTS]} />
+              <meshStandardMaterial
+                color={color} metalness={1.0} roughness={roughness}
+                emissive={emissive} emissiveIntensity={emissiveIntensity}
+                polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1}
+              />
+            </mesh>
+            {gemColor && (
+              <mesh position={[0, gemY, 0]} geometry={gemGeo}>
+                <meshStandardMaterial
+                  color={gemColor}
+                  emissive={gemColor}
+                  emissiveIntensity={0.9}
+                  metalness={0.1}
+                  roughness={0.05}
+                  flatShading
+                />
+              </mesh>
+            )}
+            {pommelDetail && !gemColor && (
+              <>
+                {pommelDetail.cap && (
+                  <mesh position={[0, bottomY + (pommelDetail.cap.offsetY ?? 0), 0]}>
+                    <cylinderGeometry
+                      args={[
+                        pommelDetail.cap.radiusTop,
+                        pommelDetail.cap.radiusBottom,
+                        pommelDetail.cap.height,
+                        24,
+                      ]}
+                    />
+                    {metalDetailMaterial}
+                  </mesh>
+                )}
+                {pommelDetail.equatorRing && (
+                  <mesh position={[0, -0.0002, 0]} rotation={[Math.PI / 2, 0, 0]}>
+                    <torusGeometry args={[pommelDetail.equatorRing.radius, pommelDetail.equatorRing.tube, 6, 48]} />
+                    <meshStandardMaterial color={color} metalness={1} roughness={Math.max(0.34, roughness - 0.05)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
+                  </mesh>
+                )}
+                {pommelDetail.flutes && Array.from({ length: pommelDetail.flutes.count }, (_, i) => {
+                  const angle = (i / pommelDetail.flutes!.count) * Math.PI * 2;
+                  const x = Math.cos(angle) * pommelDetail.flutes!.radius;
+                  const z = Math.sin(angle) * pommelDetail.flutes!.radius;
+
+                  return (
+                    <mesh key={i} position={[x, pommelDetail.flutes!.offsetY ?? 0, z]}>
+                      <cylinderGeometry args={[pommelDetail.flutes!.tube, pommelDetail.flutes!.tube, pommelDetail.flutes!.height, 6]} />
+                      <meshStandardMaterial color={color} metalness={1} roughness={Math.max(0.32, roughness - 0.10)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
+                    </mesh>
+                  );
+                })}
+              </>
+            )}
+          </>
+        );
+      })()}
     </group>
   );
 }

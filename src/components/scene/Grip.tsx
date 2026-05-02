@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { useMemo } from 'react';
 import type { ArchetypeKey, GripLength } from '../../store/configStore';
+import { getGripDetailRecipe } from '../../presets/archetypeDetails';
 
 export const GRIP_LENGTHS: Record<GripLength, number> = {
   short: 0.112,
@@ -21,11 +22,6 @@ const CORD_SEGS_PER_TURN = 24;
 const CORD_TURNS: Record<GripLength, number> = {
   short: 9,
   long:  16,
-};
-
-const VIKING_BAND_COUNT: Record<GripLength, number> = {
-  short: 12,
-  long:  18,
 };
 
 // A helix sweeping from -halfH to +halfH around the Y axis.
@@ -66,23 +62,24 @@ export function Grip({ archetype, length, color, roughness, position }: GripProp
   const gripLen = GRIP_LENGTHS[length];
   const halfH   = gripLen / 2;
   const turns   = CORD_TURNS[length];
-  const isViking = archetype === 'vikingSword';
-  const radiusTop = isViking ? 0.013 : GRIP_RADIUS_TOP;
-  const radiusBot = isViking ? 0.0135 : GRIP_RADIUS_BOT;
+  const recipe = getGripDetailRecipe(archetype);
+  const radiusTop = recipe.coreRadiusTop ?? GRIP_RADIUS_TOP;
+  const radiusBot = recipe.coreRadiusBottom ?? GRIP_RADIUS_BOT;
   const wrapRadius = (radiusTop + radiusBot) / 2 + CORD_TUBE_RADIUS;
 
-  const [cordGeo1, cordGeo2] = useMemo(() => {
+  const [cordGeo1, cordGeo2, wireGeo] = useMemo(() => {
     const segs = turns * CORD_SEGS_PER_TURN;
     return [
       new THREE.TubeGeometry(new HelixCurve(wrapRadius, halfH, turns,  1), segs, CORD_TUBE_RADIUS, CORD_TUBE_SIDES, false),
       new THREE.TubeGeometry(new HelixCurve(wrapRadius, halfH, turns, -1), segs, CORD_TUBE_RADIUS, CORD_TUBE_SIDES, false),
+      new THREE.TubeGeometry(new HelixCurve(wrapRadius + 0.0005, halfH, turns * 1.15, 1), Math.round(segs * 1.15), 0.00055, 6, false),
     ];
   }, [halfH, turns, wrapRadius]);
 
-  const vikingBands = useMemo(() => {
-    const count = VIKING_BAND_COUNT[length];
+  const bands = useMemo(() => {
+    const count = recipe.bandCount?.[length] ?? (length === 'short' ? 9 : 14);
     return Array.from({ length: count }, (_, i) => -halfH + ((i + 0.5) / count) * gripLen);
-  }, [gripLen, halfH, length]);
+  }, [gripLen, halfH, length, recipe.bandCount]);
 
   return (
     <group position={position}>
@@ -92,13 +89,29 @@ export function Grip({ archetype, length, color, roughness, position }: GripProp
         <meshStandardMaterial color={color} metalness={0} roughness={roughness} />
       </mesh>
 
-      {isViking ? (
-        vikingBands.map((y, i) => (
+      {recipe.wrap === 'bands' ? (
+        bands.map((y, i) => (
           <mesh key={i} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[wrapRadius, 0.00075, 6, 28]} />
+            <torusGeometry args={[wrapRadius, recipe.bandTube ?? 0.00075, 6, 28]} />
             <meshStandardMaterial color={color} metalness={0} roughness={Math.max(0.78, roughness - 0.05)} />
           </mesh>
         ))
+      ) : recipe.wrap === 'wire' ? (
+        <>
+          <mesh geometry={wireGeo}>
+            <meshStandardMaterial
+              color={recipe.wireColor ?? '#8A7A64'}
+              metalness={recipe.wireMetalness ?? 0.7}
+              roughness={0.34}
+            />
+          </mesh>
+          {bands.filter((_, i) => i % 4 === 0).map((y, i) => (
+            <mesh key={i} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
+              <torusGeometry args={[wrapRadius + 0.0006, 0.0005, 6, 28]} />
+              <meshStandardMaterial color={recipe.wireColor ?? '#8A7A64'} metalness={recipe.wireMetalness ?? 0.7} roughness={0.34} />
+            </mesh>
+          ))}
+        </>
       ) : (
         <>
           {/* Cross-wrapped cord — two helices of opposite chirality form a diamond pattern */}
