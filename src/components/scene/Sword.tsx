@@ -4,6 +4,7 @@ import { SWORD_TYPES } from '../../presets/swordTypes';
 import { Blade, BLADE_LENGTHS } from './Blade';
 import { Crossguard, GUARD_HEIGHT } from './Crossguard';
 import { Grip, GRIP_LENGTHS } from './Grip';
+import { HiltDetails } from './HiltDetails';
 import { Pommel, POMMEL_HALF_HEIGHTS } from './Pommel';
 
 const BLADE_COLORS: Record<SteelFinish, Record<SwordCondition, string>> = {
@@ -104,48 +105,9 @@ const GRIP_FINISH_SHADE: Record<SwordCondition, number> = {
   ancient:    0.58,
 };
 
-type VikingHiltDetailsProps = {
-  color: string;
-  emissive: string;
-  emissiveIntensity: number;
-  roughness: number;
-  guardY: number;
-  gripTopY: number;
-  gripBottomY: number;
-};
-
-function VikingHiltDetails({ color, emissive, emissiveIntensity, roughness, guardY, gripTopY, gripBottomY }: VikingHiltDetailsProps) {
-  const metal = (
-    <meshStandardMaterial
-      color={color}
-      metalness={1}
-      roughness={Math.max(0.32, roughness - 0.06)}
-      emissive={emissive}
-      emissiveIntensity={emissiveIntensity}
-    />
-  );
-
-  return (
-    <>
-      <mesh position={[0, guardY, 0]} scale={[1, 0.72, 0.62]}>
-        <cylinderGeometry args={[0.022, 0.024, 0.014, 32]} />
-        {metal}
-      </mesh>
-      <mesh position={[0, gripTopY - 0.004, 0]}>
-        <cylinderGeometry args={[0.0185, 0.017, 0.008, 32]} />
-        {metal}
-      </mesh>
-      <mesh position={[0, gripBottomY + 0.004, 0]}>
-        <cylinderGeometry args={[0.0165, 0.0185, 0.008, 32]} />
-        {metal}
-      </mesh>
-    </>
-  );
-}
-
 export function Sword() {
   const { config } = useConfigStore();
-  const { bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT } = SWORD_TYPES[config.archetype];
+  const { bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT, fullerStart, fullerEnd } = SWORD_TYPES[config.archetype];
 
   const bladeLen    = BLADE_LENGTHS[config.blade.length];
   const gripLen     = GRIP_LENGTHS[config.grip.length];
@@ -187,6 +149,8 @@ export function Sword() {
           crossSection={crossSection}
           edgeBow={edgeBow}
           spineClipT={spineClipT}
+          fullerStart={fullerStart}
+          fullerEnd={fullerEnd}
           color={bladeColor}
           steelFinish={steelFinish}
           condition={condition}
@@ -203,17 +167,16 @@ export function Sword() {
         roughness={hwRoughness}
         position={[0, guardY, 0]}
       />
-      {config.archetype === 'vikingSword' && (
-        <VikingHiltDetails
-          color={hwColor}
-          emissive={hwEmissive}
-          emissiveIntensity={hwEmissiveInt}
-          roughness={hwRoughness}
-          guardY={guardY}
-          gripTopY={gripTopY}
-          gripBottomY={gripBottomY}
-        />
-      )}
+      <HiltDetails
+        archetype={config.archetype}
+        color={hwColor}
+        emissive={hwEmissive}
+        emissiveIntensity={hwEmissiveInt}
+        roughness={hwRoughness}
+        guardY={guardY}
+        gripTopY={gripTopY}
+        gripBottomY={gripBottomY}
+      />
       <Grip
         archetype={config.archetype}
         length={config.grip.length}

@@ -64,10 +64,10 @@ Known rough edges:
 
 - `steelFinish` and `hardwareTone` are now separate controls, but the material
   recipes are still simple color/roughness tables
-- guard and pommel styles are still mostly generic rather than archetype-authored,
-  though Viking now has its first dedicated guard proportions and hilt spacers
+- guard and pommel styles are still mostly generic rather than archetype-authored
 - grip has good helical geometry, but weak material detail
-- collars/spacers exist for Viking, but are not yet generalized across archetypes
+- collars, spacers, and guard terminal options now exist as archetype recipes,
+  but the decorative language is still conservative
 - postprocessing component exists but is not yet part of the active scene
 - lint currently has Fast Refresh / React hook rule issues from existing structure
 
@@ -195,16 +195,17 @@ Acceptance criteria:
 
 Add reusable procedural modules:
 
-- guard-side collars / langets
-- grip-end spacers
-- pommel rivets or caps
-- guard terminal caps
-- optional wire rings around grip
-- simple decorative bands for ornate/fantasy variants
+- ✅ guard-side collars / langets
+- ✅ grip-end spacers
+- ✅ recipe-driven pommel rivets or caps
+- ✅ recipe-driven guard terminal caps
+- ✅ optional wire rings around grip
+- ✅ simple decorative bands for ornate/fantasy variants
 
 Files:
 
-- new `src/components/scene/Collar.tsx` or integrated modules in `Sword.tsx`
+- new `src/presets/archetypeDetails.ts`
+- new `src/components/scene/HiltDetails.tsx`
 - `src/components/scene/Crossguard.tsx`
 - `src/components/scene/Pommel.tsx`
 - `src/components/scene/Grip.tsx`
@@ -223,13 +224,20 @@ Acceptance criteria:
 
 Per-archetype improvements:
 
-- **Arming sword:** simple straight guard, wheel pommel, balanced medium taper
-- **Longsword:** longer grip, longer guard, cleaner knightly profile
-- **Bastard sword:** hand-and-a-half grip, slight guard curve, scent-stopper pommel
+- **Arming sword:** ✅ reference pass started: longer fuller, black banded grip,
+  wheel pommel, mild straight-guard arc, balanced medium taper
+- **Longsword:** ✅ reference pass started: longer fuller, longer straight guard,
+  dark brown banded two-hand grip, scent-stopper pommel, cleaner knightly profile
+- **Bastard sword:** ✅ reference pass started: hand-and-a-half black banded
+  grip, pronounced curved guard, long fuller, fluted fishtail pommel
 - **Viking sword:** broad blade, wide fuller, compact guard, brazil-nut pommel
-- **Falchion:** single-edged plan view, clip tip, no fuller by default
-- **Estoc:** narrow rigid diamond/needle profile, minimal fuller, thrusting identity
-- **Greatsword:** broad/long blade, side-ring or parrying-loop option, larger fittings
+- **Falchion:** ✅ reference pass started: strong single-edged belly, clipped
+  point, short curved guard, black banded grip, muted disc pommel
+- **Estoc:** ✅ reference pass started: narrow diamond needle profile, slim
+  straight guard with ball terminals, dark ringed grip, compact wheel pommel
+- **Greatsword:** ✅ reference pass started: extra-long hexagonal blade, double
+  fuller, black banded two-hand grip, broad curved guard, parrying lugs, fluted
+  fishtail pommel
 
 Files:
 
