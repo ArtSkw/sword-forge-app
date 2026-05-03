@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { useMemo } from 'react';
 import type { ArchetypeKey, BladeLength, BladeWidth, FullerStyle, SteelFinish, SwordCondition } from '../../store/configStore';
+import { getBladePhysicalRecipe } from '../../presets/materialRecipes';
 
 // 9 rune patterns — each is a rotation in radians applied to the main stroke mark.
 // Secondary entries add a crossing stroke at a different angle.
@@ -80,6 +81,32 @@ const SEGMENTS = 144;
 
 const TIP_THICK_T = 0.02;
 
+const EDGE_NICK_POSITIONS = [0.23, 0.36, 0.51, 0.67, 0.82];
+const SPINE_NICK_POSITIONS = [0.31, 0.58, 0.76];
+
+const EDGE_NICK_DEPTH: Record<SwordCondition, number> = {
+  pristine: 0,
+  used: 0,
+  battleWorn: 0.026,
+  ancient: 0.042,
+};
+
+function conditionEdgeWear(t: number, side: 'edge' | 'spine', condition: SwordCondition): number {
+  const depth = EDGE_NICK_DEPTH[condition];
+  if (depth <= 0 || t < 0.13 || t > 0.94) return 0;
+
+  const positions = side === 'edge' ? EDGE_NICK_POSITIONS : SPINE_NICK_POSITIONS;
+  const sideDepth = side === 'edge' ? depth : depth * 0.55;
+
+  return positions.reduce((wear, center, index) => {
+    const width = 0.010 + index * 0.0015;
+    const d = Math.abs(t - center) / width;
+    if (d >= 1) return wear;
+    const profile = 0.5 + Math.cos(d * Math.PI) * 0.5;
+    return wear + sideDepth * profile;
+  }, 0);
+}
+
 function widthScale(
   t: number,
   halfWidth: number,
@@ -144,6 +171,7 @@ function buildBladeGeometry(
   spineClipT: number,
   fullerStart: number,
   fullerEnd: number,
+  condition: SwordCondition,
 ): THREE.BufferGeometry {
   const family      = PROFILE_FAMILIES[crossSection];
   const baseUpper   = family.none;
@@ -155,8 +183,10 @@ function buildBladeGeometry(
   for (let i = 0; i <= SEGMENTS; i++) {
     const t      = i / SEGMENTS;
     const y      = (t - 0.5) * length;
-    const spineW = spineHalfWidth(t, halfWidth, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, spineClipT);
-    const edgeW  = edgeHalfWidth(t, halfWidth, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, edgeBow);
+    const spineWear = conditionEdgeWear(t, 'spine', condition);
+    const edgeWear = conditionEdgeWear(t, 'edge', condition);
+    const spineW = spineHalfWidth(t, halfWidth, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, spineClipT) * (1 - spineWear);
+    const edgeW  = edgeHalfWidth(t, halfWidth, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, edgeBow) * (1 - edgeWear);
     const tScale = halfThick * (1 - t * (1 - TIP_THICK_T));
 
     const ft    = fullerBlend(t, fuller, fullerStart, fullerEnd);
@@ -319,26 +349,53 @@ function makePatternWeldedMap(): THREE.CanvasTexture {
   return tex;
 }
 
+function smoothstep(edge0: number, edge1: number, value: number): number {
+  const t = Math.max(0, Math.min(1, (value - edge0) / (edge1 - edge0)));
+  return t * t * (3 - 2 * t);
+}
+
+// Roughness map: a broad, smooth maintenance gradient. The base and very tip
+// read a touch duller, while the mid-blade stays cleaner and sharper.
+function makeBladeRoughnessMap(): THREE.CanvasTexture {
+  const W = 96, H = 768;
+  const canvas = document.createElement('canvas');
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext('2d')!;
+  const img = ctx.createImageData(W, H);
+
+  for (let y = 0; y < H; y++) {
+    const v = y / (H - 1);
+    const baseDullness = 0.18 * (1 - smoothstep(0.04, 0.24, v));
+    const tipDullness = 0.10 * smoothstep(0.72, 1.0, v);
+    const midPolish = 0.12 * smoothstep(0.14, 0.42, v) * (1 - smoothstep(0.62, 0.92, v));
+
+    for (let x = 0; x < W; x++) {
+      const u = x / (W - 1);
+      const edgeDullness = 0.05 * Math.pow(Math.abs(u - 0.5) * 2, 1.6);
+      const value = Math.round(255 * Math.max(0.68, Math.min(1, 0.91 + baseDullness + tipDullness + edgeDullness - midPolish)));
+      const i = (y * W + x) * 4;
+      img.data[i] = value;
+      img.data[i + 1] = value;
+      img.data[i + 2] = value;
+      img.data[i + 3] = 255;
+    }
+  }
+
+  ctx.putImageData(img, 0, 0);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.magFilter = THREE.LinearFilter;
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.wrapS = THREE.ClampToEdgeWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.anisotropy = 8;
+  return tex;
+}
+
 // Shared — generated once for the app lifetime
 const BLADE_NORMAL_MAP   = makeBladeNormalMap();
 const BLADE_NORMAL_SCALE = new THREE.Vector2(0.045, 0.025);
 const PATTERN_WELDED_MAP = makePatternWeldedMap();
-
-// Per-condition material recipe. Roughness drives the base specular response;
-// clearcoat and anisotropy push the blade away from "plastic" toward forged
-// steel. We avoid iridescence for ordinary steel because it creates oil-slick
-// color bands on sharp reflections.
-export const BLADE_PHYSICAL: Record<SwordCondition, {
-  roughness: number;
-  clearcoat: number;
-  clearcoatRoughness: number;
-  anisotropy: number;
-}> = {
-  pristine:   { roughness: 0.16, clearcoat: 0.50, clearcoatRoughness: 0.10, anisotropy: 0.60 },
-  used:       { roughness: 0.28, clearcoat: 0.30, clearcoatRoughness: 0.16, anisotropy: 0.50 },
-  battleWorn: { roughness: 0.42, clearcoat: 0.16, clearcoatRoughness: 0.24, anisotropy: 0.40 },
-  ancient:    { roughness: 0.56, clearcoat: 0.04, clearcoatRoughness: 0.36, anisotropy: 0.28 },
-};
+const BLADE_ROUGHNESS_MAP = makeBladeRoughnessMap();
 
 type BladeProps = {
   archetype: ArchetypeKey;
@@ -363,12 +420,12 @@ type BladeProps = {
 export function Blade({ archetype, length, width, fuller, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT, fullerStart = DEFAULT_FULLER_START, fullerEnd = DEFAULT_FULLER_END, color, steelFinish, condition, runes, position }: BladeProps) {
   const bladeLen  = BLADE_LENGTHS[length];
   const halfWidth = BLADE_HALF_WIDTHS[width];
-  const phys      = BLADE_PHYSICAL[condition];
+  const phys      = getBladePhysicalRecipe(condition, steelFinish);
   const steelMap  = steelFinish === 'patternWelded' ? PATTERN_WELDED_MAP : null;
 
   const geo = useMemo(
-    () => buildBladeGeometry(archetype, bladeLen, halfWidth, BLADE_HALF_THICKNESS, fuller, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT, fullerStart, fullerEnd),
-    [archetype, bladeLen, halfWidth, fuller, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT, fullerStart, fullerEnd],
+    () => buildBladeGeometry(archetype, bladeLen, halfWidth, BLADE_HALF_THICKNESS, fuller, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT, fullerStart, fullerEnd, condition),
+    [archetype, bladeLen, halfWidth, fuller, bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT, fullerStart, fullerEnd, condition],
   );
 
   return (
@@ -379,6 +436,7 @@ export function Blade({ archetype, length, width, fuller, bodyTaperEnd, bodyTape
           map={steelMap}
           metalness={1.0}
           roughness={phys.roughness}
+          roughnessMap={BLADE_ROUGHNESS_MAP}
           normalMap={BLADE_NORMAL_MAP}
           normalScale={BLADE_NORMAL_SCALE}
           clearcoat={phys.clearcoat}

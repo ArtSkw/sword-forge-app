@@ -3,7 +3,7 @@ import { useConfigStore } from '../../store/configStore';
 import type {
   BladeLength, BladeWidth, FullerStyle,
   GuardStyle, PommelStyle,
-  GemstoneType, HardwareTone, SteelFinish, SwordCondition,
+  GemstoneType, GripMaterial, HardwareTone, SteelFinish, SwordCondition,
 } from '../../store/configStore';
 import { levaTheme } from '../../styles/levaTheme';
 
@@ -15,6 +15,7 @@ const POMMEL_OPTIONS       = { Wheel: 'wheel', Disc: 'disc', 'Scent Stopper': 's
 const CONDITION_OPTIONS    = { Pristine: 'pristine', Used: 'used', 'Battle-Worn': 'battleWorn', Ancient: 'ancient' };
 const STEEL_FINISH_OPTIONS = { Polished: 'polished', Satin: 'satin', Darkened: 'darkened', 'Pattern-Welded': 'patternWelded' };
 const HARDWARE_TONE_OPTIONS = { Steel: 'steel', Brass: 'brass', Bronze: 'bronze', 'Dark Iron': 'darkIron' };
+const GRIP_MATERIAL_OPTIONS = { Leather: 'leather', Wood: 'wood', Cord: 'cord', Wire: 'wire' };
 const GEM_OPTIONS          = { None: 'none', Ruby: 'ruby', Sapphire: 'sapphire', Emerald: 'emerald', Amber: 'amber' };
 
 // This component is mounted with key={archetype} in AppShell.
@@ -79,6 +80,12 @@ export function ControlPanel({ flat = false }: { flat?: boolean }) {
         value: config.finish.hardwareTone,
         options: HARDWARE_TONE_OPTIONS,
         onChange: (v: HardwareTone) => update('finish', { hardwareTone: v }),
+      },
+      gripMaterial: {
+        label: 'Grip Mat.',
+        value: config.finish.gripMaterial,
+        options: GRIP_MATERIAL_OPTIONS,
+        onChange: (v: GripMaterial) => update('finish', { gripMaterial: v }),
       },
       gripColor: {
         label: 'Grip Color',
