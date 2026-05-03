@@ -148,7 +148,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
       guard: { style: 'curved' },
       grip: { length: 'short' },
       pommel: { style: 'disc' },
-      finish: finish('#11100E', { condition: 'used', steelFinish: 'satin', hardwareTone: 'darkIron', gripMaterial: 'cord' }), // black cord grip and muted fittings for a practical chopping sword
+      finish: finish('#11100E', { steelFinish: 'satin', hardwareTone: 'darkIron', gripMaterial: 'cord' }), // black cord grip and muted fittings for a practical chopping sword
       fantasy: DEFAULT_FANTASY,
     },
   },
@@ -167,7 +167,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
       guard: { style: 'straight' },
       grip: { length: 'long' },
       pommel: { style: 'wheel' },
-      finish: finish('#2A1710', { condition: 'used', steelFinish: 'satin' }), // dark brown grip, subdued steel for a utilitarian armor-piercer
+      finish: finish('#2A1710', { steelFinish: 'satin' }), // dark brown grip, subdued steel for a utilitarian armor-piercer
       fantasy: DEFAULT_FANTASY,
     },
   },
@@ -188,7 +188,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
       guard: { style: 'curved' },
       grip: { length: 'long' },
       pommel: { style: 'fishtail' },
-      finish: finish('#4A1118', { condition: 'used', steelFinish: 'satin', hardwareTone: 'darkIron', gripMaterial: 'cord' }), // maroon cord grip with subdued war-sword fittings
+      finish: finish('#4A1118', { steelFinish: 'satin', hardwareTone: 'darkIron', gripMaterial: 'cord' }), // maroon cord grip with subdued war-sword fittings
       fantasy: DEFAULT_FANTASY,
     },
   },

@@ -97,7 +97,7 @@ function SceneContents() {
         onStart={handleStart}
         onEnd={handleEnd}
       />
-      <Environment preset="studio" />
+      <Environment preset="studio" environmentIntensity={1.18} />
       <Lighting />
       <ContactShadows position={[0, shadowY, 0]} blur={2} opacity={0.4} far={4} />
       {/* Presentation tilt: ~23° lean so blade reads as diagonal, not vertical */}
@@ -113,6 +113,11 @@ export function Scene() {
     <Canvas
       gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }}
       camera={{ position: CAMERA_POSITION, fov: 35 }}
+      onCreated={({ gl }) => {
+        gl.toneMapping = THREE.ACESFilmicToneMapping;
+        gl.toneMappingExposure = 1.03;
+        gl.outputColorSpace = THREE.SRGBColorSpace;
+      }}
       style={{ background: 'transparent' }}
     >
       <SceneContents />

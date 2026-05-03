@@ -330,13 +330,14 @@ Acceptance criteria:
 
 Work items:
 
-- mount `Postprocessing.tsx`
-- tune bloom without washing out steel
-- add subtle vignette and film grain
+- defer `Postprocessing.tsx` until transparent canvas + background video composition is stable
+- avoid bloom for now; it creates artificial glow and flashing against the live video background
+- keep vignette/film grain in the DOM/background layer rather than as a WebGL post effect
 - consider depth of field focused on sword centroid
-- set/tune renderer tone mapping and exposure
-- improve environment/reflection setup
-- add optional dust motes once main sword read is strong
+- ✅ set/tune renderer tone mapping and exposure
+- ✅ keep bright studio environment/reflection base for model readability
+- ✅ refine lighting first: controlled moving key/rim/forge lights over screen-space effects
+- ✅ add optional dust motes in the DOM/background layer once main sword read is strong
 
 Files:
 

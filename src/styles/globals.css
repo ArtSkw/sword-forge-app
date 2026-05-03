@@ -21,6 +21,21 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes cc-dust-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to   { transform: translate3d(var(--mote-drift), -70px, 0); }
+}
+
+@keyframes cc-dust-fade {
+  0%, 100% { opacity: 0; }
+  20%, 76% { opacity: 1; }
+}
+
+@keyframes cc-dust-sway {
+  0%, 100% { transform: translateX(calc(var(--mote-sway) * -0.5)); }
+  50%      { transform: translateX(calc(var(--mote-sway) * 0.5)); }
+}
+
 *,
 *::before,
 *::after {
@@ -56,4 +71,35 @@ body::after {
     linear-gradient(to bottom, rgba(3, 2, 1, 0.55) 0%, transparent 25%, transparent 72%, rgba(3, 2, 1, 0.65) 100%);
   z-index: -1;
   pointer-events: none;
+}
+
+.cc-atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+  opacity: 0;
+  animation: cc-reveal 1.6s ease 1.6s both;
+}
+
+.cc-atmosphere__mote {
+  position: absolute;
+  display: block;
+  border-radius: 999px;
+  animation:
+    cc-dust-drift var(--mote-duration) linear var(--mote-delay) infinite,
+    cc-dust-fade var(--mote-duration) ease-in-out var(--mote-delay) infinite;
+  will-change: transform, opacity;
+}
+
+.cc-atmosphere__mote-core {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: rgba(255, 214, 156, 0.78);
+  box-shadow: 0 0 10px rgba(255, 164, 78, 0.32);
+  animation: cc-dust-sway var(--mote-sway-duration) ease-in-out var(--mote-delay) infinite;
+  will-change: transform;
 }

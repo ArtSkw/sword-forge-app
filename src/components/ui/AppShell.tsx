@@ -5,6 +5,7 @@ import { ControlPanel } from './ControlPanel';
 import { Footer } from './Footer';
 import { ViewportFrame } from './ViewportFrame';
 import { NoiseOverlay } from './NoiseOverlay';
+import { AtmosphereOverlay } from './AtmosphereOverlay';
 import { useConfigStore } from '../../store/configStore';
 import { makeAudioLayer } from '../../lib/audio';
 
@@ -124,6 +125,8 @@ export function AppShell({ children }: AppShellProps) {
       >
         <source src={`${import.meta.env.BASE_URL}background.mp4`} type="video/mp4" />
       </video>
+
+      <AtmosphereOverlay />
 
       <div style={{ position: 'absolute', inset: 0 }}>{children}</div>
 
