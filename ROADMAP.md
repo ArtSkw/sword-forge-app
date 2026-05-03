@@ -264,23 +264,23 @@ Planned material controls:
 - **Condition:** Pristine / Used / Battle-Worn / Ancient
 - **Steel Finish:** Polished / Satin / Darkened / Pattern-Welded
 - **Hardware Tone:** Steel / Brass / Bronze / Dark Iron
-- **Grip Material:** Leather / Wood / Cord / Wire-Wrapped
+- **Grip Material:** ✅ Leather / Wood / Cord / Wire
 
 Implementation ideas:
 
-- shared material recipe tables in a dedicated module
-- blade physical parameters stay in `Blade.tsx` or move to `src/styles/materials.ts`
+- ✅ shared material recipe tables in `src/presets/materialRecipes.ts`
+- ✅ blade physical parameters moved into material recipes with per-steel-finish modifiers
 - small generated normal maps:
   - brushed steel grain
-  - leather grain
-  - wood grain
-  - cord fibers
+  - ✅ leather/cord grip grain
+  - ✅ wood grain material response
+  - ✅ cord/wire material response
 - condition affects:
-  - metal roughness
-  - clearcoat
-  - base color darkening
-  - grip darkening
-  - hardware roughness
+  - ✅ metal roughness
+  - ✅ clearcoat
+  - ✅ base color darkening
+  - ✅ grip darkening
+  - ✅ hardware roughness
 
 Avoid for now:
 
@@ -303,17 +303,18 @@ Acceptance criteria:
 
 Work items:
 
-- leather grain normal map for grip core
-- cord/wire normal or geometry refinement
-- subtle blade roughness gradient:
-  - duller ricasso/base
-  - cleaner mid-blade
-  - sharper edge highlights
-- tiny edge nicks for battle-worn/ancient as sparse geometry or very subtle masks
+- ✅ leather grain normal map for grip core
+- ✅ cord/wire material response and normal strength
+- ✅ subtle blade roughness gradient:
+  - ✅ duller ricasso/base
+  - ✅ cleaner mid-blade
+  - ✅ slightly rougher tip/edge response
+- ✅ tiny edge nicks for battle-worn/ancient as sparse geometry
 - ambient occlusion at part intersections:
   - blade entering guard
   - grip under collars
   - pommel cap/rivet
+  - note: avoid physical dark rings; use a subtler shader/post-process strategy later
 
 Acceptance criteria:
 

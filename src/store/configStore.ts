@@ -26,6 +26,7 @@ export type PommelStyle =
 export type SwordCondition = 'pristine' | 'used' | 'battleWorn' | 'ancient';
 export type SteelFinish = 'polished' | 'satin' | 'darkened' | 'patternWelded';
 export type HardwareTone = 'steel' | 'brass' | 'bronze' | 'darkIron';
+export type GripMaterial = 'leather' | 'wood' | 'cord' | 'wire';
 export type GemstoneType = 'none' | 'ruby' | 'sapphire' | 'emerald' | 'amber';
 
 export interface SwordConfig {
@@ -38,6 +39,7 @@ export interface SwordConfig {
     condition: SwordCondition;
     steelFinish: SteelFinish;
     hardwareTone: HardwareTone;
+    gripMaterial: GripMaterial;
     gripColor: string;
   };
   fantasy: { enabled: boolean; runes: boolean; gemstone: GemstoneType };

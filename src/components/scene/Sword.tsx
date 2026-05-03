@@ -1,109 +1,11 @@
 import { useConfigStore } from '../../store/configStore';
-import type { HardwareTone, SteelFinish, SwordCondition } from '../../store/configStore';
 import { SWORD_TYPES } from '../../presets/swordTypes';
+import { getSwordMaterialRecipes } from '../../presets/materialRecipes';
 import { Blade, BLADE_LENGTHS } from './Blade';
 import { Crossguard, GUARD_HEIGHT } from './Crossguard';
 import { Grip, GRIP_LENGTHS } from './Grip';
 import { HiltDetails } from './HiltDetails';
 import { Pommel, POMMEL_HALF_HEIGHTS } from './Pommel';
-
-const BLADE_COLORS: Record<SteelFinish, Record<SwordCondition, string>> = {
-  polished: {
-    pristine:   '#C8CCD0',
-    used:       '#AEB5B7',
-    battleWorn: '#8A908C',
-    ancient:    '#7C756B',
-  },
-  satin: {
-    pristine:   '#B8C0C2',
-    used:       '#A4ABAC',
-    battleWorn: '#858B87',
-    ancient:    '#777064',
-  },
-  darkened: {
-    pristine:   '#6A6660',
-    used:       '#5C5A56',
-    battleWorn: '#4A4A46',
-    ancient:    '#403B35',
-  },
-  patternWelded: {
-    pristine:   '#BFC7C8',
-    used:       '#AAB2B2',
-    battleWorn: '#8B918D',
-    ancient:    '#7B7469',
-  },
-};
-
-const HARDWARE_COLORS: Record<HardwareTone, Record<SwordCondition, string>> = {
-  steel: {
-    pristine:   '#C8CCD0',
-    used:       '#AEB2B1',
-    battleWorn: '#868B86',
-    ancient:    '#756E64',
-  },
-  brass: {
-    pristine:   '#B8925A',
-    used:       '#A27D4D',
-    battleWorn: '#80633E',
-    ancient:    '#695136',
-  },
-  bronze: {
-    pristine:   '#9B6A35',
-    used:       '#865B30',
-    battleWorn: '#6F4A2B',
-    ancient:    '#5A3D27',
-  },
-  darkIron: {
-    pristine:   '#585450',
-    used:       '#4C4A46',
-    battleWorn: '#3C3B38',
-    ancient:    '#322E29',
-  },
-};
-
-const HARDWARE_ROUGHNESS: Record<SwordCondition, number> = {
-  pristine:   0.36,
-  used:       0.45,
-  battleWorn: 0.56,
-  ancient:    0.68,
-};
-
-const GRIP_ROUGHNESS: Record<SwordCondition, number> = {
-  pristine:   0.84,
-  used:       0.88,
-  battleWorn: 0.92,
-  ancient:    0.96,
-};
-
-const HARDWARE_EMISSIVE: Record<HardwareTone, string> = {
-  steel:    '#000000',
-  brass:    '#B8925A',
-  bronze:   '#9B6A35',
-  darkIron: '#000000',
-};
-
-const HARDWARE_EMISSIVE_INTENSITY: Record<HardwareTone, number> = {
-  steel:    0,
-  brass:    0.05,
-  bronze:   0.035,
-  darkIron: 0,
-};
-
-function shadeHex(hex: string, factor: number): string {
-  const raw = hex.replace('#', '');
-  const n = parseInt(raw, 16);
-  const r = Math.max(0, Math.min(255, Math.round(((n >> 16) & 255) * factor)));
-  const g = Math.max(0, Math.min(255, Math.round(((n >> 8) & 255) * factor)));
-  const b = Math.max(0, Math.min(255, Math.round((n & 255) * factor)));
-  return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
-}
-
-const GRIP_FINISH_SHADE: Record<SwordCondition, number> = {
-  pristine:   1.00,
-  used:       0.88,
-  battleWorn: 0.72,
-  ancient:    0.58,
-};
 
 export function Sword() {
   const { config } = useConfigStore();
@@ -122,18 +24,11 @@ export function Sword() {
   const gripTopY = gripY + gripLen / 2;
   const gripBottomY = gripY - gripLen / 2;
 
-  const { condition, hardwareTone, steelFinish } = config.finish;
+  const { condition, steelFinish } = config.finish;
   const fantasyOn = config.fantasy.enabled;
   const runes     = fantasyOn && config.fantasy.runes;
   const gemstone  = fantasyOn ? config.fantasy.gemstone : 'none' as const;
-
-  const bladeColor    = BLADE_COLORS[steelFinish][condition];
-  const hwColor       = HARDWARE_COLORS[hardwareTone][condition];
-  const hwEmissive    = HARDWARE_EMISSIVE[hardwareTone];
-  const hwEmissiveInt = HARDWARE_EMISSIVE_INTENSITY[hardwareTone];
-  const hwRoughness   = HARDWARE_ROUGHNESS[condition];
-  const gripColor     = shadeHex(config.finish.gripColor, GRIP_FINISH_SHADE[condition]);
-  const gripRoughness = GRIP_ROUGHNESS[condition];
+  const materials = getSwordMaterialRecipes(config.finish);
 
   return (
     <group>
@@ -151,7 +46,7 @@ export function Sword() {
           spineClipT={spineClipT}
           fullerStart={fullerStart}
           fullerEnd={fullerEnd}
-          color={bladeColor}
+          color={materials.blade.color}
           steelFinish={steelFinish}
           condition={condition}
           runes={runes}
@@ -161,18 +56,18 @@ export function Sword() {
       <Crossguard
         archetype={config.archetype}
         style={config.guard.style}
-        color={hwColor}
-        emissive={hwEmissive}
-        emissiveIntensity={hwEmissiveInt}
-        roughness={hwRoughness}
+        color={materials.hardware.color}
+        emissive={materials.hardware.emissive}
+        emissiveIntensity={materials.hardware.emissiveIntensity}
+        roughness={materials.hardware.roughness}
         position={[0, guardY, 0]}
       />
       <HiltDetails
         archetype={config.archetype}
-        color={hwColor}
-        emissive={hwEmissive}
-        emissiveIntensity={hwEmissiveInt}
-        roughness={hwRoughness}
+        color={materials.hardware.color}
+        emissive={materials.hardware.emissive}
+        emissiveIntensity={materials.hardware.emissiveIntensity}
+        roughness={materials.hardware.roughness}
         guardY={guardY}
         gripTopY={gripTopY}
         gripBottomY={gripBottomY}
@@ -180,17 +75,20 @@ export function Sword() {
       <Grip
         archetype={config.archetype}
         length={config.grip.length}
-        color={gripColor}
-        roughness={gripRoughness}
+        material={materials.grip.material}
+        color={materials.grip.color}
+        metalness={materials.grip.metalness}
+        normalScale={materials.grip.normalScale}
+        roughness={materials.grip.roughness}
         position={[0, gripY, 0]}
       />
       <Pommel
         archetype={config.archetype}
         style={config.pommel.style}
-        color={hwColor}
-        emissive={hwEmissive}
-        emissiveIntensity={hwEmissiveInt}
-        roughness={hwRoughness}
+        color={materials.hardware.color}
+        emissive={materials.hardware.emissive}
+        emissiveIntensity={materials.hardware.emissiveIntensity}
+        roughness={materials.hardware.roughness}
         gemstone={gemstone}
         position={[0, pommelY, 0]}
       />

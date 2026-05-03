@@ -43,6 +43,7 @@ const finish = (
   condition: 'pristine',
   steelFinish: 'polished',
   hardwareTone: 'steel',
+  gripMaterial: 'leather',
   gripColor,
   ...overrides,
 });
@@ -126,7 +127,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
       guard: { style: 'straight' },
       grip: { length: 'short' },
       pommel: { style: 'brazilNut' },
-      finish: finish('#80755c', { condition: 'used', steelFinish: 'satin', hardwareTone: 'darkIron' }), // aged ivory grip with a lightly used bright steel blade
+      finish: finish('#80755c', { condition: 'used', steelFinish: 'satin', hardwareTone: 'darkIron', gripMaterial: 'wood' }), // aged ivory grip with a lightly used bright steel blade
       fantasy: DEFAULT_FANTASY,
     },
   },
@@ -147,7 +148,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
       guard: { style: 'curved' },
       grip: { length: 'short' },
       pommel: { style: 'disc' },
-      finish: finish('#11100E', { condition: 'used', steelFinish: 'satin', hardwareTone: 'darkIron' }), // blackened leather and muted fittings for a practical chopping sword
+      finish: finish('#11100E', { condition: 'used', steelFinish: 'satin', hardwareTone: 'darkIron', gripMaterial: 'cord' }), // black cord grip and muted fittings for a practical chopping sword
       fantasy: DEFAULT_FANTASY,
     },
   },
@@ -187,7 +188,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
       guard: { style: 'curved' },
       grip: { length: 'long' },
       pommel: { style: 'fishtail' },
-      finish: finish('#4A1118', { condition: 'used', steelFinish: 'satin', hardwareTone: 'darkIron' }), // maroon leather grip with subdued war-sword fittings
+      finish: finish('#4A1118', { condition: 'used', steelFinish: 'satin', hardwareTone: 'darkIron', gripMaterial: 'cord' }), // maroon cord grip with subdued war-sword fittings
       fantasy: DEFAULT_FANTASY,
     },
   },
