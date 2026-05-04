@@ -5,10 +5,9 @@ import * as THREE from 'three';
 import { Sword } from './Sword';
 import { Lighting } from './Lighting';
 import { useConfigStore } from '../../store/configStore';
-import { BLADE_LENGTHS } from './Blade';
 import { GUARD_HEIGHT } from './Crossguard';
-import { GRIP_LENGTHS } from './Grip';
 import { POMMEL_HALF_HEIGHTS } from './Pommel';
+import { BLADE_LENGTHS, GRIP_LENGTHS } from './dimensions';
 
 // Camera sits at ~65° polar (above + side) for a presentation-angle view.
 // OrbitControls reset() will snap back here.
@@ -40,14 +39,22 @@ function SceneContents() {
     if (!orbitRef.current) return;
     orbitRef.current.reset();
     if (timerRef.current) clearTimeout(timerRef.current);
-    setAutoRotate(true);
+    const frame = requestAnimationFrame(() => setAutoRotate(true));
+    return () => cancelAnimationFrame(frame);
   }, [viewResetTick]);
 
   // Restart auto-rotate when archetype changes
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    setAutoRotate(true);
+    const frame = requestAnimationFrame(() => setAutoRotate(true));
+    return () => cancelAnimationFrame(frame);
   }, [config.archetype]);
+
+  useEffect(() => (
+    () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    }
+  ), []);
 
   const handleStart = useCallback(() => {
     setAutoRotate(false);

@@ -62,13 +62,15 @@ Implemented foundations:
 
 Known rough edges:
 
-- `steelFinish` and `hardwareTone` are now separate controls, but the material
-  recipes are still simple color/roughness tables
+- material recipes now drive blade, hardware, and grip response, but they still
+  rely on procedural maps rather than authored PBR texture sets
 - guard and pommel styles are still mostly generic rather than archetype-authored
-- grip has good helical geometry, but weak material detail
+- grip has improved helical/banded geometry and material normals, but can still
+  use richer leather/cord/wood aging detail
 - collars, spacers, and guard terminal options now exist as archetype recipes,
   but the decorative language is still conservative
-- postprocessing component exists but is not yet part of the active scene
+- screen-space postprocessing is deliberately deferred; previous bloom/vignette
+  attempts caused flashing and artificial glow over the live video background
 - lint currently has Fast Refresh / React hook rule issues from existing structure
 
 ---
@@ -361,7 +363,7 @@ Lower priority, but useful once model quality improves:
 - quality toggle: low / medium / high
 - share URL with encoded config
 - saved gallery in LocalStorage
-- code-split heavy Three/postprocessing modules
+- code-split heavy Three/R3F modules
 - import config from JSON
 - polish screenshot capture for high-resolution output
 

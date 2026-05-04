@@ -29,11 +29,16 @@ iteration speed and fun.
 
 - **Vite + React + TypeScript** — project scaffold
 - **three** (latest) + **@react-three/fiber** + **@react-three/drei** — 3D scene
-- **@react-three/postprocessing** — bloom for blade highlights
+- **DOM atmosphere layers** — background video, grain, vignette, and dust motes
 - **leva** — parametric controls (themed to match UI, see Visual Style)
 - **zustand** — state store for sword config
 - **@fontsource/cinzel** + **@fontsource/inter** + **@fontsource/jetbrains-mono** — self-hosted fonts
 - **tailwindcss** — styling for custom UI outside the 3D canvas
+
+Postprocessing/bloom is intentionally deferred. It caused flashing and
+artificial glow when composited over the transparent 3D canvas and live
+background video. For now, cinematic polish should come from controlled
+lighting, tone mapping, environment reflections, and DOM-layer atmosphere.
 
 Use TypeScript strictly throughout. Prefer small focused components over
 large ones. Put all "magic numbers" (blade proportions, default colors,
@@ -276,16 +281,13 @@ Use a full-viewport `<Canvas>` from `@react-three/fiber`.
   from directly above/below (looks bad), zoom limited.
 - **Auto-rotation**: sword rotates slowly around Y axis (~0.2 rad/s)
   when user hasn't interacted recently. Pauses on interaction, resumes
-  after 3 seconds of inactivity.
-- **Camera**: perspective, 35° FOV. Position dynamically based on
-  current blade length so the sword always fills ~70% of vertical frame.
-  Lerp position on archetype changes (400ms).
-- **Postprocessing**: `<EffectComposer>` with subtle `<Bloom>`
-  (intensity 0.3, luminanceThreshold 0.9, luminanceSmoothing 0.2).
-  Just enough to make polished blade highlights pop.
-- **Background**: transparent canvas over the CSS gradient (don't use
-  a three.js background — let the CSS handle it for perfect consistency
-  with the UI).
+  after a short period of inactivity.
+- **Camera**: perspective, 35° FOV, fixed presentation position with
+  constrained orbit controls and a reset action.
+- **Postprocessing**: deferred. Avoid screen-space bloom/vignette until
+  transparent canvas + live background video composition can be made stable.
+- **Background**: transparent canvas over the DOM atmosphere layer: live
+  background video, vignette, grain, and dust motes.
 
 ---
 
@@ -513,9 +515,9 @@ review at each milestone so I can steer quality before you move on:
 4. **Real pommel profiles** — all 7 pommel shapes as hand-authored
    LatheGeometry profiles. Take time on these.
 5. **Crossguard variations** — all 4 guard styles.
-6. **Materials + lighting pass** — HDRI environment working, metal looks
-   like metal, bloom dialed in. This is where the "it looks like a game
-   screenshot" moment happens.
+6. **Materials + lighting pass** — environment reflections working, metal
+   looks like metal, renderer tone mapping dialed in. This is where the
+   "it looks like a game screenshot" moment happens.
 7. **UI layer** — themed Leva, TypeSelector hero component, top band,
    footer buttons. Styling polish per the Visual Style section.
 8. **Finish variations + Fantasy Mode** — blade finishes, metal tones,

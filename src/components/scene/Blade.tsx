@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { useMemo } from 'react';
 import type { ArchetypeKey, BladeLength, BladeWidth, FullerStyle, SteelFinish, SwordCondition } from '../../store/configStore';
 import { getBladePhysicalRecipe } from '../../presets/materialRecipes';
+import { BLADE_LENGTHS } from './dimensions';
 
 // 9 rune patterns — each is a rotation in radians applied to the main stroke mark.
 // Secondary entries add a crossing stroke at a different angle.
@@ -61,13 +62,6 @@ function Runes({ length, halfThick, bodyTaperEnd, bodyTaperMidWidth, halfWidth }
 }
 import { PROFILE_FAMILIES, VIKING_LENTICULAR_SINGLE, buildFullProfile, lerpProfiles } from '../../presets/bladeProfiles';
 import type { ProfileFamily } from '../../presets/bladeProfiles';
-
-export const BLADE_LENGTHS: Record<BladeLength, number> = {
-  short:     0.70,
-  medium:    0.82,
-  long:      0.98,
-  extraLong: 1.18,
-};
 
 const BLADE_HALF_WIDTHS: Record<BladeWidth, number> = {
   narrow:   0.014,

@@ -2,11 +2,7 @@ import * as THREE from 'three';
 import { useMemo } from 'react';
 import type { ArchetypeKey, GripLength, GripMaterial } from '../../store/configStore';
 import { getGripDetailRecipe } from '../../presets/archetypeDetails';
-
-export const GRIP_LENGTHS: Record<GripLength, number> = {
-  short: 0.112,
-  long:  0.220,
-};
+import { GRIP_LENGTHS } from './dimensions';
 
 // Core cylinder dimensions
 const GRIP_RADIUS_TOP = 0.011;
@@ -142,14 +138,19 @@ export function Grip({ archetype, length, material, color, metalness, normalScal
   const normalMap = GRIP_NORMAL_MAPS[material];
   const normalScaleVec = useMemo(() => new THREE.Vector2(normalScale[0], normalScale[1]), [normalScale]);
 
-  const [cordGeo1, cordGeo2, wireGeo] = useMemo(() => {
+  const wrapGeometry = useMemo(() => {
     const segs = turns * CORD_SEGS_PER_TURN;
-    return [
-      new THREE.TubeGeometry(new HelixCurve(wrapRadius, halfH, turns,  1), segs, CORD_TUBE_RADIUS, CORD_TUBE_SIDES, false),
-      new THREE.TubeGeometry(new HelixCurve(wrapRadius, halfH, turns, -1), segs, CORD_TUBE_RADIUS, CORD_TUBE_SIDES, false),
-      new THREE.TubeGeometry(new HelixCurve(wrapRadius + 0.0005, halfH, turns * 1.15, 1), Math.round(segs * 1.15), 0.00055, 6, false),
-    ];
-  }, [halfH, turns, wrapRadius]);
+    if (recipe.wrap === 'wire') {
+      return {
+        wireGeo: new THREE.TubeGeometry(new HelixCurve(wrapRadius + 0.0005, halfH, turns * 1.15, 1), Math.round(segs * 1.15), 0.00055, 6, false),
+      };
+    }
+    if (recipe.wrap === 'bands') return {};
+    return {
+      cordGeo1: new THREE.TubeGeometry(new HelixCurve(wrapRadius, halfH, turns, 1), segs, CORD_TUBE_RADIUS, CORD_TUBE_SIDES, false),
+      cordGeo2: new THREE.TubeGeometry(new HelixCurve(wrapRadius, halfH, turns, -1), segs, CORD_TUBE_RADIUS, CORD_TUBE_SIDES, false),
+    };
+  }, [halfH, recipe.wrap, turns, wrapRadius]);
 
   const bands = useMemo(() => {
     const count = recipe.bandCount?.[length] ?? (length === 'short' ? 9 : 14);
@@ -173,7 +174,7 @@ export function Grip({ archetype, length, material, color, metalness, normalScal
         ))
       ) : recipe.wrap === 'wire' ? (
         <>
-          <mesh geometry={wireGeo}>
+          <mesh geometry={wrapGeometry.wireGeo}>
             <meshStandardMaterial
               color={recipe.wireColor ?? '#8A7A64'}
               metalness={recipe.wireMetalness ?? 0.7}
@@ -190,10 +191,10 @@ export function Grip({ archetype, length, material, color, metalness, normalScal
       ) : (
         <>
           {/* Cross-wrapped cord — two helices of opposite chirality form a diamond pattern */}
-          <mesh geometry={cordGeo1}>
+          <mesh geometry={wrapGeometry.cordGeo1}>
             <meshStandardMaterial color={color} metalness={metalness} roughness={Math.max(0.20, roughness - 0.08)} normalMap={normalMap} normalScale={normalScaleVec} />
           </mesh>
-          <mesh geometry={cordGeo2}>
+          <mesh geometry={wrapGeometry.cordGeo2}>
             {/* polygonOffset pushes this helix slightly back so cord1 wins at crossings */}
             <meshStandardMaterial
               color={color}

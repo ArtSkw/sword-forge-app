@@ -1,11 +1,12 @@
 import { useConfigStore } from '../../store/configStore';
 import { SWORD_TYPES } from '../../presets/swordTypes';
 import { getSwordMaterialRecipes } from '../../presets/materialRecipes';
-import { Blade, BLADE_LENGTHS } from './Blade';
+import { Blade } from './Blade';
 import { Crossguard, GUARD_HEIGHT } from './Crossguard';
-import { Grip, GRIP_LENGTHS } from './Grip';
+import { Grip } from './Grip';
 import { HiltDetails } from './HiltDetails';
 import { Pommel, POMMEL_HALF_HEIGHTS } from './Pommel';
+import { BLADE_LENGTHS, GRIP_LENGTHS } from './dimensions';
 
 export function Sword() {
   const { config } = useConfigStore();

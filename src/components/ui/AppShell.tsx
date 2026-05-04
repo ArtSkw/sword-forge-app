@@ -100,9 +100,16 @@ export function AppShell({ children }: AppShellProps) {
   useEffect(() => makeAudioLayer(`${import.meta.env.BASE_URL}sounds/music.mp3`, 0.08, 4000), []);
 
   // Close drawer when switching archetype
-  useEffect(() => { setDrawerOpen(false); }, [archetype]);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setDrawerOpen(false));
+    return () => cancelAnimationFrame(frame);
+  }, [archetype]);
   // Close drawer when screen widens past breakpoint
-  useEffect(() => { if (!isNarrow) setDrawerOpen(false); }, [isNarrow]);
+  useEffect(() => {
+    if (isNarrow) return;
+    const frame = requestAnimationFrame(() => setDrawerOpen(false));
+    return () => cancelAnimationFrame(frame);
+  }, [isNarrow]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
