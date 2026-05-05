@@ -3,6 +3,7 @@ import { tokens } from '../../styles/tokens';
 import { useConfigStore, type ArchetypeKey } from '../../store/configStore';
 import { SWORD_TYPES, SWORD_TYPE_ORDER } from '../../presets/swordTypes';
 import { playCling, type ClingParams } from '../../lib/audio';
+import { useViewportSize } from '../../hooks/useViewportSize';
 
 const CLING_SRC = `${import.meta.env.BASE_URL}sounds/sword-cling.mp3`;
 
@@ -47,12 +48,16 @@ function CornerBracket({ corner }: CornerBracketProps) {
 type TypeCardProps = {
   archetypeKey: ArchetypeKey;
   isSelected: boolean;
+  compact: boolean;
   onClick: () => void;
 };
 
-function TypeCard({ archetypeKey, isSelected, onClick }: TypeCardProps) {
+function TypeCard({ archetypeKey, isSelected, compact, onClick }: TypeCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const preset = SWORD_TYPES[archetypeKey];
+  const cardWidth = compact ? 96 : 120;
+  const cardHeight = compact ? 106 : 124;
+  const iconSize = compact ? 58 : 70;
 
   const borderColor = isSelected
     ? tokens.color.borderAccentBright
@@ -72,19 +77,21 @@ function TypeCard({ archetypeKey, isSelected, onClick }: TypeCardProps) {
       title={preset.description}
       style={{
         position: 'relative',
-        width: 120,
-        height: 124,
+        width: cardWidth,
+        minWidth: cardWidth,
+        height: cardHeight,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '12px 8px 10px',
+        padding: compact ? '10px 7px 9px' : '12px 8px 10px',
         background: `linear-gradient(to bottom, ${tokens.color.bgPanel}, ${tokens.color.bgDeep})`,
         border: `1px solid ${borderColor}`,
         borderRadius: 2,
         cursor: 'pointer',
         boxShadow,
         transition: 'border-color 0.15s, box-shadow 0.15s',
+        scrollSnapAlign: 'center',
       }}
     >
       {isHovered && !isSelected && (
@@ -104,14 +111,14 @@ function TypeCard({ archetypeKey, isSelected, onClick }: TypeCardProps) {
           <img
             src={`${import.meta.env.BASE_URL}sword-icons/${archetypeKey}.png`}
             alt={preset.name}
-            style={{ width: 70, height: 70, objectFit: 'contain', display: 'block' }}
+            style={{ width: iconSize, height: iconSize, objectFit: 'contain', display: 'block' }}
           />
         </div>
       </div>
       <span
         style={{
           fontFamily: tokens.font.display,
-          fontSize: 10,
+          fontSize: compact ? 9 : 10,
           letterSpacing: tokens.letterSpacing.display,
           textTransform: 'uppercase',
           color: isSelected ? tokens.color.textPrimary : tokens.color.textSecondary,
@@ -128,21 +135,29 @@ function TypeCard({ archetypeKey, isSelected, onClick }: TypeCardProps) {
 export function TypeSelector() {
   const config = useConfigStore((s) => s.config);
   const setArchetype = useConfigStore((s) => s.setArchetype);
+  const { width, height } = useViewportSize();
+  const compact = width < 1280 || height < 760;
+  const liftForActions = width < 1320;
 
   return (
     <div
+      className="cc-type-selector"
       style={{
         position: 'absolute',
-        bottom: 24,
+        bottom: liftForActions ? 78 : 24,
         left: '50%',
         transform: 'translateX(-50%)',
         display: 'flex',
-        gap: 8,
+        gap: compact ? 6 : 8,
         zIndex: 10,
         overflowX: 'auto',
-        maxWidth: 'calc(100vw - 48px)',
-        paddingBottom: 4,
+        maxWidth: liftForActions ? 'calc(100vw - 32px)' : 'min(calc(100vw - 360px), 940px)',
+        padding: '0 10px 6px',
         animation: 'cc-reveal 0.9s ease 2.2s both',
+        scrollSnapType: 'x proximity',
+        scrollbarWidth: 'none',
+        WebkitMaskImage: 'linear-gradient(to right, transparent 0, black 18px, black calc(100% - 18px), transparent 100%)',
+        maskImage: 'linear-gradient(to right, transparent 0, black 18px, black calc(100% - 18px), transparent 100%)',
       }}
     >
       {SWORD_TYPE_ORDER.map((key) => (
@@ -150,6 +165,7 @@ export function TypeSelector() {
           key={key}
           archetypeKey={key}
           isSelected={config.archetype === key}
+          compact={compact}
           onClick={() => { setArchetype(key); playCling(CLING_SRC, CLING_PARAMS[key]); }}
         />
       ))}

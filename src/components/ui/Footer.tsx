@@ -5,6 +5,7 @@ import { exportConfig } from '../../lib/exportConfig';
 import { useConfigStore } from '../../store/configStore';
 import { tokens } from '../../styles/tokens';
 import { audioState } from '../../lib/audio';
+import { useViewportSize } from '../../hooks/useViewportSize';
 
 export function Footer() {
   const config        = useConfigStore((s) => s.config);
@@ -12,6 +13,8 @@ export function Footer() {
   const [copied, setCopied] = useState(false);
   const [muted, setMuted] = useState(audioState.muted);
   const [hovered, setHovered] = useState(false);
+  const { width } = useViewportSize();
+  const compact = width < 1320;
 
   useEffect(() => { const unsub = audioState.subscribe((m) => setMuted(m)); return () => { unsub(); }; }, []);
 
@@ -29,15 +32,15 @@ export function Footer() {
       <div
         style={{
           position: 'absolute',
-          bottom: 24,
-          left: 24,
+          bottom: compact ? 18 : 24,
+          left: compact ? 16 : 24,
           zIndex: 10,
           animation: 'cc-rise 0.8s ease 2.6s both',
           display: 'flex',
-          gap: 8,
+          gap: compact ? 6 : 8,
         }}
       >
-        <Button label="Reset View" variant="secondary" onClick={bumpResetTick} />
+        <Button label="Reset View" variant="secondary" onClick={bumpResetTick} compact={compact} />
         <button
           onClick={() => { audioState.toggle(); }}
           onMouseEnter={() => setHovered(true)}
@@ -47,7 +50,7 @@ export function Footer() {
             background: 'transparent',
             border,
             borderRadius: tokens.radius.sharp,
-            padding: '10px',
+            padding: compact ? '9px' : '10px',
             cursor: 'pointer',
             color: muted ? tokens.color.textMuted : tokens.color.textPrimary,
             display: 'flex',
@@ -76,12 +79,12 @@ export function Footer() {
       <div
         style={{
           position: 'absolute',
-          bottom: 24,
-          right: 24,
+          bottom: compact ? 18 : 24,
+          right: compact ? 16 : 24,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'flex-end',
-          gap: 8,
+          gap: compact ? 6 : 8,
           zIndex: 10,
           animation: 'cc-rise 0.8s ease 2.6s both',
         }}
@@ -90,7 +93,7 @@ export function Footer() {
           <span
             style={{
               fontFamily: tokens.font.mono,
-              fontSize: 11,
+              fontSize: compact ? 10 : 11,
               color: tokens.color.borderAccentBright,
               letterSpacing: '0.05em',
             }}
@@ -98,9 +101,9 @@ export function Footer() {
             Configuration copied
           </span>
         )}
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Button label="Export" variant="secondary" onClick={handleExport} />
-          <Button label="Screenshot" onClick={takeScreenshot} />
+        <div style={{ display: 'flex', gap: compact ? 6 : 8 }}>
+          <Button label="Export" variant="secondary" onClick={handleExport} compact={compact} />
+          <Button label="Screenshot" onClick={takeScreenshot} compact={compact} />
         </div>
       </div>
     </>

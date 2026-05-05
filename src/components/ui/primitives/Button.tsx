@@ -8,6 +8,7 @@ type ButtonProps = {
   onClick?: () => void;
   variant?: ButtonVariant;
   disabled?: boolean;
+  compact?: boolean;
 };
 
 const BORDER: Record<ButtonVariant, string> = {
@@ -22,7 +23,7 @@ const BORDER_HOVER: Record<ButtonVariant, string> = {
   destructive: tokens.color.accentCrimson,
 };
 
-export function Button({ label, onClick, variant = 'primary', disabled = false }: ButtonProps) {
+export function Button({ label, onClick, variant = 'primary', disabled = false, compact = false }: ButtonProps) {
   const [hovered, setHovered] = useState(false);
 
   const border = `1px solid ${hovered && !disabled ? BORDER_HOVER[variant] : BORDER[variant]}`;
@@ -40,9 +41,9 @@ export function Button({ label, onClick, variant = 'primary', disabled = false }
         background: 'transparent',
         border,
         borderRadius: tokens.radius.sharp,
-        padding: '10px 20px',
+        padding: compact ? '9px 14px' : '10px 20px',
         fontFamily: tokens.font.display,
-        fontSize: 11,
+        fontSize: compact ? 10 : 11,
         letterSpacing: tokens.letterSpacing.display,
         textTransform: 'uppercase',
         color: disabled ? tokens.color.textMuted : tokens.color.textPrimary,

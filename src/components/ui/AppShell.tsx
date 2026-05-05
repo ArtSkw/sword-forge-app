@@ -8,12 +8,15 @@ import { NoiseOverlay } from './NoiseOverlay';
 import { AtmosphereOverlay } from './AtmosphereOverlay';
 import { useConfigStore } from '../../store/configStore';
 import { makeAudioLayer } from '../../lib/audio';
+import { useViewportSize } from '../../hooks/useViewportSize';
+import { Button } from './primitives/Button';
 
 const TOP_BAND_HEIGHT = 64;
 const BRACKET_SIZE = 14;
 const BRACKET_GAP = 20;
 const DRAWER_WIDTH = 300;
 const NARROW_BREAKPOINT = 900;
+const DESKTOP_NOTICE_BREAKPOINT = 900;
 
 function useNarrowScreen() {
   const [isNarrow, setIsNarrow] = useState(() => window.innerWidth < NARROW_BREAKPOINT);
@@ -89,12 +92,91 @@ function DrawerToggle({ open, onClick }: { open: boolean; onClick: () => void })
   );
 }
 
+function DesktopRecommendation({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 42,
+        display: 'grid',
+        placeItems: 'center',
+        padding: 22,
+        background: 'rgba(5, 3, 2, 0.66)',
+        backdropFilter: 'blur(6px)',
+        animation: 'cc-reveal 0.35s ease both',
+      }}
+    >
+      <div
+        style={{
+          width: 'min(100%, 430px)',
+          position: 'relative',
+          padding: '24px 22px 22px',
+          background: `linear-gradient(180deg, rgba(28, 24, 20, 0.96), rgba(10, 9, 7, 0.98))`,
+          border: `1px solid ${tokens.color.borderAccent}`,
+          borderRadius: tokens.radius.sharp,
+          boxShadow: tokens.shadow.panel,
+          textAlign: 'center',
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            top: 12,
+            left: 12,
+          }}
+        >
+          <Bracket side="left" />
+        </div>
+        <div
+          style={{
+            position: 'absolute',
+            top: 12,
+            right: 12,
+          }}
+        >
+          <Bracket side="right" />
+        </div>
+        <h2
+          style={{
+            margin: '6px 0 12px',
+            fontFamily: tokens.font.display,
+            fontWeight: 500,
+            fontSize: 18,
+            letterSpacing: tokens.letterSpacing.display,
+            textTransform: 'uppercase',
+            color: tokens.color.textPrimary,
+          }}
+        >
+          Wider Display Recommended
+        </h2>
+        <p
+          style={{
+            margin: '0 auto 20px',
+            maxWidth: 330,
+            fontFamily: tokens.font.control,
+            fontSize: 18,
+            lineHeight: 1.35,
+            color: tokens.color.textSecondary,
+          }}
+        >
+          The forge is tuned for a desktop canvas, where the sword model and controls have room to breathe.
+        </p>
+        <Button label="Continue" onClick={onDismiss} compact />
+      </div>
+    </div>
+  );
+}
+
 type AppShellProps = { children: ReactNode };
 
 export function AppShell({ children }: AppShellProps) {
   const archetype = useConfigStore((s) => s.config.archetype);
   const isNarrow = useNarrowScreen();
+  const { width } = useViewportSize();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [noticeDismissed, setNoticeDismissed] = useState(false);
+  const showDesktopNotice = width < DESKTOP_NOTICE_BREAKPOINT && !noticeDismissed;
 
   useEffect(() => makeAudioLayer(`${import.meta.env.BASE_URL}sounds/ambient.mp3`, 0.3, 2000), []);
   useEffect(() => makeAudioLayer(`${import.meta.env.BASE_URL}sounds/music.mp3`, 0.08, 4000), []);
@@ -219,6 +301,7 @@ export function AppShell({ children }: AppShellProps) {
       <TypeSelector />
       <Footer />
       <ViewportFrame />
+      {showDesktopNotice && <DesktopRecommendation onDismiss={() => setNoticeDismissed(true)} />}
     </div>
   );
 }
