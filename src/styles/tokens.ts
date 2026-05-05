@@ -22,6 +22,7 @@ export const tokens = {
   font: {
     display: '"Cinzel", serif',
     body: '"Inter", system-ui, sans-serif',
+    control: '"Alegreya", serif',
     mono: '"JetBrains Mono", monospace',
   },
   letterSpacing: {

@@ -3,6 +3,9 @@
 @import "@fontsource/cinzel/400.css";
 @import "@fontsource/cinzel/500.css";
 @import "@fontsource/cinzel/600.css";
+@import "@fontsource/alegreya/latin-400.css";
+@import "@fontsource/alegreya/latin-500.css";
+@import "@fontsource/alegreya/latin-600.css";
 @import "@fontsource/inter/400.css";
 @import "@fontsource/inter/500.css";
 @import "@fontsource/inter/600.css";
@@ -102,4 +105,8 @@ body::after {
   box-shadow: 0 0 10px rgba(255, 164, 78, 0.32);
   animation: cc-dust-sway var(--mote-sway-duration) ease-in-out var(--mote-delay) infinite;
   will-change: transform;
+}
+
+[class*='leva-c'] {
+  letter-spacing: 0.025em;
 }

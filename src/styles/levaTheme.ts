@@ -14,8 +14,8 @@ export const levaTheme = {
     vivid1:     tokens.color.borderAccentBright,
   },
   radii: { xs: '0px', sm: '2px', lg: '2px' },
-  fonts: { mono: tokens.font.mono, sans: tokens.font.body },
-  fontSizes: { root: '11px' },
+  fonts: { mono: tokens.font.control, sans: tokens.font.control },
+  fontSizes: { root: '13px' },
   sizes: { rootWidth: '260px', rowHeight: '24px', titleBarHeight: '32px' },
   space: { sm: '6px', md: '10px', rowGap: '4px', colGap: '4px' },
 };

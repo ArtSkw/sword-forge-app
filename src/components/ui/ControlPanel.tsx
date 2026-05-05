@@ -6,6 +6,7 @@ import type {
   GemstoneType, GripMaterial, HardwareTone, SteelFinish, SwordCondition,
 } from '../../store/configStore';
 import { levaTheme } from '../../styles/levaTheme';
+import { playOneShot } from '../../lib/audio';
 
 const BLADE_LENGTH_OPTIONS = { Short: 'short', Medium: 'medium', Long: 'long', 'Extra Long': 'extraLong' };
 const BLADE_WIDTH_OPTIONS  = { Narrow: 'narrow', Standard: 'standard', Wide: 'wide' };
@@ -17,6 +18,26 @@ const STEEL_FINISH_OPTIONS = { Polished: 'polished', Satin: 'satin', Darkened: '
 const HARDWARE_TONE_OPTIONS = { Steel: 'steel', Brass: 'brass', Bronze: 'bronze', 'Dark Iron': 'darkIron' };
 const GRIP_MATERIAL_OPTIONS = { Leather: 'leather', Wood: 'wood', Cord: 'cord', Wire: 'wire' };
 const GEM_OPTIONS          = { None: 'none', Ruby: 'ruby', Sapphire: 'sapphire', Emerald: 'emerald', Amber: 'amber' };
+const ANVIL_SRC = `${import.meta.env.BASE_URL}sounds/anvil.wav`;
+const ANVIL_THROTTLE_MS = 180;
+const ANVIL_VOLUME = 0.42;
+let lastAnvilAt = 0;
+
+type LevaChangeContext = {
+  initial: boolean;
+  fromPanel: boolean;
+};
+
+function playAnvil() {
+  const now = performance.now();
+  if (now - lastAnvilAt < ANVIL_THROTTLE_MS) return;
+  lastAnvilAt = now;
+  playOneShot(ANVIL_SRC, ANVIL_VOLUME);
+}
+
+function playAnvilForManualChange(context: LevaChangeContext) {
+  if (!context.initial && context.fromPanel) playAnvil();
+}
 
 // This component is mounted with key={archetype} in AppShell.
 // useCreateStore() creates a FRESH Leva store on every mount, so controls
@@ -31,19 +52,28 @@ export function ControlPanel({ flat = false }: { flat?: boolean }) {
         label: 'Length',
         value: config.blade.length,
         options: BLADE_LENGTH_OPTIONS,
-        onChange: (v: BladeLength) => update('blade', { length: v }),
+        onChange: (v: BladeLength, _path: string, context: LevaChangeContext) => {
+          playAnvilForManualChange(context);
+          update('blade', { length: v });
+        },
       },
       width: {
         label: 'Width',
         value: config.blade.width,
         options: BLADE_WIDTH_OPTIONS,
-        onChange: (v: BladeWidth) => update('blade', { width: v }),
+        onChange: (v: BladeWidth, _path: string, context: LevaChangeContext) => {
+          playAnvilForManualChange(context);
+          update('blade', { width: v });
+        },
       },
       fuller: {
         label: 'Fuller',
         value: config.blade.fuller,
         options: FULLER_OPTIONS,
-        onChange: (v: FullerStyle) => update('blade', { fuller: v }),
+        onChange: (v: FullerStyle, _path: string, context: LevaChangeContext) => {
+          playAnvilForManualChange(context);
+          update('blade', { fuller: v });
+        },
       },
     }),
 
@@ -52,13 +82,19 @@ export function ControlPanel({ flat = false }: { flat?: boolean }) {
         label: 'Guard',
         value: config.guard.style,
         options: GUARD_OPTIONS,
-        onChange: (v: GuardStyle) => update('guard', { style: v }),
+        onChange: (v: GuardStyle, _path: string, context: LevaChangeContext) => {
+          playAnvilForManualChange(context);
+          update('guard', { style: v });
+        },
       },
       pommelStyle: {
         label: 'Pommel',
         value: config.pommel.style,
         options: POMMEL_OPTIONS,
-        onChange: (v: PommelStyle) => update('pommel', { style: v }),
+        onChange: (v: PommelStyle, _path: string, context: LevaChangeContext) => {
+          playAnvilForManualChange(context);
+          update('pommel', { style: v });
+        },
       },
     }),
 
@@ -67,30 +103,45 @@ export function ControlPanel({ flat = false }: { flat?: boolean }) {
         label: 'Condition',
         value: config.finish.condition,
         options: CONDITION_OPTIONS,
-        onChange: (v: SwordCondition) => update('finish', { condition: v }),
+        onChange: (v: SwordCondition, _path: string, context: LevaChangeContext) => {
+          playAnvilForManualChange(context);
+          update('finish', { condition: v });
+        },
       },
       steelFinish: {
         label: 'Steel',
         value: config.finish.steelFinish,
         options: STEEL_FINISH_OPTIONS,
-        onChange: (v: SteelFinish) => update('finish', { steelFinish: v }),
+        onChange: (v: SteelFinish, _path: string, context: LevaChangeContext) => {
+          playAnvilForManualChange(context);
+          update('finish', { steelFinish: v });
+        },
       },
       hardwareTone: {
         label: 'Hardware',
         value: config.finish.hardwareTone,
         options: HARDWARE_TONE_OPTIONS,
-        onChange: (v: HardwareTone) => update('finish', { hardwareTone: v }),
+        onChange: (v: HardwareTone, _path: string, context: LevaChangeContext) => {
+          playAnvilForManualChange(context);
+          update('finish', { hardwareTone: v });
+        },
       },
       gripMaterial: {
         label: 'Grip Mat.',
         value: config.finish.gripMaterial,
         options: GRIP_MATERIAL_OPTIONS,
-        onChange: (v: GripMaterial) => update('finish', { gripMaterial: v }),
+        onChange: (v: GripMaterial, _path: string, context: LevaChangeContext) => {
+          playAnvilForManualChange(context);
+          update('finish', { gripMaterial: v });
+        },
       },
       gripColor: {
         label: 'Grip Color',
         value: config.finish.gripColor,
-        onChange: (v: string) => update('finish', { gripColor: v }),
+        onChange: (v: string, _path: string, context: LevaChangeContext) => {
+          playAnvilForManualChange(context);
+          update('finish', { gripColor: v });
+        },
       },
     }),
 
@@ -98,18 +149,27 @@ export function ControlPanel({ flat = false }: { flat?: boolean }) {
       enabled: {
         label: 'Enabled',
         value: config.fantasy.enabled,
-        onChange: (v: boolean) => update('fantasy', { enabled: v }),
+        onChange: (v: boolean, _path: string, context: LevaChangeContext) => {
+          playAnvilForManualChange(context);
+          update('fantasy', { enabled: v });
+        },
       },
       runes: {
         label: 'Runes',
         value: config.fantasy.runes,
-        onChange: (v: boolean) => update('fantasy', { runes: v }),
+        onChange: (v: boolean, _path: string, context: LevaChangeContext) => {
+          playAnvilForManualChange(context);
+          update('fantasy', { runes: v });
+        },
       },
       gemstone: {
         label: 'Gemstone',
         value: config.fantasy.gemstone,
         options: GEM_OPTIONS,
-        onChange: (v: GemstoneType) => update('fantasy', { gemstone: v }),
+        onChange: (v: GemstoneType, _path: string, context: LevaChangeContext) => {
+          playAnvilForManualChange(context);
+          update('fantasy', { gemstone: v });
+        },
       },
     }),
   }, { store });

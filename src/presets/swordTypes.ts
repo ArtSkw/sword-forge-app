@@ -87,7 +87,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
       guard: { style: 'straight' },
       grip: { length: 'long' },
       pommel: { style: 'scentStopper' },
-      finish: finish('#4A2B22'), // dark brown leather, matching restrained two-hand reproductions
+      finish: finish('#32150f'), // darker red-brown leather, matching restrained two-hand reproductions
       fantasy: DEFAULT_FANTASY,
     },
   },
@@ -127,7 +127,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
       guard: { style: 'straight' },
       grip: { length: 'short' },
       pommel: { style: 'brazilNut' },
-      finish: finish('#80755c', { condition: 'used', steelFinish: 'satin', hardwareTone: 'darkIron', gripMaterial: 'wood' }), // aged ivory grip with a lightly used bright steel blade
+      finish: finish('#655d49', { condition: 'used', steelFinish: 'satin', hardwareTone: 'darkIron', gripMaterial: 'wood' }), // darker aged ivory grip with a lightly used bright steel blade
       fantasy: DEFAULT_FANTASY,
     },
   },
