@@ -108,7 +108,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
       guard: { style: 'curved' },
       grip: { length: 'long' },
       pommel: { style: 'fishtail' },
-      finish: finish('#101A2C'), // deep navy leather, distinct from longsword and greatsword grips
+      finish: finish('#101A2C', { hardwareTone: 'brass' }), // deep navy leather with warmer brass fittings
       fantasy: DEFAULT_FANTASY,
     },
   },
