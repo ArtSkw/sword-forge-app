@@ -24,6 +24,22 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes cc-entry-blackout {
+  0%   { opacity: 1; }
+  58%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes cc-entry-layer {
+  from { opacity: 0; transform: translateY(9px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cc-entry-exit {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+
 @keyframes cc-dust-drift {
   from { transform: translate3d(0, 0, 0); }
   to   { transform: translate3d(var(--mote-drift), -70px, 0); }

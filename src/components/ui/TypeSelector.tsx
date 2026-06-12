@@ -153,7 +153,7 @@ export function TypeSelector() {
         overflowX: 'auto',
         maxWidth: liftForActions ? 'calc(100vw - 32px)' : 'min(calc(100vw - 360px), 940px)',
         padding: '0 10px 6px',
-        animation: 'cc-reveal 0.9s ease 2.2s both',
+        animation: 'cc-reveal 0.9s ease 1.6s both',
         scrollSnapType: 'x proximity',
         scrollbarWidth: 'none',
         WebkitMaskImage: 'linear-gradient(to right, transparent 0, black 18px, black calc(100% - 18px), transparent 100%)',

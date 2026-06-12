@@ -168,18 +168,115 @@ function DesktopRecommendation({ onDismiss }: { onDismiss: () => void }) {
   );
 }
 
+const ENTRY_EXIT_MS = 520;
+
+function EntryScreen({ exiting, onEnter }: { exiting: boolean; onEnter: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onEnter}
+      aria-label="Click to enter"
+      disabled={exiting}
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 50,
+        display: 'grid',
+        placeItems: 'center',
+        padding: 24,
+        background:
+          'radial-gradient(ellipse 50% 42% at 50% 46%, rgba(9, 6, 4, 0.34), rgba(3, 2, 1, 0.86) 72%, rgba(2, 1, 1, 0.96) 100%)',
+        border: 0,
+        color: tokens.color.textPrimary,
+        cursor: exiting ? 'default' : 'pointer',
+        animation: exiting ? 'cc-entry-exit 0.52s ease both' : 'cc-reveal 0.2s ease both',
+      }}
+    >
+      <span
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: '#020101',
+          animation: 'cc-entry-blackout 2.05s ease both',
+        }}
+      />
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: 18,
+          textAlign: 'center',
+          pointerEvents: 'none',
+          position: 'relative',
+        }}
+      >
+        <img
+          src={`${import.meta.env.BASE_URL}favicon.svg`}
+          alt=""
+          aria-hidden="true"
+          style={{
+            width: 44,
+            height: 44,
+            filter:
+              'invert(86%) sepia(20%) saturate(680%) hue-rotate(356deg) brightness(92%) contrast(88%) drop-shadow(0 0 16px rgba(201, 169, 97, 0.22))',
+            opacity: 0.9,
+            animation: 'cc-entry-layer 0.95s ease 1.75s both',
+          }}
+        />
+        <h1
+          style={{
+            margin: 0,
+            fontFamily: tokens.font.display,
+            fontWeight: 500,
+            fontSize: 'clamp(22px, 3vw, 34px)',
+            letterSpacing: '0.16em',
+            textTransform: 'uppercase',
+            color: tokens.color.textPrimary,
+            animation: 'cc-entry-layer 0.95s ease 2.25s both',
+          }}
+        >
+          Gustav&apos;s Forge
+        </h1>
+        <span
+          style={{
+            marginTop: 4,
+            fontFamily: tokens.font.display,
+            fontSize: 13,
+            letterSpacing: tokens.letterSpacing.display,
+            textTransform: 'uppercase',
+            color: tokens.color.textSecondary,
+            animation: 'cc-entry-layer 0.95s ease 2.75s both',
+          }}
+        >
+          Click to enter
+        </span>
+      </div>
+    </button>
+  );
+}
+
 type AppShellProps = { children: ReactNode };
 
 export function AppShell({ children }: AppShellProps) {
   const archetype = useConfigStore((s) => s.config.archetype);
   const isNarrow = useNarrowScreen();
   const { width } = useViewportSize();
+  const [hasEntered, setHasEntered] = useState(false);
+  const [entryExiting, setEntryExiting] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [noticeDismissed, setNoticeDismissed] = useState(false);
-  const showDesktopNotice = width < DESKTOP_NOTICE_BREAKPOINT && !noticeDismissed;
+  const showDesktopNotice = hasEntered && width < DESKTOP_NOTICE_BREAKPOINT && !noticeDismissed;
 
-  useEffect(() => makeAudioLayer(`${import.meta.env.BASE_URL}sounds/ambient.mp3`, 0.3, 2000), []);
-  useEffect(() => makeAudioLayer(`${import.meta.env.BASE_URL}sounds/music.mp3`, 0.08, 4000), []);
+  useEffect(() => {
+    if (!hasEntered) return;
+    return makeAudioLayer(`${import.meta.env.BASE_URL}sounds/ambient.mp3`, 0.3, 2000);
+  }, [hasEntered]);
+  useEffect(() => {
+    if (!hasEntered) return;
+    return makeAudioLayer(`${import.meta.env.BASE_URL}sounds/music.mp3`, 0.08, 4000);
+  }, [hasEntered]);
 
   // Close drawer when switching archetype
   useEffect(() => {
@@ -192,6 +289,12 @@ export function AppShell({ children }: AppShellProps) {
     const frame = requestAnimationFrame(() => setDrawerOpen(false));
     return () => cancelAnimationFrame(frame);
   }, [isNarrow]);
+
+  useEffect(() => {
+    if (!entryExiting) return;
+    const timeout = window.setTimeout(() => setHasEntered(true), ENTRY_EXIT_MS);
+    return () => window.clearTimeout(timeout);
+  }, [entryExiting]);
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
@@ -215,14 +318,14 @@ export function AppShell({ children }: AppShellProps) {
         <source src={`${import.meta.env.BASE_URL}background.mp4`} type="video/mp4" />
       </video>
 
-      <AtmosphereOverlay />
+      {hasEntered && <AtmosphereOverlay />}
 
-      <div style={{ position: 'absolute', inset: 0 }}>{children}</div>
+      {hasEntered && <div style={{ position: 'absolute', inset: 0 }}>{children}</div>}
 
       <NoiseOverlay />
 
       {/* Control panel — fixed top-right on wide screens, drawer on narrow */}
-      {isNarrow ? (
+      {hasEntered && isNarrow ? (
         <>
           <DrawerToggle open={drawerOpen} onClick={() => setDrawerOpen((o) => !o)} />
 
@@ -258,13 +361,13 @@ export function AppShell({ children }: AppShellProps) {
             <ControlPanel key={archetype} flat />
           </div>
         </>
-      ) : (
-        <div style={{ animation: 'cc-reveal 0.9s ease 2.4s both' }}>
+      ) : hasEntered ? (
+        <div style={{ animation: 'cc-reveal 0.9s ease 2s both' }}>
           <ControlPanel key={archetype} />
         </div>
-      )}
+      ) : null}
 
-      <header
+      {hasEntered && <header
         style={{
           position: 'absolute',
           top: 0,
@@ -278,7 +381,7 @@ export function AppShell({ children }: AppShellProps) {
           background: 'transparent',
           pointerEvents: 'none',
           zIndex: 10,
-          animation: 'cc-rise 1s ease 1.8s both',
+          animation: 'cc-rise 1s ease 1.2s both',
         }}
       >
         <Bracket side="left" />
@@ -296,11 +399,12 @@ export function AppShell({ children }: AppShellProps) {
           Gustav's Forge
         </h1>
         <Bracket side="right" />
-      </header>
+      </header>}
 
-      <TypeSelector />
-      <Footer />
+      {hasEntered && <TypeSelector />}
+      {hasEntered && <Footer />}
       <ViewportFrame />
+      {!hasEntered && <EntryScreen exiting={entryExiting} onEnter={() => setEntryExiting(true)} />}
       {showDesktopNotice && <DesktopRecommendation onDismiss={() => setNoticeDismissed(true)} />}
     </div>
   );

@@ -41,7 +41,7 @@ export function ViewportFrame() {
           maskComposite: 'exclude',
           pointerEvents: 'none',
           zIndex: 20,
-          animation: 'cc-reveal 1s ease 1.5s both',
+          animation: 'cc-reveal 1s ease 0.8s both',
         }}
       />
 
@@ -52,7 +52,7 @@ export function ViewportFrame() {
           inset: 0,
           pointerEvents: 'none',
           zIndex: 21,
-          animation: 'cc-reveal 1s ease 1.5s both',
+          animation: 'cc-reveal 1s ease 0.8s both',
         }}
       >
         <EdgeDiamond edge="top" />

@@ -35,7 +35,7 @@ export function Footer() {
           bottom: compact ? 18 : 24,
           left: compact ? 16 : 24,
           zIndex: 10,
-          animation: 'cc-rise 0.8s ease 2.6s both',
+          animation: 'cc-rise 0.8s ease 2.4s both',
           display: 'flex',
           gap: compact ? 6 : 8,
         }}
@@ -86,7 +86,7 @@ export function Footer() {
           alignItems: 'flex-end',
           gap: compact ? 6 : 8,
           zIndex: 10,
-          animation: 'cc-rise 0.8s ease 2.6s both',
+          animation: 'cc-rise 0.8s ease 2.4s both',
         }}
       >
         {copied && (
