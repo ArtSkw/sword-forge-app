@@ -14,7 +14,9 @@ export const anchors: Record<StationId, Anchor> = {
 
 // Interaction state shared with the overlay: the scene marks orbit drags, the overlay marks wheel
 // zoom and tracks the pointer (rings appear near the sword; a tap on touch shows them for a while).
-export const interaction = { dragging: false, zoomUntil: 0, touchUntil: 0, pointerX: -1e4, pointerY: -1e4 };
+export const interaction = { dragging: false, zoomUntil: 0, touchUntil: 0, pointerX: -1e4, pointerY: -1e4,
+  // Set by the overlay while the rings are shown: the sword holds still so they can be clicked.
+  rings: false };
 
 const listeners = new Set<() => void>();
 export function publishAnchors() { listeners.forEach((fn) => fn()); }

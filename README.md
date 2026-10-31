@@ -1,39 +1,39 @@
-# Sword Forge
+# Gustav's Forge
 
-An interactive 3D sword configurator set in a medieval forge atmosphere. Choose from seven historical sword archetypes and customize the sword's condition, steel, fittings, guard style, and grip to craft your own weapon.
+A 3D medieval sword configurator in the browser. Pick one of seven historical sword types, then work on it part by part in a forge lit by firelight.
 
 **Live demo:** https://artskw.github.io/sword-forge-app/
 
 ---
 
-## Features
+## How it works
 
-- **Seven sword archetypes** — Arming Sword, Longsword, Bastard Sword, Viking Sword, Falchion, Estoc, Greatsword
-- **Real-time 3D rendering** via Three.js with animated forge lighting
-- **Customizable sword build** — condition, steel/hardware tone, guard style, grip length and color
-- **Immersive atmosphere** — blurred video background, ambient forge sounds, medieval background music, and subtle per-sword cling sounds on selection
-- **Export** — copy current configuration as JSON; take a screenshot of the scene
-- **Responsive layout** — full panel on wide screens, slide-out drawer on narrow viewports
+- **Seven sword types:** Arming Sword, Longsword, Bastard Sword, Viking Sword, Falchion, Estoc and Greatsword, chosen from a row of cards at the bottom.
+- **Five parts:** blade, guard, grip, pommel and finish. Rest the pointer on the sword and rings mark each part; click one to work on it. Forms from the sword's own period come first, and later or legendary forms sit under "Other ages".
+- **Inspector:** the panel on the right names the chosen part and its period, with extra options where they apply: leather dye for the grip, fittings and condition for the finish.
+- **Historical account:** a parchment scroll with the sword's history, how it was fought, its weight and balance (estimated from the 3D model) and a description of its fittings.
+- **Keyboard:** ←/→ move between parts, ↑/↓ change the variant, Esc goes back, H opens the account.
+- **Sound:** forge ambience, music and anvil strikes, plus a slightly different cling for each sword type. One button mutes it all.
+- **Screenshot:** saves a picture of the current sword.
 
-## Tech Stack
+The forge is built for desktop screens. Narrower screens get a notice and can carry on.
+
+## Tech stack
 
 - React 19 + TypeScript (strict)
 - Three.js + @react-three/fiber + @react-three/drei
-- Zustand (state management)
+- Zustand for state
 - Vite
-- Web Audio API (pitch-shifted cling sounds, ambient layering)
-- GitHub Pages (deployment)
+- Web Audio API for layered ambience and pitch-shifted sounds
+- Hugeicons for interface icons
+- GitHub Pages for hosting
 
-## Getting Started
+## Getting started
 
 ```bash
 npm install
 npm run dev
 ```
-
-## Development Direction
-
-The active plan is documented in [`ROADMAP.md`](./ROADMAP.md). Current focus is a feasible procedural game-asset pipeline: improve geometry first, refactor finish controls into whole-sword condition/material controls, then use the Viking sword as the first hero-quality benchmark before generalizing improvements to the remaining archetypes.
 
 ## Deployment
 
@@ -41,4 +41,4 @@ The active plan is documented in [`ROADMAP.md`](./ROADMAP.md). Current focus is 
 npm run deploy
 ```
 
-Builds and publishes to GitHub Pages via `gh-pages`.
+Builds the app and publishes it to GitHub Pages with `gh-pages`.

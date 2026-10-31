@@ -21,11 +21,16 @@ const SWORD_INTRO_DURATION = 1.2;
 const STUDIO_HDRI = `${import.meta.env.BASE_URL}hdri/studio_small_03_1k.hdr`;
 const SWORD_ROTATION: [number, number, number] = [0.08, 0, -0.80];
 
-// Edit mode: how close the camera comes to each part.
-const FOCUS_DISTANCE: Record<StationId, number> = { blade: 2.2, guard: 0.85, grip: 0.8, pommel: 0.6, finish: 3.1 };
-// Edit mode: the part sits left of the inspector (right) and above the variant row (bottom).
-const FOCUS_SHIFT = 0.13;
-const FOCUS_SHIFT_Y = 0.07;
+// Edit mode: how close the camera comes to each hilt part (Blade and Finish are fitted, see below).
+const FOCUS_DISTANCE: Record<'guard' | 'grip' | 'pommel', number> = { guard: 0.85, grip: 0.8, pommel: 0.6 };
+// Finish frames the whole sword large; Blade frames the blade itself (the hilt may leave the shot).
+const FIT_FILL_FINISH = 1.0, FIT_FILL_BLADE = 1.08;
+const FINISH_DROP = 36;          // px: Finish sits this much below the free area's centre
+const BLADE_NUDGE = { x: 44, y: 12 };   // px: Blade sits this much right of and above the centre
+// Screen space taken by the edit panels: inspector on the right, variant row + nav at the bottom.
+const PANEL_RIGHT = 320, PANEL_BOTTOM = 220, MARGIN_TOP = 56;
+const PART_SHIFT_Y = 0.07;       // hilt parts: a little above centre (they're small; centred in the free space looked low)
+const FOV = 35;
 const READING_SHIFT = -0.17;   // sword moves right while the historical account is open
 const FOCUS_MS = 650;
 const OVERVIEW_MS = 650;
@@ -49,6 +54,23 @@ function anchorY(id: StationId, layout: ReturnType<typeof getSwordLayout>) {
   }
 }
 
+// Edit mode looks straight at the blade's flat (its local +Z), so the sword lies flat in the screen
+// at its usual diagonal, with no twist.
+const FLAT_NORMAL = new THREE.Vector3(0, 0, 1);
+const WORLD_UP = new THREE.Vector3(0, 1, 0);
+
+// Distance at which the whole sword fits the free area of the screen, seen from `viewDir`
+// (unit vector from the target to the camera): the sword's axis is projected onto the screen axes.
+function fitDistance(axis: THREE.Vector3, viewDir: THREE.Vector3, w: number, h: number, fill: number) {
+  const tan = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
+  const right = new THREE.Vector3().crossVectors(WORLD_UP, viewDir).normalize();
+  const up = new THREE.Vector3().crossVectors(viewDir, right);
+  const pad = 0.06;   // guard width and pommel
+  const ex = Math.abs(axis.dot(right)) + pad, ey = Math.abs(axis.dot(up)) + pad;
+  const freeH = Math.max(0.3, (h - PANEL_BOTTOM - MARGIN_TOP) / h), freeW = Math.max(0.3, (w - PANEL_RIGHT) / w);
+  return Math.max(ey / (2 * tan * freeH * fill), ex / (2 * tan * (w / h) * freeW * fill));
+}
+
 function SceneContents() {
   const [autoRotate, setAutoRotate] = useState(true);
   const timerRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -63,7 +85,19 @@ function SceneContents() {
   const introRef = useRef({ done: false });
 
   // Camera move state: from/to target, distance and view shift, interpolated in useFrame.
-  const move = useRef({ t0: 0, ms: 0, fromTarget: new THREE.Vector3(), toTarget: new THREE.Vector3(), fromDist: OVERVIEW_DISTANCE, toDist: OVERVIEW_DISTANCE, fromShift: 0, toShift: 0, shift: 0, fromShiftY: 0, toShiftY: 0, shiftY: 0, active: false });
+  const move = useRef({ t0: 0, ms: 0, fromTarget: new THREE.Vector3(), toTarget: new THREE.Vector3(), fromDist: OVERVIEW_DISTANCE, toDist: OVERVIEW_DISTANCE, fromShift: 0, toShift: 0, shift: 0, fromShiftY: 0, toShiftY: 0, shiftY: 0, fromSph: new THREE.Spherical(), toSph: new THREE.Spherical(), turn: false, active: false });
+
+  // Station framing depends on the screen size only while a station is open (overview keeps its zoom on resize).
+  const frameKey = station ? `${size.width}x${size.height}` : '';
+  const dir = useRef(new THREE.Vector3());
+  const motionReduced = useRef(reducedMotion());
+  useEffect(() => {
+    const mq = matchMedia('(prefers-reduced-motion: reduce)'), on = () => { motionReduced.current = mq.matches; };
+    mq.addEventListener('change', on); return () => mq.removeEventListener('change', on);
+  }, []);
+  const autoRotateOn = useRef(false);
+  useEffect(() => { autoRotateOn.current = autoRotate && station === null && !reading && !motionReduced.current; });
+  const lastFramed = useRef<{ station: StationId | null; reading: boolean } | null>(null);
 
   // Reset orbit camera back to presentation angle
   useEffect(() => {
@@ -93,21 +127,43 @@ function SceneContents() {
     m.fromTarget.copy(controls.target);
     m.fromDist = camera.position.distanceTo(controls.target);
     m.fromShift = m.shift; m.fromShiftY = m.shiftY;
+    // Turn to face the blade's flat by azimuth (shorter way round) and elevation, never through the pole.
+    // Leaving edit mode keeps the current direction.
+    m.turn = station !== null;
+    m.fromSph.setFromVector3(dir.current.subVectors(camera.position, controls.target));
+    const faceDir = new THREE.Vector3().copy(FLAT_NORMAL).transformDirection(group.matrixWorld);
+    m.toSph.setFromVector3(faceDir);
+    m.toSph.theta = m.fromSph.theta + Math.atan2(Math.sin(m.toSph.theta - m.fromSph.theta), Math.cos(m.toSph.theta - m.fromSph.theta));
     if (station) {
-      const y = anchorY(station, getSwordLayout(config));
-      m.toTarget.set(0, y, 0).applyMatrix4(group.matrixWorld);
-      m.toDist = FOCUS_DISTANCE[station];
-      m.toShift = FOCUS_SHIFT; m.toShiftY = FOCUS_SHIFT_Y;
+      const layout = getSwordLayout(config);
+      m.toShift = (PANEL_RIGHT / 2) / size.width;
+      if (station === 'blade' || station === 'finish') {
+        const blade = station === 'blade', len = blade ? layout.bladeLen : layout.total;
+        m.toTarget.set(0, blade ? layout.bladeY : 0, 0).applyMatrix4(group.matrixWorld);
+        const axis = new THREE.Vector3(0, 1, 0).transformDirection(group.matrixWorld).multiplyScalar(len);
+        m.toDist = fitDistance(axis, faceDir, size.width, size.height, blade ? FIT_FILL_BLADE : FIT_FILL_FINISH);
+        // Centred in the free area; Finish sits a little lower than that.
+        m.toShiftY = ((PANEL_BOTTOM - MARGIN_TOP) / 2 + (blade ? BLADE_NUDGE.y : -FINISH_DROP)) / size.height;
+        if (blade) m.toShift -= BLADE_NUDGE.x / size.width;
+      } else {
+        m.toTarget.set(0, anchorY(station, layout), 0).applyMatrix4(group.matrixWorld);
+        m.toDist = FOCUS_DISTANCE[station as keyof typeof FOCUS_DISTANCE];
+        m.toShiftY = PART_SHIFT_Y;
+      }
     } else {
       m.toTarget.set(0, 0, 0);
       m.toDist = OVERVIEW_DISTANCE;
       m.toShift = reading ? READING_SHIFT : 0; m.toShiftY = 0;
     }
     controls.minDistance = Math.min(1.5, m.toDist * 0.8);
-    m.t0 = performance.now(); m.ms = reducedMotion() ? 1 : station ? FOCUS_MS : OVERVIEW_MS; m.active = true;
+    controls.maxDistance = Math.max(6, m.toDist * 1.1);
+    // A resize inside the same station re-frames at once instead of restarting the glide.
+    const resizeOnly = lastFramed.current?.station === station && lastFramed.current?.reading === reading;
+    lastFramed.current = { station, reading };
+    m.t0 = performance.now(); m.ms = motionReduced.current || resizeOnly ? 1 : station ? FOCUS_MS : OVERVIEW_MS; m.active = true;
     // The config is read when the station changes; geometry edits inside a station must not re-frame.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [station, reading, camera]);
+  }, [station, reading, camera, frameKey]);
 
   const handleStart = useCallback(() => {
     interaction.dragging = true; interaction.touchUntil = 0;
@@ -127,18 +183,23 @@ function SceneContents() {
   });
 
   // Camera glide + view offset
-  const dir = useRef(new THREE.Vector3());
+  const sph = useRef(new THREE.Spherical());
   useFrame(() => {
     const m = move.current, controls = orbitRef.current, cam = camera as THREE.PerspectiveCamera;
     if (m.active && controls) {
       const k = easeInOut(Math.min(1, (performance.now() - m.t0) / m.ms));
-      dir.current.subVectors(cam.position, controls.target).normalize();
+      if (m.turn) {
+        sph.current.set(1, m.fromSph.phi + (m.toSph.phi - m.fromSph.phi) * k, m.fromSph.theta + (m.toSph.theta - m.fromSph.theta) * k);
+        dir.current.setFromSpherical(sph.current);
+      } else dir.current.subVectors(cam.position, controls.target).normalize();
       controls.target.lerpVectors(m.fromTarget, m.toTarget, k);
       cam.position.copy(controls.target).addScaledVector(dir.current, m.fromDist + (m.toDist - m.fromDist) * k);
       m.shift = m.fromShift + (m.toShift - m.fromShift) * k;
       m.shiftY = m.fromShiftY + (m.toShiftY - m.fromShiftY) * k;
       if (k >= 1) m.active = false;
     }
+    // Auto-rotation pauses while the rings are shown, so the part under the pointer stays put.
+    if (controls) controls.autoRotate = autoRotateOn.current && !interaction.rings;
     if (Math.abs(m.shift) > 1e-4 || Math.abs(m.shiftY) > 1e-4) cam.setViewOffset(size.width, size.height, m.shift * size.width, m.shiftY * size.height, size.width, size.height);
     else if (cam.view?.enabled) cam.clearViewOffset();
   });
@@ -173,7 +234,6 @@ function SceneContents() {
     if (progress >= 1) introRef.current.done = true;
   });
 
-  const framing = station !== null || reading;
   return (
     <>
       <OrbitControls
@@ -187,14 +247,13 @@ function SceneContents() {
         maxPolarAngle={MAX_POLAR}
         minDistance={1.5}
         maxDistance={6}
-        autoRotate={autoRotate && !framing && !reducedMotion()}
         autoRotateSpeed={1.5}
         onStart={handleStart}
         onEnd={handleEnd}
       />
       {/* Same CC0 Poly Haven HDRI drei's "studio" preset uses, served locally instead of from a third-party CDN */}
       <Environment files={STUDIO_HDRI} environmentIntensity={1.18} />
-      <Lighting />
+      <Lighting inspect={station !== null} />
       <ContactShadows position={[0, shadowY, 0]} blur={2} opacity={0.4} far={4} />
       {/* Presentation tilt: ~23° lean so blade reads as diagonal, not vertical */}
       <group ref={swordGroupRef} rotation={SWORD_ROTATION}>
@@ -208,7 +267,7 @@ export function Scene() {
   return (
     <Canvas
       gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }}
-      camera={{ position: CAMERA_POSITION, fov: 35 }}
+      camera={{ position: CAMERA_POSITION, fov: FOV }}
       onCreated={({ gl }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
         gl.toneMappingExposure = 1.03;

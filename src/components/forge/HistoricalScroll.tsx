@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Cancel01Icon } from '@hugeicons/core-free-icons';
 import { useConfigStore } from '../../store/configStore';
 import { SWORD_TYPES } from '../../presets/swordTypes';
 import { ACCOUNT, BLADE_PATTERNS, CONDITIONS, DYES, FITTINGS, GRIPS, GUARDS, POMMELS, STEELS } from '../../presets/forge';
@@ -59,7 +61,7 @@ export function HistoricalScroll() {
     const patterns = BLADE_PATTERNS[config.archetype];
     const pattern = patterns.find((p) => p.id === config.blade.pattern) ?? patterns[0];
     const ph = swordPhysics(config);
-    const feel = ph.balanceCm < 11 ? 'lively in the hand, quick to recover after a blow' : ph.balanceCm < 15 ? 'well balanced — neither sluggish nor flighty' : 'blade-heavy, made for strong cuts';
+    const feel = ph.balanceCm < 11 ? 'lively in the hand, quick to recover after a blow' : ph.balanceCm < 15 ? 'well balanced, neither sluggish nor flighty' : 'blade-heavy, made for strong cuts';
     const dye = DYES.find((d) => d.color && d.color.toLowerCase() === config.finish.gripColor.toLowerCase());
     return { acc, preset, pattern, ph, feel, dye };
   }, [config]);
@@ -72,7 +74,7 @@ export function HistoricalScroll() {
       <div className="rod" />
       <div className="sheet" ref={sheetRef} role="dialog" aria-label="Historical account">
         <button className="close" aria-label="Close" onClick={() => setReading(false)}>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1.5 1.5 L10.5 10.5 M10.5 1.5 L1.5 10.5" /></svg>
+          <HugeiconsIcon icon={Cancel01Icon} size={16} strokeWidth={1.5} />
         </button>
         <h2>{acc.title}</h2>
         <div className="era">{pattern ? `${pattern.name} pattern · ${pattern.era}` : content.preset.description}</div>
@@ -80,7 +82,7 @@ export function HistoricalScroll() {
         <p className="lead">{acc.lead}</p>
         {pattern && <><h3>This blade</h3><p>{pattern.story}</p></>}
         <h3>In the hand</h3>
-        <p>This sword weighs about {ph.massKg.toFixed(2)}&nbsp;kg, with {ph.bladeCm}&nbsp;cm of blade. Its point of balance lies some {Math.round(ph.balanceCm)}&nbsp;cm in front of the guard — {feel}.</p>
+        <p>This sword weighs about {ph.massKg.toFixed(2)}&nbsp;kg, with {ph.bladeCm}&nbsp;cm of blade. Its point of balance lies some {Math.round(ph.balanceCm)}&nbsp;cm in front of the guard. It feels {feel}.</p>
         <h3>How it was fought</h3>
         <p>{acc.fighting}</p>
         <h3>Its fittings</h3>
@@ -90,7 +92,7 @@ export function HistoricalScroll() {
           <dt>Pommel</dt><dd>{name(POMMELS, config.pommel.style)}. {note(POMMELS, config.pommel.style)}</dd>
           <dt>Steel</dt><dd>{name(STEELS, config.finish.steelFinish)}, {name(FITTINGS, config.finish.hardwareTone).toLowerCase()} fittings, {name(CONDITIONS, config.finish.condition).toLowerCase()}. {note(STEELS, config.finish.steelFinish)}</dd>
         </dl>
-        <div className="foot">Weight and balance are reckoned from the forge's model of this sword.</div>
+        <div className="foot">Weight and balance are estimates, reckoned from this sword’s model.</div>
       </div>
       <div className="rod" ref={rodRef} />
     </div>

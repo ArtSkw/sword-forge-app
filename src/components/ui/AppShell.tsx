@@ -89,7 +89,7 @@ function DesktopRecommendation({ onDismiss }: { onDismiss: () => void }) {
             color: tokens.color.textPrimary,
           }}
         >
-          Wider Display Recommended
+          Best on a wider screen
         </h2>
         <p
           style={{
@@ -101,9 +101,9 @@ function DesktopRecommendation({ onDismiss }: { onDismiss: () => void }) {
             color: tokens.color.textSecondary,
           }}
         >
-          The forge is tuned for a desktop canvas, where the sword model and controls have room to breathe.
+          The forge is laid out for a desktop. On a smaller screen the sword and its controls crowd each other.
         </p>
-        <Button label="Continue" onClick={onDismiss} compact />
+        <Button label="Continue anyway" onClick={onDismiss} compact />
       </div>
     </div>
   );
@@ -116,7 +116,7 @@ function EntryScreen({ exiting, onEnter }: { exiting: boolean; onEnter: () => vo
     <button
       type="button"
       onClick={onEnter}
-      aria-label="Click to enter"
+      aria-label="Enter the forge"
       disabled={exiting}
       style={{
         position: 'absolute',
@@ -191,7 +191,7 @@ function EntryScreen({ exiting, onEnter }: { exiting: boolean; onEnter: () => vo
             animation: 'cc-entry-layer 0.95s ease 2.75s both',
           }}
         >
-          Click to enter
+          Enter the forge
         </span>
       </div>
     </button>

@@ -52,7 +52,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
   armingSword: {
     key: 'armingSword',
     name: 'Arming Sword',
-    description: 'The quintessential knightly sword — balanced, versatile, deadly.',
+    description: 'The one-handed knightly sword, balanced for cut and thrust.',
     bodyTaperEnd: 0.84, // reference-like fuller section with deliberate terminal taper
     bodyTaperMidWidth: 0.42,
     tipShoulderRound: 0,
@@ -73,7 +73,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
   longsword: {
     key: 'longsword',
     name: 'Longsword',
-    description: 'A two-handed weapon favored by knights and men-at-arms.',
+    description: 'A two-handed weapon favoured by knights and men-at-arms.',
     bodyTaperEnd: 0.87, // long, steady blade body before the final acute point
     bodyTaperMidWidth: 0.44,
     tipShoulderRound: 0,
@@ -94,7 +94,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
   bastardSword: {
     key: 'bastardSword',
     name: 'Bastard Sword',
-    description: 'The hand-and-a-half sword — adaptable, powerful, elegant.',
+    description: 'The hand-and-a-half sword: one hand in the saddle, two on foot.',
     bodyTaperEnd: 0.83,
     bodyTaperMidWidth: 0.34,
     tipShoulderRound: 0,
@@ -115,7 +115,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
   vikingSword: {
     key: 'vikingSword',
     name: 'Viking Sword',
-    description: 'Broad, fearless, and beautiful — forged for the northern warrior.',
+    description: 'A broad one-handed blade for cutting, carried with a shield.',
     bodyTaperEnd: 0.92, // near-parallel edges, short stubby tip over last 8%
     bodyTaperMidWidth: 0.88, // Viking blades retain almost full width along the body
     tipShoulderRound: 0.07,  // round the shoulder for the soft, blunted Viking tip
@@ -134,7 +134,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
   falchion: {
     key: 'falchion',
     name: 'Falchion',
-    description: 'Single-edged and curved, delivering brutal chopping power.',
+    description: 'Single-edged and curved, heavy toward the point, made to chop.',
     bodyTaperEnd: 0.70, // broad chopping body with a clipped, forward-leaning point
     bodyTaperMidWidth: 0.50,
     tipShoulderRound: 0.035,
@@ -155,7 +155,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
   estoc: {
     key: 'estoc',
     name: 'Estoc',
-    description: 'A rigid thrusting sword built to pierce plate armor.',
+    description: 'A rigid thrusting sword made to find the gaps in plate armour.',
     bodyTaperEnd: 0.86, // long rigid spike tapering steadily into a needle point
     bodyTaperMidWidth: 0.34,
     tipShoulderRound: 0,
@@ -174,7 +174,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
   greatsword: {
     key: 'greatsword',
     name: 'Greatsword',
-    description: 'A monument in steel — the weapon of champions and legends.',
+    description: 'The largest two-hander, with parrying lugs above the guard.',
     bodyTaperEnd: 0.82, // long cutting body with a controlled two-handed taper
     bodyTaperMidWidth: 0.46,
     tipShoulderRound: 0,

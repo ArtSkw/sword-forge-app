@@ -1,11 +1,12 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
+import { ArrowLeft01Icon, ArrowRight01Icon, Camera01Icon, UndoIcon, ScrollTextIcon, VolumeHighIcon, VolumeMute02Icon } from '@hugeicons/core-free-icons';
 import './forge.css';
 import { useConfigStore, type ArchetypeKey } from '../../store/configStore';
 import { SWORD_TYPES, SWORD_TYPE_ORDER } from '../../presets/swordTypes';
 import { ARCHETYPE_ERA, BLADE_PATTERNS, STATIONS, type StationId } from '../../presets/forge';
 import { anchors, interaction, onAnchors } from '../../lib/anchors';
 import { audioState, playBellows, playCling, playHiss, playOneShot, playTick, type ClingParams } from '../../lib/audio';
-import { exportConfig } from '../../lib/exportConfig';
 import { takeScreenshot } from '../../lib/screenshot';
 import { useStationChoices, type Choice, type StationChoices } from './choices';
 import { HistoricalScroll } from './HistoricalScroll';
@@ -24,19 +25,19 @@ const CLING_PARAMS: Record<ArchetypeKey, ClingParams> = {
 };
 const SHORT_NAMES: Record<ArchetypeKey, string> = { armingSword: 'Arming', longsword: 'Longsword', bastardSword: 'Bastard', vikingSword: 'Viking', falchion: 'Falchion', estoc: 'Estoc', greatsword: 'Greatsword' };
 const RING_REACH = 90;   // px from the sword's line within which the rings appear
+const RING_DWELL = 280;  // ms the pointer must rest near the sword before the rings appear
+const RING_GRACE = 380;  // ms they linger after the pointer leaves, so brushing past doesn't flicker
 const TIP_DELAY = 450;
 const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+const icon = (svg: IconSvgElement) => <HugeiconsIcon icon={svg} size={16} strokeWidth={1.5} />;
 const ICONS = {
-  scroll: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M6 4 H17 A2 2 0 0 1 17 8 H8 V18 A2 2 0 0 1 4 18 V6 A2 2 0 0 1 6 4 Z" /><path d="M8 8 V18 H18 A2 2 0 0 0 18 14 H10" /><path d="M11 11 H15" /></svg>,
-  reset: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M4 12 A8 8 0 1 0 7 5.8" /><path d="M4 4 V9 H9" /></svg>,
-  sound: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M11 5 L6 9 H3 V15 H6 L11 19 Z" /><path d="M15.5 8.5 A5 5 0 0 1 15.5 15.5 M18.5 5.5 A9 9 0 0 1 18.5 18.5" /></svg>,
-  muted: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M11 5 L6 9 H3 V15 H6 L11 19 Z" /><path d="M16 9 L22 15 M22 9 L16 15" /></svg>,
-  export: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M12 15 V3 M7 8 L12 3 L17 8" /><path d="M4 14 V20 H20 V14" /></svg>,
-  shot: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3" y="7" width="18" height="13" rx="2" /><circle cx="12" cy="13.5" r="3.5" /><path d="M8 7 L10 4 H14 L16 7" /></svg>,
-  prev: <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2 L4 6 L8 10" /></svg>,
-  next: <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 2 L8 6 L4 10" /></svg>,
+  scroll: icon(ScrollTextIcon), reset: icon(UndoIcon), sound: icon(VolumeHighIcon), muted: icon(VolumeMute02Icon),
+  shot: icon(Camera01Icon), prev: icon(ArrowLeft01Icon), next: icon(ArrowRight01Icon),
 };
+
+// True while the forge moves keyboard focus itself (focusin fires synchronously inside focus()).
+let autoFocusing = false;
 
 function forgeSound() { playTick(); setTimeout(() => playOneShot(ANVIL, 0.32), 60); setTimeout(() => playHiss(), 420); }
 
@@ -62,7 +63,7 @@ function Tooltip({ mode }: { mode: string }) {
     const hide = () => { clearTimeout(timer); current?.removeAttribute('aria-describedby'); current = null; setTip(null); };
     hideRef.current = hide;
     const over = (e: Event) => { const el = (e.target as HTMLElement).closest<HTMLElement>('.forge [data-tip]'); if (el && el !== current) show(el, TIP_DELAY); else if (!el && current) hide(); };
-    const focus = (e: FocusEvent) => { const el = (e.target as HTMLElement).closest<HTMLElement>('.forge [data-tip]'); if (el && el.matches(':focus-visible')) show(el, 0); };
+    const focus = (e: FocusEvent) => { const el = (e.target as HTMLElement).closest<HTMLElement>('.forge [data-tip]'); if (el && el.matches(':focus-visible') && !autoFocusing) show(el, 0); };
     const down = (e: PointerEvent) => { if (!current || !current.contains(e.target as Node)) hide(); };
     const key = (e: KeyboardEvent) => { if (e.key === 'Escape') hide(); };
     addEventListener('pointerover', over); addEventListener('focusin', focus); addEventListener('focusout', hide);
@@ -91,20 +92,30 @@ function Hotspots({ hidden, onOpen }: { hidden: boolean; onOpen: (id: StationId)
   const rings = useRef<Partial<Record<StationId, HTMLButtonElement | null>>>({});
   const layer = useRef<HTMLDivElement>(null);
   const shown = useRef(false);
-  useEffect(() => onAnchors(() => {
+  const timing = useRef({ nearSince: 0, farSince: 0 });
+  useEffect(() => { const el = layer.current; const off = onAnchors(() => {
     // Distance from the pointer to the sword's line (finish → pommel, extended to the tip side).
     const a = anchors.finish, b = anchors.pommel, px = interaction.pointerX, py = interaction.pointerY;
     const dx = b.x - a.x, dy = b.y - a.y, len2 = dx * dx + dy * dy || 1;
     const t = Math.max(-0.25, Math.min(1.05, ((px - a.x) * dx + (py - a.y) * dy) / len2));
     const near = Math.hypot(px - (a.x + t * dx), py - (a.y + t * dy)) < RING_REACH;
-    const now = performance.now();
-    const show = (near || now < interaction.touchUntil) && !hidden && !interaction.dragging && now > interaction.zoomUntil && anchors.pommel.visible;
-    if (layer.current && show !== shown.current) { shown.current = show; layer.current.dataset.show = String(show); }
+    const now = performance.now(), tm = timing.current;
+    const allowed = !hidden && !interaction.dragging && now > interaction.zoomUntil && anchors.pommel.visible;
+    if (!allowed) tm.nearSince = 0;   // after a drag or zoom the dwell starts over
+    else if (near) { tm.farSince = 0; tm.nearSince ||= now; } else { tm.nearSince = 0; tm.farSince ||= now; }
+    const wants = now < interaction.touchUntil || (shown.current ? !tm.farSince || now - tm.farSince < RING_GRACE : near && now - tm.nearSince >= RING_DWELL);
+    const show = allowed && wants;
+    if (layer.current && show !== shown.current) { shown.current = show; interaction.rings = show; layer.current.dataset.show = String(show); }
     for (const { id } of STATIONS) {
       const ring = rings.current[id], p = anchors[id];
       if (ring) ring.style.transform = `translate(${p.x}px, ${p.y}px)`;
     }
-  }), [hidden]);
+  });
+  return () => {
+    off();
+    shown.current = false; interaction.rings = false;
+    if (el) el.dataset.show = 'false';
+  }; }, [hidden]);
   return (
     <div className="hots" ref={layer} data-show="false">
       {STATIONS.map((s) => (
@@ -146,7 +157,7 @@ function Chooser({ station, choices }: { station: StationId; choices: StationCho
     <div className="chooser" ref={rowRef}>
       {items.map((it) => {
         if (it === 'more') return (
-          <button key="more" className="item more" onClick={() => toggle(true)} data-tip="Other ages" data-tip-body={`${rest.length} ${station === 'grip' ? 'materials' : 'forms'} from other ages and legend`}>
+          <button key="more" className="item more" onClick={() => toggle(true)} data-tip="Other ages" data-tip-body={`${rest.length} ${station === 'grip' ? 'materials' : 'forms'} from other ages${rest.some((c) => c.era === 'Fantasy') ? ' and from legend' : ''}`}>
             <div className="card glass"><span className="count">+{rest.length}</span></div>
             <span className="nm">Other ages</span><span className="er">&nbsp;</span>
           </button>
@@ -228,7 +239,6 @@ export function ForgeUI() {
   const shown = station ?? last;
   const choices = useStationChoices(shown);
   const [muted, setMuted] = useState(audioState.muted);
-  const [copied, setCopied] = useState<'' | 'ok' | 'fail'>('');
   useEffect(() => { const off = audioState.subscribe(setMuted); return () => { off(); }; }, []);
 
   const open = (id: StationId | null) => { if (id && id !== station) playBellows(); setStation(id); };
@@ -259,7 +269,9 @@ export function ForgeUI() {
     const a = document.activeElement;
     if (a && a !== document.body && !a.closest('[inert]')) return;
     const target = station ? '.forge .chooser .item[aria-pressed="true"], .forge .chooser .item' : reading ? null : '.forge .acard[aria-pressed="true"]';
-    if (target) document.querySelector<HTMLElement>(target)?.focus({ preventScroll: true });
+    const el = target ? document.querySelector<HTMLElement>(target) : null;
+    // Moving focus for the user shouldn't pop a tooltip (the inspector already says the same).
+    if (el) { autoFocusing = true; el.focus({ preventScroll: true }); autoFocusing = false; }
   }, [station, reading]);
 
   // Keyboard: ←/→ parts, ↑/↓ variants, Esc back, H account (no modifiers, no auto-repeat bursts)
@@ -318,29 +330,25 @@ export function ForgeUI() {
         <div className="arch fade hide-focus hide-reading" inert={overviewOff}>
           {SWORD_TYPE_ORDER.map((k) => (
             <button key={k} className="acard glass" aria-pressed={config.archetype === k} aria-label={SWORD_TYPES[k].name}
-              data-tip={SWORD_TYPES[k].name} data-tip-body={`${ARCHETYPE_ERA[k]} — ${SWORD_TYPES[k].description}`}
+              data-tip={SWORD_TYPES[k].name} data-tip-body={`${ARCHETYPE_ERA[k]} · ${SWORD_TYPES[k].description}`}
               onClick={() => { if (k !== config.archetype) setArchetype(k); playCling(CLING, CLING_PARAMS[k]); }}>
               <img src={`${BASE}sword-icons/${k}.png`} alt="" /><span>{SHORT_NAMES[k]}</span>
             </button>
           ))}
         </div>
         <div className="corner-l fade hide-focus" inert={!!station}>
-          <button className="btn" onClick={() => setReading(!reading)} data-tip={reading ? 'Close the account' : 'Historical account'} data-tip-body={reading ? 'Back to the forge (Esc)' : 'The story of this sword, how it was fought and how it handles (H)'}>
+          <button className="btn" onClick={() => setReading(!reading)} data-tip={reading ? 'Close the account' : 'Historical account'} data-tip-body={reading ? 'Back to the forge (Esc)' : 'Where this sword comes from, how it was fought, how it handles (H)'}>
             {ICONS.scroll}<span>{reading ? 'Close account' : 'Historical account'}</span>
           </button>
         </div>
         <div className="corner-r fade hide-focus hide-reading" inert={overviewOff}>
-          <button className="btn icon" aria-label="Reset view" data-tip="Reset view" data-tip-body="Back to the presentation angle" onClick={() => { open(null); bumpResetTick(); }}>{ICONS.reset}</button>
+          <button className="btn icon" aria-label="Reset view" data-tip="Reset view" data-tip-body="Return the camera to where it started" onClick={() => { open(null); bumpResetTick(); }}>{ICONS.reset}</button>
           <button className="btn icon" aria-label={muted ? 'Unmute' : 'Mute'} data-tip={muted ? 'Sound off' : 'Sound on'} data-tip-body="Forge ambience, music and the clang of the anvil" onClick={() => audioState.toggle()}>{muted ? ICONS.muted : ICONS.sound}</button>
-          <button className="btn icon" aria-label="Export configuration"
-            data-tip={copied === 'ok' ? 'Copied' : copied === 'fail' ? 'Could not copy' : 'Export'} data-tip-body={copied === 'fail' ? 'The browser blocked the clipboard' : 'Copy this sword’s configuration'}
-            onClick={async () => { try { await exportConfig(config); setCopied('ok'); } catch { setCopied('fail'); } setTimeout(() => setCopied(''), 1800); }}>{ICONS.export}</button>
           <button className="btn icon" aria-label="Screenshot" data-tip="Screenshot" data-tip-body="Save a picture of your sword" onClick={() => takeScreenshot()}>{ICONS.shot}</button>
         </div>
         <div className="corner-r focus-only" inert={!station}>
           <button className="btn primary" onClick={() => open(null)} data-tip="Done" data-tip-body="Back to the whole sword (Esc)">Done</button>
         </div>
-        <span className="sr-only" role="status">{copied === 'ok' ? 'Configuration copied' : copied === 'fail' ? 'Could not copy the configuration' : ''}</span>
         <HistoricalScroll />
         <Tooltip mode={mode} />
       </div>
