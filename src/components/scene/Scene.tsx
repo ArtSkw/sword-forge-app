@@ -18,6 +18,7 @@ const MAX_POLAR = Math.PI * 0.85;
 const AUTO_ROTATE_RESUME_MS = 10000;
 const SWORD_INTRO_DELAY = 2.6;
 const SWORD_INTRO_DURATION = 1.2;
+const STUDIO_HDRI = `${import.meta.env.BASE_URL}hdri/studio_small_03_1k.hdr`;
 
 function useShadowY() {
   const config = useConfigStore((s) => s.config);
@@ -107,7 +108,8 @@ function SceneContents() {
         onStart={handleStart}
         onEnd={handleEnd}
       />
-      <Environment preset="studio" environmentIntensity={1.18} />
+      {/* Same CC0 Poly Haven HDRI drei's "studio" preset uses, served locally instead of from a third-party CDN */}
+      <Environment files={STUDIO_HDRI} environmentIntensity={1.18} />
       <Lighting />
       <ContactShadows position={[0, shadowY, 0]} blur={2} opacity={0.4} far={4} />
       {/* Presentation tilt: ~23° lean so blade reads as diagonal, not vertical */}
