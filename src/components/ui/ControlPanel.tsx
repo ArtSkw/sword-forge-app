@@ -43,7 +43,8 @@ function playAnvilForManualChange(context: LevaChangeContext) {
 // useCreateStore() creates a FRESH Leva store on every mount, so controls
 // always initialize from the current preset values — no global store caching.
 export function ControlPanel({ flat = false }: { flat?: boolean }) {
-  const { config, update } = useConfigStore();
+  const config = useConfigStore((s) => s.config);
+  const update = useConfigStore((s) => s.update);
   const store = useCreateStore();
 
   useControls({

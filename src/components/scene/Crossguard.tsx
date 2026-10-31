@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { ArchetypeKey, GuardStyle } from '../../store/configStore';
 import { getGuardTerminalRecipe } from '../../presets/archetypeDetails';
 
@@ -230,6 +230,8 @@ type CrossguardProps = {
 export function Crossguard({ archetype, style, color, emissive, emissiveIntensity, roughness, position }: CrossguardProps) {
   const params = getGuardParams(style, archetype);
   const geo    = useMemo(() => buildGuardGeometry(style, archetype), [style, archetype]);
+  // Geometry passed via prop is not owned by R3F, so release the old one ourselves.
+  useEffect(() => () => geo.dispose(), [geo]);
   const halfW  = params.width / 2;
   const terminalY = params.tipY;
   const terminalZ = params.tipZ;

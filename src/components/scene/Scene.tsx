@@ -20,7 +20,7 @@ const SWORD_INTRO_DELAY = 2.6;
 const SWORD_INTRO_DURATION = 1.2;
 
 function useShadowY() {
-  const { config } = useConfigStore();
+  const config = useConfigStore((s) => s.config);
   const bladeLen    = BLADE_LENGTHS[config.blade.length];
   const gripLen     = GRIP_LENGTHS[config.grip.length];
   const pommelHalfH = POMMEL_HALF_HEIGHTS[config.pommel.style];
@@ -34,7 +34,8 @@ function SceneContents() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orbitRef  = useRef<any>(null);
   const shadowY   = useShadowY();
-  const { config, viewResetTick } = useConfigStore();
+  const archetype = useConfigStore((s) => s.config.archetype);
+  const viewResetTick = useConfigStore((s) => s.viewResetTick);
 
   // Reset orbit camera back to presentation angle
   useEffect(() => {
@@ -50,7 +51,7 @@ function SceneContents() {
     if (timerRef.current) clearTimeout(timerRef.current);
     const frame = requestAnimationFrame(() => setAutoRotate(true));
     return () => cancelAnimationFrame(frame);
-  }, [config.archetype]);
+  }, [archetype]);
 
   useEffect(() => (
     () => {
