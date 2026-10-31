@@ -49,7 +49,6 @@ interface ConfigStore {
   config: SwordConfig;
   setArchetype: (key: ArchetypeKey) => void;
   update: <K extends keyof SwordConfig>(key: K, value: Partial<SwordConfig[K]>) => void;
-  reset: () => void;
   viewResetTick: number;
   bumpResetTick: () => void;
 }
@@ -69,7 +68,6 @@ export const useConfigStore = create<ConfigStore>((set) => ({
     set((state) => ({
       config: { ...state.config, [key]: { ...(state.config[key] as object), ...value } },
     })),
-  reset: () => set({ config: DEFAULT_CONFIG }),
   viewResetTick: 0,
   bumpResetTick: () => set((s) => ({ viewResetTick: s.viewResetTick + 1 })),
 }));

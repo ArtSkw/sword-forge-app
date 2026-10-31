@@ -53,13 +53,10 @@ export type PommelDetailRecipe = {
 };
 
 export type GripDetailRecipe = {
-  wrap: 'crossCord' | 'bands' | 'wire';
   coreRadiusTop?: number;
   coreRadiusBottom?: number;
   bandCount?: Partial<Record<GripLength, number>>;
   bandTube?: number;
-  wireColor?: string;
-  wireMetalness?: number;
 };
 
 export const HILT_DETAIL_RECIPES: Record<ArchetypeKey, HiltDetailRecipe> = {
@@ -253,47 +250,40 @@ export function getPommelDetailRecipe(archetype: ArchetypeKey, style: PommelStyl
 
 export const GRIP_DETAIL_RECIPES: Record<ArchetypeKey, GripDetailRecipe> = {
   armingSword: {
-    wrap: 'bands',
     bandCount: { short: 9, long: 14 },
     bandTube: 0.0007,
   },
   longsword: {
-    wrap: 'bands',
     coreRadiusTop: 0.0115,
     coreRadiusBottom: 0.013,
     bandCount: { short: 10, long: 15 },
     bandTube: 0.0007,
   },
   bastardSword: {
-    wrap: 'bands',
     coreRadiusTop: 0.0105,
     coreRadiusBottom: 0.0125,
     bandCount: { short: 8, long: 11 },
     bandTube: 0.00065,
   },
   vikingSword: {
-    wrap: 'bands',
     coreRadiusTop: 0.013,
     coreRadiusBottom: 0.0135,
     bandCount: { short: 12, long: 18 },
     bandTube: 0.00075,
   },
   falchion: {
-    wrap: 'bands',
     coreRadiusTop: 0.0105,
     coreRadiusBottom: 0.0125,
     bandCount: { short: 10, long: 14 },
     bandTube: 0.00072,
   },
   estoc: {
-    wrap: 'bands',
     coreRadiusTop: 0.0105,
     coreRadiusBottom: 0.0128,
     bandCount: { short: 5, long: 7 },
     bandTube: 0.00058,
   },
   greatsword: {
-    wrap: 'bands',
     coreRadiusTop: 0.012,
     coreRadiusBottom: 0.014,
     bandCount: { short: 11, long: 16 },
