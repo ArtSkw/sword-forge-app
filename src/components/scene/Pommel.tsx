@@ -43,7 +43,7 @@ type PommelProps = {
 };
 
 export function Pommel({ archetype, style, color, emissive, emissiveIntensity, roughness, gemstone, position }: PommelProps) {
-  const points   = POMMEL_PROFILES[style];
+  const points   = useMemo(() => POMMEL_PROFILES[style].map(([r, y]) => new THREE.Vector2(r, y)), [style]);
   const bottomY  = POMMEL_GEM_BOTTOM_Y[style];
   const gemColor = gemstone !== 'none' ? GEM_COLORS[gemstone] : null;
   const pommelDetail = getPommelDetailRecipe(archetype, style);

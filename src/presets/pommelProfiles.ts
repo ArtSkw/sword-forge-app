@@ -1,7 +1,7 @@
-import * as THREE from 'three';
 import type { PommelStyle } from '../store/configStore';
 
-// Each profile is a Vector2[] array swept around the Y axis by LatheGeometry.
+// Each profile is a list of [radius, y] points swept around the Y axis by LatheGeometry.
+// Plain tuples (no three.js) so the UI can draw pommel silhouettes from the same data.
 // X = radius (≥ 0), Y = height.  All profiles are centered at Y = 0 (the mesh
 // origin) and extend from −halfHeight to +halfHeight.
 // X = 0 at both ends closes the top and bottom cleanly.
@@ -28,11 +28,13 @@ export const POMMEL_GEM_BOTTOM_Y: Record<PommelStyle, number> = {
   fantasy:      -0.026,
 };
 
-function v(r: number, y: number) {
-  return new THREE.Vector2(r, y);
+export type ProfilePoint2 = readonly [number, number];
+
+function v(r: number, y: number): ProfilePoint2 {
+  return [r, y];
 }
 
-export const POMMEL_PROFILES: Record<PommelStyle, THREE.Vector2[]> = {
+export const POMMEL_PROFILES: Record<PommelStyle, ProfilePoint2[]> = {
 
   // Classic disc with chamfered rim and a slightly recessed rivet centre on top.
   wheel: [

@@ -137,3 +137,35 @@ export function makeAudioLayer(src: string, target: number, delayMs: number): ()
     audio.pause();
   };
 }
+
+// --- Procedural UI sounds (no extra assets): tick, bellows breath, paper rustle, quench hiss ---
+
+async function noiseBurst(dur: number, type: BiquadFilterType, f0: number, f1: number, gain: number, wobbleHz = 0) {
+  if (_muted) return;
+  try {
+    const ctx = await getCtx();
+    const t = ctx.currentTime;
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (wobbleHz ? 0.6 + 0.4 * Math.sin((i / ctx.sampleRate) * wobbleHz * Math.PI * 2) : 1);
+    const src = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), g = ctx.createGain();
+    src.buffer = buf; filter.type = type;
+    filter.frequency.setValueAtTime(f0, t); filter.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(filter).connect(g).connect(ctx.destination); src.start(t);
+  } catch { /* audio unavailable: stay silent */ }
+}
+
+export async function playTick(freq = 1500, gain = 0.05) {
+  if (_muted) return;
+  try {
+    const ctx = await getCtx();
+    const t = ctx.currentTime, osc = ctx.createOscillator(), g = ctx.createGain();
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+    osc.connect(g).connect(ctx.destination); osc.start(t); osc.stop(t + 0.06);
+  } catch { /* audio unavailable */ }
+}
+export const playBellows = () => noiseBurst(0.35, 'lowpass', 600, 200, 0.05);
+export const playPaper = () => noiseBurst(0.65, 'bandpass', 2600, 1200, 0.06, 18);
+export const playHiss = () => noiseBurst(0.7, 'highpass', 3000, 6000, 0.045);

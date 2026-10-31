@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { SWORD_TYPES } from '../presets/swordTypes';
+import type { BladeShape, StationId } from '../presets/forge';
 
 export type ArchetypeKey =
   | 'armingSword'
@@ -31,7 +32,8 @@ export type GemstoneType = 'none' | 'ruby' | 'sapphire' | 'emerald' | 'amber';
 
 export interface SwordConfig {
   archetype: ArchetypeKey;
-  blade: { length: BladeLength; width: BladeWidth; fuller: FullerStyle };
+  // pattern: a named historical blade form (presets/forge.ts); shape overrides the archetype taper.
+  blade: { length: BladeLength; width: BladeWidth; fuller: FullerStyle; pattern?: string; shape?: BladeShape };
   guard: { style: GuardStyle };
   grip: { length: GripLength };
   pommel: { style: PommelStyle };
@@ -51,6 +53,11 @@ interface ConfigStore {
   update: <K extends keyof SwordConfig>(key: K, value: Partial<SwordConfig[K]>) => void;
   viewResetTick: number;
   bumpResetTick: () => void;
+  // Forge UI state: the part being worked on (edit mode) and the historical account.
+  station: StationId | null;
+  setStation: (id: StationId | null) => void;
+  reading: boolean;
+  setReading: (on: boolean) => void;
 }
 
 const DEFAULT_CONFIG: SwordConfig = {
@@ -62,7 +69,7 @@ export const useConfigStore = create<ConfigStore>((set) => ({
   config: DEFAULT_CONFIG,
   setArchetype: (key) => {
     const preset = SWORD_TYPES[key];
-    set({ config: { archetype: key, ...preset.defaults } });
+    set({ config: { archetype: key, ...preset.defaults }, station: null });
   },
   update: (key, value) =>
     set((state) => ({
@@ -70,4 +77,8 @@ export const useConfigStore = create<ConfigStore>((set) => ({
     })),
   viewResetTick: 0,
   bumpResetTick: () => set((s) => ({ viewResetTick: s.viewResetTick + 1 })),
+  station: null,
+  setStation: (id) => set({ station: id, reading: false }),
+  reading: false,
+  setReading: (on) => set({ reading: on, station: null }),
 }));

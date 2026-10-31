@@ -1,27 +1,23 @@
 import { useConfigStore } from '../../store/configStore';
+import { getSwordLayout } from './swordLayout';
 import { SWORD_TYPES } from '../../presets/swordTypes';
 import { getSwordMaterialRecipes } from '../../presets/materialRecipes';
 import { Blade } from './Blade';
-import { Crossguard, GUARD_HEIGHT } from './Crossguard';
+import { Crossguard } from './Crossguard';
 import { Grip } from './Grip';
 import { HiltDetails } from './HiltDetails';
-import { Pommel, POMMEL_HALF_HEIGHTS } from './Pommel';
-import { BLADE_LENGTHS, GRIP_LENGTHS } from './dimensions';
+import { Pommel } from './Pommel';
 
 export function Sword() {
   const config = useConfigStore((s) => s.config);
-  const { bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT, fullerStart, fullerEnd } = SWORD_TYPES[config.archetype];
+  const preset = SWORD_TYPES[config.archetype];
+  const { crossSection, edgeBow, spineClipT, fullerStart, fullerEnd } = preset;
+  // A blade pattern may override the archetype's taper (see presets/forge.ts).
+  const bodyTaperEnd = config.blade.shape?.bodyTaperEnd ?? preset.bodyTaperEnd;
+  const bodyTaperMidWidth = config.blade.shape?.bodyTaperMidWidth ?? preset.bodyTaperMidWidth;
+  const tipShoulderRound = config.blade.shape?.tipShoulderRound ?? preset.tipShoulderRound;
 
-  const bladeLen    = BLADE_LENGTHS[config.blade.length];
-  const gripLen     = GRIP_LENGTHS[config.grip.length];
-  const pommelHalfH = POMMEL_HALF_HEIGHTS[config.pommel.style];
-  const total       = bladeLen + GUARD_HEIGHT + gripLen + pommelHalfH * 2;
-
-  const tipY    = total / 2;
-  const bladeY  = tipY - bladeLen / 2;
-  const guardY  = tipY - bladeLen - GUARD_HEIGHT / 2;
-  const gripY   = tipY - bladeLen - GUARD_HEIGHT - gripLen / 2;
-  const pommelY = -total / 2 + pommelHalfH;
+  const { gripLen, bladeY, guardY, gripY, pommelY } = getSwordLayout(config);
   const gripTopY = gripY + gripLen / 2;
   const gripBottomY = gripY - gripLen / 2;
 
