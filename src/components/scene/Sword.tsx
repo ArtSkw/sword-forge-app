@@ -9,7 +9,7 @@ import { Pommel, POMMEL_HALF_HEIGHTS } from './Pommel';
 import { BLADE_LENGTHS, GRIP_LENGTHS } from './dimensions';
 
 export function Sword() {
-  const { config } = useConfigStore();
+  const config = useConfigStore((s) => s.config);
   const { bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT, fullerStart, fullerEnd } = SWORD_TYPES[config.archetype];
 
   const bladeLen    = BLADE_LENGTHS[config.blade.length];

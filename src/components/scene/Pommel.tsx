@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import type { ArchetypeKey, PommelStyle, GemstoneType } from '../../store/configStore';
 import { getPommelDetailRecipe } from '../../presets/archetypeDetails';
 import { POMMEL_PROFILES, POMMEL_HALF_HEIGHTS, POMMEL_GEM_BOTTOM_Y } from '../../presets/pommelProfiles';
@@ -57,6 +57,8 @@ export function Pommel({ archetype, style, color, emissive, emissiveIntensity, r
     geo.computeVertexNormals();
     return geo;
   }, []);
+  // Geometry passed via prop is not owned by R3F, so release the old one ourselves.
+  useEffect(() => () => gemGeo.dispose(), [gemGeo]);
 
   return (
     <group position={position}>

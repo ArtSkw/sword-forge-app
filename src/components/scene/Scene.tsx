@@ -18,9 +18,10 @@ const MAX_POLAR = Math.PI * 0.85;
 const AUTO_ROTATE_RESUME_MS = 10000;
 const SWORD_INTRO_DELAY = 2.6;
 const SWORD_INTRO_DURATION = 1.2;
+const STUDIO_HDRI = `${import.meta.env.BASE_URL}hdri/studio_small_03_1k.hdr`;
 
 function useShadowY() {
-  const { config } = useConfigStore();
+  const config = useConfigStore((s) => s.config);
   const bladeLen    = BLADE_LENGTHS[config.blade.length];
   const gripLen     = GRIP_LENGTHS[config.grip.length];
   const pommelHalfH = POMMEL_HALF_HEIGHTS[config.pommel.style];
@@ -34,7 +35,8 @@ function SceneContents() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const orbitRef  = useRef<any>(null);
   const shadowY   = useShadowY();
-  const { config, viewResetTick } = useConfigStore();
+  const archetype = useConfigStore((s) => s.config.archetype);
+  const viewResetTick = useConfigStore((s) => s.viewResetTick);
 
   // Reset orbit camera back to presentation angle
   useEffect(() => {
@@ -50,7 +52,7 @@ function SceneContents() {
     if (timerRef.current) clearTimeout(timerRef.current);
     const frame = requestAnimationFrame(() => setAutoRotate(true));
     return () => cancelAnimationFrame(frame);
-  }, [config.archetype]);
+  }, [archetype]);
 
   useEffect(() => (
     () => {
@@ -106,7 +108,8 @@ function SceneContents() {
         onStart={handleStart}
         onEnd={handleEnd}
       />
-      <Environment preset="studio" environmentIntensity={1.18} />
+      {/* Same CC0 Poly Haven HDRI drei's "studio" preset uses, served locally instead of from a third-party CDN */}
+      <Environment files={STUDIO_HDRI} environmentIntensity={1.18} />
       <Lighting />
       <ContactShadows position={[0, shadowY, 0]} blur={2} opacity={0.4} far={4} />
       {/* Presentation tilt: ~23° lean so blade reads as diagonal, not vertical */}
