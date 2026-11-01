@@ -92,6 +92,8 @@ export function periodNote(part: { id: string; years?: [number, number] }, form:
 // Self-check (dev only): every Form's blade exists, and every Form's own parts sit in its period.
 if (import.meta.env.DEV) {
   for (const [type, forms] of Object.entries(FORMS)) {
+    // At most four Forms per type, so the list never overwhelms (author's rule).
+    if (forms.length > 4) console.warn(`[forms] ${type}: ${forms.length} Forms, the limit is 4`);
     for (const form of forms) {
       if (!BLADE_PROFILES[type as keyof typeof BLADE_PROFILES]?.some((p) => p.id === form.blade)) console.warn(`[forms] ${type}/${form.id}: unknown blade "${form.blade}"`);
       const parts: [string, { years?: [number, number] } | undefined][] = [

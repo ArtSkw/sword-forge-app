@@ -126,18 +126,6 @@ export const FORMS: Record<ArchetypeKey, Form[]> = {
       note: 'A great round central lobe between two smaller ones, sheathed in silver.',
       story: 'Petersen’s type S, the big three-lobed pommel with a dominant round centre, often covered with thick silver sheet over a cross-hatched iron surface and engraved. This form follows a silver-sheeted iron pommel found in Kent, decorated with acanthus leaves and measuring 78.8 × 39.9 × 36.5 mm. Its silver is shown here by bright steel fittings.',
       blade: 'hedeby', guard: 'vikingBar', pommel: 'lobed3', grip: 'leather', steel: 'satin', fittings: 'steel' },
-    { id: 'typeX', name: 'Type X', era: c('950–1000'), years: [950, 1000],
-      anchor: 'After Portable Antiquities Scheme PUBLIC-4221F3',
-      anchorUrl: 'https://finds.org.uk/database/artefacts/record/id/567833',
-      note: 'No upper guard: one iron nut-shaped pommel on the tang, over a plain straight guard.',
-      story: 'In the tenth century the Viking hilt lost its upper guard, and a single pommel sat straight on the tang (Petersen’s type X). This form follows an iron brazil-nut pommel of c. 950–1000, 60 × 48 × 24 mm, recorded by the Portable Antiquities Scheme. Type X hilts are plain iron.',
-      blade: 'hedeby', guard: 'vikingBar', pommel: 'brazilNut', grip: 'wood', steel: 'satin', fittings: 'darkIron' },
-    { id: 'ringerike', name: 'Ringerike', era: '11th c.', years: [1000, 1100],
-      anchor: 'After Portable Antiquities Scheme NMS-CFA5A1',
-      anchorUrl: 'https://finds.org.uk/database/artefacts/record/id/628549',
-      note: 'A late type X with a cast bronze brazil-nut pommel on a tapering blade.',
-      story: 'By the eleventh century some brazil-nut pommels were cast in bronze. This one, recorded by the Portable Antiquities Scheme, is worked in openwork with ribbons in the Ringerike style. The record is of the pommel alone; the guard here is matched to it in bronze.',
-      blade: 'late', guard: 'longBar', pommel: 'brazilNut', grip: 'leather', steel: 'satin', fittings: 'bronze' },
     { id: 'gicelin', name: 'Gicelin', era: c('1050–1250'), years: [1050, 1250],
       anchor: 'After Finnish Heritage Agency KM 3631:1',
       anchorUrl: 'http://museovirasto.finna.fi/Record/museovirasto.453FB6C8D87044003B391646E7A082C4',
@@ -245,12 +233,6 @@ export const FORMS: Record<ArchetypeKey, Form[]> = {
       note: 'A narrow clipped blade, a straight pierced cross and engraved brass fittings.',
       story: 'The Thorpe falchion in Norwich Castle Museum is dated about 1320 by its straight cross, pierced with a cruciform hole. The blade is 80 cm long and narrow, with a fuller on one face only and a small brass crown inlaid. The brass pommel is engraved with animals and monsters.',
       blade: 'narrow', guard: 'longBar', pommel: 'disc', grip: 'leather', steel: 'satin', fittings: 'brass' },
-    { id: 'maciejowski', name: 'Maciejowski', era: c('1250'), years: [1240, 1260],
-      anchor: 'After Morgan Library MS M.638, fol. 14v',
-      anchorUrl: 'https://commons.wikimedia.org/wiki/File:Maciejowski_falchion.png',
-      note: 'As painted about 1250: a short, broad blade under a gilt cross bent hard toward it.',
-      story: 'The Maciejowski Bible, painted in northern France about 1250, shows falchions with short, broad blades swelling to the tip. This one has a gilt hilt whose cross bends strongly toward the blade.',
-      blade: 'short', guard: 'arched', pommel: 'wheel', grip: 'leather', steel: 'polished', fittings: 'brass' },
     { id: 'grossesMesser', name: 'Grosses Messer', era: c('1500'), years: [1480, 1530],
       anchor: 'After Kunsthistorisches Museum A 173',
       anchorUrl: 'https://www.khm.at/en/object/372127/',
@@ -284,6 +266,10 @@ export const FORMS: Record<ArchetypeKey, Form[]> = {
 /*
  * Future Forms: anchored and verified in the research, but their defining feature needs a part that
  * does not exist yet. Each line: Form · anchor · parts it needs.
+ *
+ * Rule (author, 2026-11-01): at most 4 Forms per type, the best documented. Kept out for that reason:
+ *   Viking Type X (PAS PUBLIC-4221F3, a pommel only) and Ringerike (PAS NMS-CFA5A1, a pommel only);
+ *   falchion Maciejowski (Morgan MS M.638, a manuscript painting, not a surviving sword).
  *
  * Viking (Hersir's type H, Frankish five-lobe and Jarl's three-lobe are now Forms; they still lack
  * the chequer wire inlay, the inscribed guard face and the engraved silver sheet — Step 4)
