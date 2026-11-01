@@ -134,7 +134,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
   falchion: {
     key: 'falchion',
     name: 'Falchion',
-    description: 'Single-edged and curved, heavy toward the point, made to chop.',
+    description: 'Single-edged and broad, swelling toward a clipped point, made to chop.',
     bodyTaperEnd: 0.70, // broad chopping body with a clipped, forward-leaning point
     bodyTaperMidWidth: 0.50,
     tipShoulderRound: 0.035,
@@ -144,7 +144,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     fullerStart: 0.120,
     fullerEnd: 0.690,
     defaults: {
-      blade: { length: 'medium', width: 'standard', fuller: 'decorative' },
+      blade: { length: 'medium', width: 'standard', fuller: 'none' },
       guard: { style: 'curved' },
       grip: { length: 'short' },
       pommel: { style: 'disc' },
@@ -166,7 +166,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
       blade: { length: 'extraLong', width: 'narrow', fuller: 'none' },
       guard: { style: 'straight' },
       grip: { length: 'long' },
-      pommel: { style: 'wheel' },
+      pommel: { style: 'scentStopper' },
       finish: finish('#2A1710', { steelFinish: 'satin' }), // dark brown grip, subdued steel for a utilitarian armor-piercer
       fantasy: DEFAULT_FANTASY,
     },

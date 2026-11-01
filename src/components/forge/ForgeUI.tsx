@@ -1,10 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
-import { ArrowLeft01Icon, ArrowRight01Icon, Camera01Icon, UndoIcon, ScrollTextIcon, VolumeHighIcon, VolumeMute02Icon } from '@hugeicons/core-free-icons';
+import { ArrowLeft01Icon, ArrowRight01Icon, Camera01Icon, InformationCircleIcon, UndoIcon, ScrollTextIcon, VolumeHighIcon, VolumeMute02Icon } from '@hugeicons/core-free-icons';
 import './forge.css';
 import { useConfigStore, type ArchetypeKey } from '../../store/configStore';
 import { SWORD_TYPES, SWORD_TYPE_ORDER } from '../../presets/swordTypes';
-import { ARCHETYPE_ERA, BLADE_PATTERNS, STATIONS, type StationId } from '../../presets/forge';
+import { ARCHETYPE_ERA, STATIONS, type StationId } from '../../presets/forge';
+import { currentForm, formsOf, matchesForm } from '../../lib/forms';
 import { anchors, interaction, onAnchors } from '../../lib/anchors';
 import { audioState, playBellows, playCling, playHiss, playOneShot, playTick, type ClingParams } from '../../lib/audio';
 import { takeScreenshot } from '../../lib/screenshot';
@@ -34,6 +35,7 @@ const icon = (svg: IconSvgElement) => <HugeiconsIcon icon={svg} size={16} stroke
 const ICONS = {
   scroll: icon(ScrollTextIcon), reset: icon(UndoIcon), sound: icon(VolumeHighIcon), muted: icon(VolumeMute02Icon),
   shot: icon(Camera01Icon), prev: icon(ArrowLeft01Icon), next: icon(ArrowRight01Icon),
+  info: <HugeiconsIcon icon={InformationCircleIcon} size={18} strokeWidth={1.5} />,
 };
 
 // True while the forge moves keyboard focus itself (focusin fires synchronously inside focus()).
@@ -42,11 +44,11 @@ let autoFocusing = false;
 function forgeSound() { playTick(); setTimeout(() => playOneShot(ANVIL, 0.32), 60); setTimeout(() => playHiss(), 420); }
 
 // ── Tooltips: styled, delayed, shared by every element with data-tip ──────────
-// Usage: data-tip="Title" (+ optional data-tip-body="One line"). Shows above the element.
+// Usage: data-tip="Title" (+ optional data-tip-body="One line"). Shows above the element, or below it near the top edge.
 // The text is read from the element on every render, so a label that changes (Copied, Sound off) stays true.
 function Tooltip({ mode }: { mode: string }) {
   const ref = useRef<HTMLDivElement>(null);
-  const [tip, setTip] = useState<{ el: HTMLElement; x: number; y: number } | null>(null);
+  const [tip, setTip] = useState<{ el: HTMLElement; x: number; top: number; bottom: number } | null>(null);
   const hideRef = useRef<() => void>(() => {});
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout> | undefined, current: HTMLElement | null = null;
@@ -57,7 +59,7 @@ function Tooltip({ mode }: { mode: string }) {
         if (!usable(el)) return;
         const r = el.getBoundingClientRect();
         el.setAttribute('aria-describedby', 'forge-tip');
-        setTip({ el, x: r.left + r.width / 2, y: r.top });
+        setTip({ el, x: r.left + r.width / 2, top: r.top, bottom: r.bottom });
       }, delay);
     };
     const hide = () => { clearTimeout(timer); current?.removeAttribute('aria-describedby'); current = null; setTip(null); };
@@ -77,7 +79,11 @@ function Tooltip({ mode }: { mode: string }) {
     const el = ref.current;
     if (!el || !tip) return;
     const w = el.offsetWidth, x = Math.max(12 + w / 2, Math.min(innerWidth - 12 - w / 2, tip.x));
-    el.style.left = `${x}px`; el.style.top = `${tip.y - 10}px`;
+    const below = tip.top - 10 - el.offsetHeight < 12;
+    el.dataset.place = below ? 'below' : 'above';
+    el.style.left = `${x}px`; el.style.top = `${below ? tip.bottom + 10 : tip.top - 10}px`;
+    // The arrow keeps pointing at the element when the box is pushed in from a screen edge.
+    el.style.setProperty('--arrow-x', `${Math.max(-(w / 2 - 12), Math.min(w / 2 - 12, tip.x - x))}px`);
   });
   const title = tip?.el.dataset.tip, body = tip?.el.dataset.tipBody;
   return tip ? (
@@ -159,20 +165,23 @@ function Chooser({ station, choices }: { station: StationId; choices: StationCho
         if (it === 'more') return (
           <button key="more" className="item more" onClick={() => toggle(true)} data-tip="Other ages" data-tip-body={`${rest.length} ${station === 'grip' ? 'materials' : 'forms'} from other ages${rest.some((c) => c.era === 'Fantasy') ? ' and from legend' : ''}`}>
             <div className="card glass"><span className="count">+{rest.length}</span></div>
-            <span className="nm">Other ages</span><span className="er">&nbsp;</span>
+            <span className="nm">Other ages</span>
           </button>
         );
         if (it === 'back') return (
           <button key="back" className="item back" onClick={() => toggle(false)} data-tip="Back" data-tip-body="Forms of this sword's own age">
             <div className="card glass">{ICONS.prev}</div>
-            <span className="nm">Back</span><span className="er">&nbsp;</span>
+            <span className="nm">Back</span>
           </button>
         );
         return (
           <button key={it.id} className="item" aria-pressed={it.selected} data-tip={it.name} data-tip-body={it.note} onClick={() => { if (!it.selected) { it.apply(); forgeSound(); } }}>
-            <div className="card glass">{it.art}</div>
+            <div className="card glass">
+              {it.art}
+              {it.off && <span className="badge" data-tip={it.off.title} data-tip-body={it.off.body} aria-hidden="true">{ICONS.info}</span>}
+            </div>
             <span className="nm">{it.name}</span>
-            <span className="er">{it.period ? '\u00a0' : it.era}</span>
+            {it.off && <span className="sr">{`${it.off.title}. ${it.off.body}`}</span>}
           </button>
         );
       })}
@@ -203,6 +212,67 @@ function Inspector({ station, choices }: { station: StationId; choices: StationC
         </section>
       ))}
     </aside>
+  );
+}
+
+// ── Form switcher: the subtitle under the sword's name. Arrows step through the type's Forms; the name
+// opens the list. "Your variant" shows once any part has been changed from the Form.
+function FormSwitcher() {
+  const config = useConfigStore((s) => s.config);
+  const setForm = useConfigStore((s) => s.setForm);
+  const busy = useConfigStore((s) => s.station !== null || s.reading);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null), nameRef = useRef<HTMLButtonElement>(null), listRef = useRef<HTMLDivElement>(null);
+  const forms = formsOf(config), form = currentForm(config);
+  const close = (refocus: boolean) => { setOpen(false); if (refocus) nameRef.current?.focus({ preventScroll: true }); };
+  // The list belongs to the overview: leaving it (edit mode, the account) closes it.
+  const [wasBusy, setWasBusy] = useState(busy);
+  if (wasBusy !== busy) { setWasBusy(busy); if (busy && open) setOpen(false); }
+  useEffect(() => {
+    if (!open) return;
+    listRef.current?.querySelector<HTMLButtonElement>('[aria-current="true"]')?.focus({ preventScroll: true });
+    const away = (e: PointerEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    // While the list is open it owns the keyboard: ↑/↓ move, Esc closes; nothing reaches the forge's shortcuts.
+    const keys = (e: KeyboardEvent) => {
+      const items = [...(listRef.current?.querySelectorAll<HTMLButtonElement>('button') ?? [])];
+      if (e.key === 'Escape') { e.stopPropagation(); close(true); }
+      else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault(); e.stopPropagation();
+        const i = items.indexOf(document.activeElement as HTMLButtonElement);
+        items[(i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length]?.focus();
+      } else if (['ArrowLeft', 'ArrowRight', 'h', 'H'].includes(e.key)) e.stopPropagation();
+    };
+    addEventListener('pointerdown', away); addEventListener('keydown', keys, true);
+    return () => { removeEventListener('pointerdown', away); removeEventListener('keydown', keys, true); };
+  }, [open]);
+  if (!form) return null;
+  const i = forms.indexOf(form);
+  const altered = !matchesForm(config, form);
+  const pick = (id: string, fromList: boolean) => {
+    if (id !== form.id || altered) { setForm(id); forgeSound(); }
+    if (fromList) close(true);
+  };
+  const step = (d: number) => pick(forms[(i + d + forms.length) % forms.length].id, false);
+  return (
+    <div className="formsw" ref={ref}>
+      {forms.length > 1 && <button className="fs-step" aria-label="Previous form" onClick={() => step(-1)}>{ICONS.prev}</button>}
+      <button ref={nameRef} className="fs-name" aria-expanded={open} aria-controls="forge-forms" onClick={() => setOpen(!open)}
+        data-tip={form.name} data-tip-body={`${form.note} ${form.anchor}.`}>
+        <span>{form.name}</span><span className="fs-era">{form.era}</span>{altered && <span className="fs-alt">your variant</span>}
+      </button>
+      {forms.length > 1 && <button className="fs-step" aria-label="Next form" onClick={() => step(1)}>{ICONS.next}</button>}
+      {open && (
+        <div id="forge-forms" ref={listRef} className="fs-list glass" role="group" aria-label="Forms">
+          {forms.map((f) => (
+            <button key={f.id} aria-current={f.id === form.id} onClick={() => pick(f.id, true)}>
+              <b>{f.name}</b><span className="fs-era">{f.era}</span>
+              <span className="fs-note">{f.note}</span>
+              <span className="fs-anchor">{f.anchor}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -293,18 +363,7 @@ export function ForgeUI() {
     return () => removeEventListener('keydown', onKey);
   }, []);
 
-  // Swipe across the scene moves between parts while one is being worked on.
-  useEffect(() => {
-    let start: { x: number; y: number; id: number } | null = null;
-    const down = (e: PointerEvent) => { if (live.current.station && e.isPrimary && !(e.target as HTMLElement).closest('button')) start = { x: e.clientX, y: e.clientY, id: e.pointerId }; };
-    const up = (e: PointerEvent) => { if (!start || e.pointerId !== start.id) return; const dx = e.clientX - start.x, dy = e.clientY - start.y; start = null; if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.5) live.current.step(dx < 0 ? 1 : -1); };
-    addEventListener('pointerdown', down); addEventListener('pointerup', up);
-    return () => { removeEventListener('pointerdown', down); removeEventListener('pointerup', up); };
-  }, []);
-
   const preset = SWORD_TYPES[config.archetype];
-  const patterns = BLADE_PATTERNS[config.archetype];
-  const pattern = patterns.find((p) => p.id === config.blade.pattern) ?? patterns[0];
   const mode = `forge${station ? ' focus' : ''}${reading ? ' reading' : ''}`;
   const overviewOff = !!station || reading;
 
@@ -313,7 +372,7 @@ export function ForgeUI() {
       <div style={{ pointerEvents: 'auto' }}>
         <header className="title fade hide-focus hide-reading" inert={overviewOff}>
           <h1>{preset.name}</h1>
-          <p>{pattern ? `${pattern.name} pattern · ${pattern.era}` : 'Classic form'}</p>
+          <FormSwitcher />
         </header>
         <div inert={overviewOff}><Hotspots hidden={overviewOff} onOpen={open} /></div>
 
@@ -347,6 +406,7 @@ export function ForgeUI() {
           <button className="btn icon" aria-label="Screenshot" data-tip="Screenshot" data-tip-body="Save a picture of your sword" onClick={() => takeScreenshot()}>{ICONS.shot}</button>
         </div>
         <div className="corner-r focus-only" inert={!station}>
+          <button className="btn icon" aria-label="Reset view" data-tip="Reset view" data-tip-body="Back to this part's first shot (or double-click the sword)" onClick={() => bumpResetTick()}>{ICONS.reset}</button>
           <button className="btn primary" onClick={() => open(null)} data-tip="Done" data-tip-body="Back to the whole sword (Esc)">Done</button>
         </div>
         <HistoricalScroll />

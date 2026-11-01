@@ -2,7 +2,7 @@ import type { ArchetypeKey, GripMaterial, GuardStyle, PommelStyle, SteelFinish }
 import { getGuardParams } from '../../presets/guardShapes';
 import { getGuardTerminalRecipe } from '../../presets/archetypeDetails';
 import { POMMEL_PROFILES } from '../../presets/pommelProfiles';
-import type { BladePattern } from '../../presets/forge';
+import type { BladeProfile } from '../../presets/forge';
 
 // Engraved-style silhouettes for the variant cards, drawn from the same data as the 3D parts.
 // Upright like the sword (blade up, pommel down). 64×64 viewBox, gold line art.
@@ -97,7 +97,7 @@ export function SteelSwatch({ finish }: { finish: SteelFinish }) {
 const WIDTH_CM = { narrow: 2.8, standard: 4.4, wide: 6.0 } as const;
 const LENGTH_CM = { short: 70, medium: 82, long: 98, extraLong: 118 } as const;
 // Drawn for legibility, not to scale: width, taper and point are exaggerated so patterns read apart.
-export function BladeSilhouette({ pattern }: { pattern: Pick<BladePattern, 'length' | 'width' | 'fuller' | 'shape'> }) {
+export function BladeSilhouette({ pattern }: { pattern: Pick<BladeProfile, 'length' | 'width' | 'fuller' | 'shape'> }) {
   const len = 0.78 + (LENGTH_CM[pattern.length] - 70) / 180, base = 2 + (WIDTH_CM[pattern.width] - 2.4) * 1.05;
   const mid = 1 - (1 - (pattern.shape?.bodyTaperMidWidth ?? 0.88)) * 1.5, te = pattern.shape?.bodyTaperEnd ?? 0.9, round = (pattern.shape?.tipShoulderRound ?? 0.07) > 0.05;
   const L = 50 * len, top: [number, number][] = [], bot: [number, number][] = [], cy = 32;

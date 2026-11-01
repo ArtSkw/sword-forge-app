@@ -15,9 +15,9 @@ export const STATIONS: { id: StationId; name: string }[] = [
   { id: 'finish', name: 'Finish' },
 ];
 
-// ── Blade patterns: a named historical form maps to the blade parameters ──────
+// ── Blade profiles: a named historical blade (Geibig / Oakeshott) maps to the blade parameters ──
 export type BladeShape = { bodyTaperEnd?: number; bodyTaperMidWidth?: number; tipShoulderRound?: number };
-export type BladePattern = {
+export type BladeProfile = {
   id: string;
   name: string;
   era: string;
@@ -29,65 +29,58 @@ export type BladePattern = {
   story: string;
 };
 
-const NBSP = ' ';
-
-export const BLADE_PATTERNS: Record<ArchetypeKey, BladePattern[]> = {
-  vikingSword: [
-    { id: 'hedeby', name: 'Hedeby', era: `c.${NBSP}850`, length: 'short', width: 'wide', fuller: 'single',
-      note: 'Broad and near-parallel, with a wide fuller and a rounded point. A raider’s sword, made for cutting.',
-      story: 'Named after the trading town on the Schlei where blades like this changed hands. With edges running almost parallel down to a gently rounded point, it was a sword for cutting.' },
-    { id: 'ulfberht', name: 'Ulfberht', era: `c.${NBSP}950`, length: 'medium', width: 'wide', fuller: 'single', shape: { bodyTaperMidWidth: 0.7, tipShoulderRound: 0.04 },
-      note: 'The name +VLFBERH+T is inlaid down the fuller, and the blade narrows to a keener point.',
-      story: 'Some of the finest blades of the age carry the inlaid name +VLFBERH+T. Many are of unusually clean steel. Lesser smiths copied them, sometimes misspelling the name.' },
-    { id: 'late', name: 'Late Viking', era: `c.${NBSP}1050`, length: 'medium', width: 'standard', fuller: 'single', shape: { bodyTaperEnd: 0.86, bodyTaperMidWidth: 0.55, tipShoulderRound: 0 },
-      note: 'Longer and more tapered, already close to the knightly swords that came after.',
-      story: 'By the eleventh century blades were longer, with more taper and narrower fullers. From here it is a short step to the knightly sword.' },
-  ],
-  // Other archetypes get their own named patterns in the next content pass; until then the
-  // archetype's classic form is the single pattern.
-  armingSword: [], longsword: [], bastardSword: [], falchion: [], estoc: [], greatsword: [],
+// ── Forms: named starting points per type, each anchored to a surviving object ──
+export type Form = {
+  id: string;
+  name: string;
+  era: string;                 // display, e.g. "c. 800–950"
+  years: [number, number];     // for period-harmony checks
+  anchor: string;              // "After Wallace Collection A456"
+  anchorUrl?: string;
+  note: string;                // one line (≤ ~100 chars): switcher list and inspector
+  story: string;               // a short paragraph for the historical account
+  blade: string;               // BladeProfile id of this type
+  guard: GuardStyle;
+  pommel: PommelStyle;
+  grip: GripMaterial;
+  gripColor?: string;          // hex; omitted = the type's natural colour
+  steel: SteelFinish;
+  fittings: HardwareTone;
 };
 
-// ── Period-correct parts per archetype (approximate; later-age parts stay selectable) ──
-export const PERIOD: Record<ArchetypeKey, { guards: GuardStyle[]; pommels: PommelStyle[]; grips: GripMaterial[] }> = {
-  armingSword: { guards: ['straight', 'curved'], pommels: ['wheel', 'disc'], grips: ['leather', 'wood', 'cord'] },
-  longsword: { guards: ['straight', 'curved'], pommels: ['wheel', 'scentStopper', 'fishtail'], grips: ['leather', 'cord', 'wire'] },
-  bastardSword: { guards: ['straight', 'curved'], pommels: ['scentStopper', 'fishtail', 'wheel'], grips: ['leather', 'cord', 'wire'] },
-  vikingSword: { guards: ['straight'], pommels: ['brazilNut', 'disc'], grips: ['wood', 'leather', 'cord'] },
-  falchion: { guards: ['straight', 'curved'], pommels: ['disc', 'wheel'], grips: ['leather', 'wood', 'cord'] },
-  estoc: { guards: ['straight', 'ornate'], pommels: ['wheel', 'scentStopper'], grips: ['leather', 'cord', 'wire'] },
-  greatsword: { guards: ['curved', 'straight', 'ornate'], pommels: ['fishtail', 'scentStopper', 'wheel'], grips: ['leather', 'cord', 'wire'] },
-};
+
+
 
 // ── Variants with their notes ──────────────────────────────────────────────────
-type Variant<T extends string> = { id: T; name: string; era?: string; note: string };
+// years: when the part was in use, for period-harmony notes (none = no historical model).
+type Variant<T extends string> = { id: T; name: string; era?: string; years?: [number, number]; note: string };
 
 export const GUARDS: Variant<GuardStyle>[] = [
-  { id: 'straight', name: 'Straight', era: '9th–16th c.', note: 'A plain straight cross. Strong, and quick to recover.' },
-  { id: 'curved', name: 'Curved', era: '13th c.', note: 'Arms bent toward the blade to catch a sliding edge.' },
-  { id: 'ornate', name: 'Ornate', era: '15th c.', note: 'Slender arms ending in turned finials, a later fashion.' },
-  { id: 'fantasy', name: 'Fantastic', era: 'Fantasy', note: 'No smith of history forged this one.' },
+  { id: 'straight', name: 'Straight', era: '9th–16th c.', years: [800, 1600], note: 'A plain straight cross. Strong, and quick to recover.' },
+  { id: 'curved', name: 'Curved', era: '13th–16th c.', years: [1250, 1600], note: 'Arms bent toward the blade to catch a sliding edge.' },
+  { id: 'ornate', name: 'Ornate', era: '15th–16th c.', years: [1450, 1600], note: 'Slender arms ending in turned finials.' },
+  { id: 'fantasy', name: 'Fantastic', era: 'Fantasy', note: 'Wide arms that flare at the tips and sweep up toward the blade.' },
 ];
 export const POMMELS: Variant<PommelStyle>[] = [
-  { id: 'brazilNut', name: 'Brazil nut', era: '9th–11th c.', note: 'The common Viking counterweight, peened over the end of the tang.' },
-  { id: 'disc', name: 'Disc', era: '10th–14th c.', note: 'A flat disc. It weighs less, so the balance drifts toward the point.' },
-  { id: 'wheel', name: 'Wheel', era: '12th c.', note: 'A disc with raised rims, the knightly pommel of the high Middle Ages.' },
-  { id: 'scentStopper', name: 'Scent stopper', era: '14th c.', note: 'Shaped like the stopper of a perfume bottle; popular in the late Middle Ages.' },
-  { id: 'fishtail', name: 'Fishtail', era: '15th c.', note: 'A flared, faceted pommel of the late fifteenth century.' },
-  { id: 'ornate', name: 'Ornate', era: '15th c.', note: 'A grooved wheel with a decorative band.' },
-  { id: 'fantasy', name: 'Fantastic', era: 'Fantasy', note: 'Out of legend, with no historical model.' },
+  { id: 'brazilNut', name: 'Brazil nut', era: '10th–13th c.', years: [950, 1250], note: 'The common Viking counterweight, peened over the end of the tang.' },
+  { id: 'disc', name: 'Disc', era: '10th–16th c.', years: [950, 1550], note: 'A flat disc. It weighs less, so the balance drifts toward the point.' },
+  { id: 'wheel', name: 'Wheel', era: '12th–15th c.', years: [1100, 1500], note: 'A disc with raised rims, the knightly pommel of the high Middle Ages.' },
+  { id: 'scentStopper', name: 'Scent stopper', era: '14th–16th c.', years: [1350, 1600], note: 'Shaped like the stopper of a perfume bottle; popular in the late Middle Ages.' },
+  { id: 'fishtail', name: 'Fishtail', era: '15th c.', years: [1400, 1500], note: 'A flared, faceted pommel of the late fifteenth century.' },
+  { id: 'ornate', name: 'Ornate', era: '15th–16th c.', years: [1400, 1550], note: 'A grooved wheel with a decorative band.' },
+  { id: 'fantasy', name: 'Fantastic', era: 'Fantasy', note: 'An angular pommel with a sharp point and a flared crown.' },
 ];
 export const GRIPS: Variant<GripMaterial>[] = [
-  { id: 'wood', name: 'Wood', note: 'Two halves of wood around the tang, bound tight.' },
-  { id: 'leather', name: 'Leather', note: 'Leather over a wooden core. It darkens with handling.' },
-  { id: 'cord', name: 'Cord', note: 'Cord under the leather gives a ridged, sure grip.' },
-  { id: 'wire', name: 'Wire', era: '14th c.', note: 'Twisted wire, hard-wearing and bright. A later luxury.' },
+  { id: 'wood', name: 'Wood', years: [700, 1600], note: 'Two halves of wood around the tang, bound tight.' },
+  { id: 'leather', name: 'Leather', years: [700, 1600], note: 'Leather over a wooden core. It darkens with handling.' },
+  { id: 'cord', name: 'Cord', years: [1100, 1600], note: 'Cord under the leather gives a ridged, sure grip.' },
+  { id: 'wire', name: 'Wire', era: '12th–16th c.', years: [1150, 1600], note: 'Twisted wire, hard-wearing and bright.' },
 ];
 export const STEELS: Variant<SteelFinish>[] = [
-  { id: 'satin', name: 'Satin', note: 'A plain hand polish, the everyday finish.' },
-  { id: 'polished', name: 'Polished', note: 'Mirror-bright: a lord’s sword.' },
-  { id: 'patternWelded', name: 'Pattern-welded', note: 'Twisted rods forge-welded into a serpent-skin pattern.' },
-  { id: 'darkened', name: 'Darkened', note: 'Darkened by heat, which slows rust.' },
+  { id: 'satin', name: 'Satin', years: [700, 1600], note: 'A plain hand polish, the everyday finish.' },
+  { id: 'polished', name: 'Polished', years: [700, 1600], note: 'Mirror-bright: a lord’s sword.' },
+  { id: 'patternWelded', name: 'Pattern-welded', years: [500, 1100], note: 'Twisted rods forge-welded into a serpent-skin pattern.' },
+  { id: 'darkened', name: 'Darkened', years: [700, 1600], note: 'Darkened by heat, which slows rust.' },
 ];
 export const FITTINGS: { id: HardwareTone; name: string; swatch: string }[] = [
   { id: 'darkIron', name: 'Dark iron', swatch: 'radial-gradient(circle at 35% 30%, #8a857e, #3c3b38 60%, #1d1c1a)' },
@@ -114,7 +107,7 @@ export const DYES: { id: string; name: string; color: string | null }[] = [
 // ── Archetype eras (shown in the type tooltips) ──────────────────────────────
 export const ARCHETYPE_ERA: Record<ArchetypeKey, string> = {
   armingSword: '12th–14th centuries', longsword: '14th–16th centuries', bastardSword: '14th–16th centuries',
-  vikingSword: '8th–11th centuries', falchion: '13th–15th centuries', estoc: '14th–16th centuries', greatsword: '15th–16th centuries',
+  vikingSword: '8th–11th centuries', falchion: '13th–16th centuries', estoc: '14th–16th centuries', greatsword: '15th–16th centuries',
 };
 
 // ── Historical account: opening paragraph and how each type was fought ───────
@@ -141,7 +134,7 @@ export const ACCOUNT: Record<ArchetypeKey, { title: string; lead: string; fighti
   },
   falchion: {
     title: 'The falchion',
-    lead: 'A single-edged, broad-bladed sword of the thirteenth to fifteenth centuries, related to the cleaver as much as to the knightly sword.',
+    lead: 'A single-edged, broad-bladed sword of the thirteenth to sixteenth centuries, related to the cleaver as much as to the knightly sword. Its back runs nearly straight; the edge swells toward a clipped point.',
     fighting: 'A chopping weapon. The weight sits toward the point, and the cuts land heavy.',
   },
   estoc: {

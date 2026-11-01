@@ -97,11 +97,22 @@ function SceneContents() {
   }, []);
   const autoRotateOn = useRef(false);
   useEffect(() => { autoRotateOn.current = autoRotate && station === null && !reading && !motionReduced.current; });
-  const lastFramed = useRef<{ station: StationId | null; reading: boolean } | null>(null);
+  const lastFramed = useRef<{ station: StationId | null; reading: boolean; reframe: number } | null>(null);
+  // Edit mode can be turned by hand; a double-click glides back to the part's shot.
+  const [reframe, setReframe] = useState(0);
+  // Re-frame triggers in edit mode: double-click, or the Reset view button.
+  const again = reframe + (station ? viewResetTick : 0);
+  const gl = useThree((s) => s.gl);
+  useEffect(() => {
+    const el = gl.domElement, onDouble = () => { if (useConfigStore.getState().station) setReframe((n) => n + 1); };
+    el.addEventListener('dblclick', onDouble);
+    return () => el.removeEventListener('dblclick', onDouble);
+  }, [gl]);
 
-  // Reset orbit camera back to presentation angle
+  // Reset view: in edit mode, back to the part's shot; otherwise the orbit camera returns to the presentation angle.
   useEffect(() => {
     if (!orbitRef.current) return;
+    if (useConfigStore.getState().station) return;   // edit mode: the framing effect below re-frames
     orbitRef.current.reset();
     move.current.active = false; move.current.shift = 0; move.current.shiftY = 0;
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -158,15 +169,18 @@ function SceneContents() {
     controls.minDistance = Math.min(1.5, m.toDist * 0.8);
     controls.maxDistance = Math.max(6, m.toDist * 1.1);
     // A resize inside the same station re-frames at once instead of restarting the glide.
-    const resizeOnly = lastFramed.current?.station === station && lastFramed.current?.reading === reading;
-    lastFramed.current = { station, reading };
+    const last = lastFramed.current;
+    const resizeOnly = last?.station === station && last?.reading === reading && last?.reframe === again;
+    lastFramed.current = { station, reading, reframe: again };
     m.t0 = performance.now(); m.ms = motionReduced.current || resizeOnly ? 1 : station ? FOCUS_MS : OVERVIEW_MS; m.active = true;
     // The config is read when the station changes; geometry edits inside a station must not re-frame.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [station, reading, camera, frameKey]);
+  }, [station, reading, camera, frameKey, again]);
 
   const handleStart = useCallback(() => {
     interaction.dragging = true; interaction.touchUntil = 0;
+    // A drag during a glide keeps the user's direction (target and distance still settle).
+    move.current.turn = false;
     setAutoRotate(false);
     if (timerRef.current) clearTimeout(timerRef.current);
   }, []);
@@ -241,8 +255,8 @@ function SceneContents() {
         enableDamping
         dampingFactor={0.12}
         enablePan={false}
-        enableRotate={station === null}
         enableZoom={station === null}
+        rotateSpeed={station ? 0.7 : 1}
         minPolarAngle={MIN_POLAR}
         maxPolarAngle={MAX_POLAR}
         minDistance={1.5}
