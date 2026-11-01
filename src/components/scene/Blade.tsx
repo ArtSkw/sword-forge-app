@@ -3,6 +3,7 @@ import { useEffect, useMemo } from 'react';
 import type { SteelFinish, SwordCondition } from '../../store/configStore';
 import { getBladePhysicalRecipe } from '../../presets/materialRecipes';
 import { sectionCreases, sectionPerimeter, takesFuller } from '../../presets/bladeSections';
+import type { ProfilePoint } from '../../presets/bladeProfiles';
 import { RICASSO, flameOffset, halfWidths, type BladeSpec } from '../../lib/bladeSpec';
 import { GRIP_NORMAL_MAPS } from './gripTextures';
 
@@ -65,12 +66,30 @@ function fullerBlend(t: number, s: BladeSpec): number {
   return Math.max(0, Math.min(1, (t - s.fullerStart) / FULLER_BLEND, (s.fullerEnd - t) / FULLER_BLEND));
 }
 
+// The section tables have 28 points; curved faces would shade in bands. Each run between hard points is
+// resampled with a Catmull-Rom curve that stops at the hard points, so faces round smoothly and ridges stay sharp.
+const SUBDIV = 4;
+function refine(per: ProfilePoint[], hard: Set<number>): { pts: ProfilePoint[]; crease: boolean[] } {
+  const n = per.length, pts: ProfilePoint[] = [], crease: boolean[] = [];
+  for (let j = 0; j < n; j++) {
+    const p1 = per[j], p2 = per[(j + 1) % n];
+    const p0 = hard.has(j) ? p1 : per[(j - 1 + n) % n], p3 = hard.has((j + 1) % n) ? p2 : per[(j + 2) % n];
+    for (let k = 0; k < SUBDIV; k++) {
+      const u = k / SUBDIV, u2 = u * u, u3 = u2 * u;
+      const at = (i: 0 | 1) => 0.5 * (2 * p1[i] + (p2[i] - p0[i]) * u + (2 * p0[i] - 5 * p1[i] + 4 * p2[i] - p3[i]) * u2 + (3 * p1[i] - p0[i] - 3 * p2[i] + p3[i]) * u3);
+      pts.push([at(0), at(1)]);
+      crease.push(k === 0 && hard.has(j));
+    }
+  }
+  return { pts, crease };
+}
+
 function buildBladeGeometry(s: BladeSpec, condition: SwordCondition): THREE.BufferGeometry {
-  const segments = s.flame ? 320 : 160;
-  const plain = sectionPerimeter(s.section, 'none', s.archetype), fullered = sectionPerimeter(s.section, s.fuller, s.archetype);
-  const N = plain.length;
+  const segments = s.flame ? 360 : 240;
   const hard = sectionCreases(s.section, takesFuller(s.section) ? s.fuller : 'none');
-  const crease = plain.map((_, j) => hard.has(j));
+  const plainR = refine(sectionPerimeter(s.section, 'none', s.archetype), hard), fullerR = refine(sectionPerimeter(s.section, s.fuller, s.archetype), hard);
+  const plain = plainR.pts, fullered = fullerR.pts, crease = plainR.crease;
+  const N = plain.length;
 
   const rings: THREE.Vector3[][] = [];
   for (let i = 0; i <= segments; i++) {
@@ -178,48 +197,8 @@ function roundedBox(halfW: number, halfT: number, len: number): THREE.BufferGeom
   return geo;
 }
 
-// Normal map: mostly lengthwise grind marks with a little irregular forge grit.
-// The previous isotropic noise fought the blade's glossy anisotropic shader and
-// could read as pixel/grid sparkle. These marks run along the blade instead.
-function makeBladeNormalMap(): THREE.CanvasTexture {
-  const W = 512, H = 512;
-  const canvas = document.createElement('canvas');
-  canvas.width = W; canvas.height = H;
-  const ctx = canvas.getContext('2d')!;
-  const img = ctx.createImageData(W, H);
-
-  const columnGrain = Array.from({ length: W }, (_, x) => {
-    const u = x / W;
-    const broad = Math.sin(u * Math.PI * 18) * 4;
-    const fine = Math.sin(u * Math.PI * 91 + 0.8) * 2;
-    const noise = (Math.random() + Math.random() - 1) * 2.5;
-    return broad + fine + noise;
-  });
-
-  for (let y = 0; y < H; y++) {
-    const v = y / H;
-    const lengthStreak = Math.sin(v * Math.PI * 38) * 0.9;
-    for (let x = 0; x < W; x++) {
-      const i = (y * W + x) * 4;
-      const chatter = (Math.random() + Math.random() - 1) * 1.8;
-      img.data[i]   = 128 + Math.round(columnGrain[x] + chatter);
-      img.data[i+1] = 128 + Math.round(lengthStreak + chatter * 0.35);
-      img.data[i+2] = 255;
-      img.data[i+3] = 255;
-    }
-  }
-  ctx.putImageData(img, 0, 0);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.magFilter = THREE.LinearFilter;
-  tex.minFilter = THREE.LinearMipmapLinearFilter;
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  tex.repeat.set(1, 5);
-  tex.anisotropy = 8;
-  return tex;
-}
-
 function makePatternWeldedMap(): THREE.CanvasTexture {
-  const W = 512, H = 1024;
+  const W = 1024, H = 2048;
   const canvas = document.createElement('canvas');
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext('2d')!;
@@ -248,7 +227,7 @@ function makePatternWeldedMap(): THREE.CanvasTexture {
   tex.minFilter = THREE.LinearMipmapLinearFilter;
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.repeat.set(1, 1);
-  tex.anisotropy = 8;
+  tex.anisotropy = 16;
   return tex;
 }
 
@@ -290,29 +269,67 @@ function makeBladeRoughnessMap(): THREE.CanvasTexture {
   tex.minFilter = THREE.LinearMipmapLinearFilter;
   tex.wrapS = THREE.ClampToEdgeWrapping;
   tex.wrapT = THREE.ClampToEdgeWrapping;
-  tex.anisotropy = 8;
+  tex.anisotropy = 16;
   return tex;
 }
 
 // Shared — generated once for the app lifetime
-const BLADE_NORMAL_MAP   = makeBladeNormalMap();
-const BLADE_NORMAL_SCALE = new THREE.Vector2(0.045, 0.025);
 const PATTERN_WELDED_MAP = makePatternWeldedMap();
 const BLADE_ROUGHNESS_MAP = makeBladeRoughnessMap();
 
 type BladeProps = { spec: BladeSpec; color: string; steelFinish: SteelFinish; condition: SwordCondition; runes: boolean };
 
+// Grind lines worked out in the shader from the blade's own coordinates (metres), not from a texture, so
+// they stay crisp at any zoom. Lines run along the blade; where they would be finer than a pixel they fade,
+// so the steel never shimmers. A slow variation in roughness breaks up the polish like hand finishing.
+const GRIND: Record<SteelFinish, number> = { polished: 0.035, satin: 0.16, darkened: 0.1, patternWelded: 0.07 };
+const GRIND_VERTEX = /* glsl */ `varying vec3 vGrindPos;
+varying vec3 vGrindAcross;`;
+const GRIND_FRAGMENT = /* glsl */ `varying vec3 vGrindPos;
+varying vec3 vGrindAcross;
+uniform float uGrind;
+float grindHash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float grindNoise(vec2 p) {
+  vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(grindHash(i), grindHash(i + vec2(1.0, 0.0)), f.x), mix(grindHash(i + vec2(0.0, 1.0)), grindHash(i + vec2(1.0, 1.0)), f.x), f.y);
+}`;
+
+function grindShader(strength: { value: number }) {
+  return (shader: THREE.WebGLProgramParametersWithUniforms) => {
+    shader.uniforms.uGrind = strength;
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', `#include <common>\n${GRIND_VERTEX}`)
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvGrindPos = position;\nvGrindAcross = normalize(normalMatrix * vec3(1.0, 0.0, 0.0));');
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', `#include <common>\n${GRIND_FRAGMENT}`)
+      .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+        roughnessFactor *= 0.92 + 0.16 * grindNoise(vec2(vGrindPos.x * 110.0, vGrindPos.y * 2.0));`)
+      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+        {
+          float a = vGrindPos.x * 3200.0, l = vGrindPos.y * 4.0;
+          float fade = 1.0 - smoothstep(0.35, 1.2, fwidth(a));
+          float g = (grindNoise(vec2(a, l)) - 0.5) + 0.6 * (grindNoise(vec2(a * 2.7, l * 1.9 + 7.0)) - 0.5);
+          normal = normalize(normal + vGrindAcross * g * uGrind * fade);
+        }`);
+  };
+}
+
+// One compiled variant per finish (the material remounts when the finish changes).
+const GRIND_SHADERS = Object.fromEntries((Object.keys(GRIND) as SteelFinish[]).map((f) => [f, grindShader({ value: GRIND[f] })])) as Record<SteelFinish, ReturnType<typeof grindShader>>;
+
 function Steel({ color, steelFinish, condition }: Omit<BladeProps, 'spec' | 'runes'>) {
   const phys = getBladePhysicalRecipe(condition, steelFinish);
+
   return (
     <meshPhysicalMaterial
+      key={steelFinish}
+      onBeforeCompile={GRIND_SHADERS[steelFinish]}
+      customProgramCacheKey={() => `blade-grind-${steelFinish}`}
       color={color}
       map={steelFinish === 'patternWelded' ? PATTERN_WELDED_MAP : null}
       metalness={1.0}
       roughness={phys.roughness}
       roughnessMap={BLADE_ROUGHNESS_MAP}
-      normalMap={BLADE_NORMAL_MAP}
-      normalScale={BLADE_NORMAL_SCALE}
       clearcoat={phys.clearcoat}
       clearcoatRoughness={phys.clearcoatRoughness}
       anisotropy={phys.anisotropy}

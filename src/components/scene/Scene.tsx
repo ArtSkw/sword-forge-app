@@ -18,7 +18,10 @@ const MAX_POLAR = Math.PI * 0.85;
 const AUTO_ROTATE_RESUME_MS = 10000;
 const SWORD_INTRO_DELAY = 2.6;
 const SWORD_INTRO_DURATION = 1.2;
-const STUDIO_HDRI = `${import.meta.env.BASE_URL}hdri/studio_small_03_1k.hdr`;
+// Reflections: the 2k studio map on desktops, the 1k one on touch devices and small screens (quality tiers
+// grow from here; see the performance step in the plan).
+const LOW_TIER = typeof window !== 'undefined' && (matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 700);
+const STUDIO_HDRI = `${import.meta.env.BASE_URL}hdri/studio_small_03_${LOW_TIER ? '1k' : '2k'}.hdr`;
 const SWORD_ROTATION: [number, number, number] = [0.08, 0, -0.80];
 
 // Edit mode: how close the camera comes to each hilt part (Blade and Finish are fitted, see below),
