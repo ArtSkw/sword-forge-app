@@ -103,12 +103,12 @@ export function Grip({ archetype, length, shape, material, color, roughness, met
   const rTop = recipe.coreRadiusTop ?? GRIP_RADIUS_TOP, rBot = recipe.coreRadiusBottom ?? GRIP_RADIUS_BOT;
   const geo = useMemo(() => gripGeometry(len, rBot, rTop, material, shape), [len, rBot, rTop, material, shape]);
   useEffect(() => () => geo.dispose(), [geo]);
-  const leather = surface('leather'), wire = surface(metal.tone);
+  const leather = surface('leather'), wire = surface(metal.tone), wood = surface('wood');
   return (
     <group position={position}>
       <mesh geometry={geo}>
         {material === 'wire' && <meshStandardMaterial key={wire.key} {...wire.props} color={metal.color} metalness={1} roughness={Math.max(0.22, metal.roughness - 0.08)} />}
-        {material === 'wood' && <meshStandardMaterial key="wood" map={woodTexture()} color={color} metalness={0} roughness={Math.max(0.38, roughness - 0.3)} />}
+        {material === 'wood' && <meshStandardMaterial key={wood.key} {...wood.props} map={woodTexture()} color={color} metalness={0} roughness={Math.max(0.38, roughness - 0.3)} />}
         {(material === 'leather' || material === 'cord') && <meshStandardMaterial key={leather.key} {...leather.props} color={color} metalness={0} roughness={roughness} />}
       </mesh>
     </group>
