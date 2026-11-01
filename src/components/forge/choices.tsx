@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { useConfigStore } from '../../store/configStore';
 import { SWORD_TYPES } from '../../presets/swordTypes';
-import { ageLabel, DEFAULT_GRIP_SHAPE, HILT_NOTE, MESSER_CAPS, DYES, GRIP_SHAPES, GRIP_SHAPE_OFFERED, ECUSSON_NOTE, RING_CHOICES, TERMINALS, EDGE_CHOICES, FITTINGS, GRIPS, GUARDS, POMMELS, RICASSO_CHOICES, SECTIONS, SECTION_CHOICES, STEELS, type StationId } from '../../presets/forge';
+import { ageLabel, DEFAULT_GRIP_SHAPE, ENAMEL_NOTE, WIRE_INLAYS, HILT_NOTE, MESSER_CAPS, DYES, GRIP_SHAPES, GRIP_SHAPE_OFFERED, ECUSSON_NOTE, RING_CHOICES, TERMINALS, EDGE_CHOICES, FITTINGS, GRIPS, GUARDS, POMMELS, RICASSO_CHOICES, SECTIONS, SECTION_CHOICES, STEELS, type StationId } from '../../presets/forge';
 import { currentForm, currentProfile, overlaps, periodNote, profileBlade, profilesOf, type PeriodNote } from '../../lib/forms';
 import { bladeSpec, profileSpec } from '../../lib/bladeSpec';
 import { POMMEL_FORM } from '../../presets/pommelProfiles';
@@ -91,6 +91,11 @@ export function useStationChoices(station: StationId | null): StationChoices | n
       rows.push({ label: 'Side rings', kind: 'chips', items: RING_CHOICES.map((r) => ({ id: String(r.id), name: r.name, selected: h.rings === r.id, apply: () => update('guard', { rings: r.id || undefined }) })) });
       if (h.rings) extraNote = `${extraNote} ${RING_CHOICES[h.rings].note}`.trim();
     }
+    if (arch === 'vikingSword') {
+      const cur = config.guard.wire ?? 'none';
+      rows.push({ label: 'Wire inlay', kind: 'chips', items: WIRE_INLAYS.map((w) => ({ id: w.id, name: w.name, selected: cur === w.id, apply: () => update('guard', { wire: w.id === 'none' ? undefined : w.id }) })) });
+      if (cur !== 'none') extraNote = `${extraNote} ${WIRE_INLAYS.find((w) => w.id === cur)?.note ?? ''}`.trim();
+    }
     engraving('guard', !!config.guard.engraved);
     cards = GUARDS.filter((g) => GUARDS_BY_TYPE[arch].includes(g.id)).sort((a, b) => GUARDS_BY_TYPE[arch].indexOf(a.id) - GUARDS_BY_TYPE[arch].indexOf(b.id)).map((g) => ({ ...g, period: ofForm(g, form?.guard), off: off(g, form?.guard), selected: config.guard.style === g.id, art: <GuardSilhouette archetype={arch} style={g.id} />, apply: () => update('guard', { style: g.id }) }));
   }
@@ -100,7 +105,13 @@ export function useStationChoices(station: StationId | null): StationChoices | n
     cards = MESSER_CAPS.map((m) => ({ ...m, period: m.id === own || ofAge(m.years), off: form ? periodNote(m, form, own) : null, selected: cur === m.id,
       art: <CapSilhouette cap={m.id} />, apply: () => update('grip', { cap: m.id === 'beak' ? undefined : m.id }) }));
   } else if (station === 'pommel') {
-    if (POMMEL_FORM[config.pommel.style].axis === 'z') engraving('pommel', !!config.pommel.engraved);
+    if (POMMEL_FORM[config.pommel.style].axis === 'z') {
+      // The face: plain, engraved, or engraved with its cuts filled with enamel.
+      const p = config.pommel, cur = !p.engraved ? 'plain' : p.enamel ?? 'engraved';
+      rows.push({ label: 'Face', kind: 'chips', items: ([['plain', 'Plain'], ['engraved', 'Engraved'], ['azure', 'Blue enamel'], ['gules', 'Red enamel']] as const).map(([id, name]) => ({ id, name, selected: cur === id,
+        apply: () => update('pommel', { engraved: id === 'plain' ? undefined : true, enamel: id === 'azure' || id === 'gules' ? id : undefined }) })) });
+      if (p.enamel) extraNote = `${extraNote} ${ENAMEL_NOTE}`.trim();
+    }
     cards = POMMELS.map((g) => ({ ...g, period: ofForm(g, form?.pommel), off: off(g, form?.pommel), selected: config.pommel.style === g.id, art: <PommelSilhouette style={g.id} />, apply: () => update('pommel', { style: g.id }) }));
   }
   if (station === 'grip') {

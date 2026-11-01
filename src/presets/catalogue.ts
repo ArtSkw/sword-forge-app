@@ -112,8 +112,8 @@ export const FORMS: Record<ArchetypeKey, Form[]> = {
       anchor: 'After Finnish Heritage Agency KM 18402:1',
       anchorUrl: 'http://museovirasto.finna.fi/Record/museovirasto.FE4D68B51D0D5FEE17E1354056773CBA',
       note: 'A wide, domed upper guard under a small three-sided cap, over an +VLFBERHT+ blade.',
-      story: 'Petersen’s type H, the commonest hilt in Viking Norway: elliptical guards with gently domed faces and a small pyramidal cap riveted to the upper guard. This sword, found in Finland, has a blade of 78.2 cm signed +VLFBERHT+, a guard of 10.6 cm and an upper guard of 8.5 cm, and weighs 1340 g. Its guards are inlaid with silver and copper wire in a chequerboard, 24 wires to the centimetre; that inlay is not shown here yet.',
-      blade: 'ulfberht', guard: 'vikingBar', pommel: 'pyramid', grip: 'leather', steel: 'satin', fittings: 'darkIron', inscription: 'ulfberht' },
+      story: 'Petersen’s type H, the commonest hilt in Viking Norway: elliptical guards with gently domed faces and a small pyramidal cap riveted to the upper guard. This sword, found in Finland, has a blade of 78.2 cm signed +VLFBERHT+, a guard of 10.6 cm and an upper guard of 8.5 cm, and weighs 1340 g. Its guards are inlaid with silver and copper wire in a chequerboard, 24 wires to the centimetre.',
+      blade: 'ulfberht', guard: 'vikingBar', pommel: 'pyramid', grip: 'leather', steel: 'satin', fittings: 'darkIron', inscription: 'ulfberht', wire: 'chequer' },
     { id: 'frankishFive', name: 'Frankish five-lobe', era: '9th–10th c.', years: [800, 1000],
       anchor: 'After Wallace Collection A456',
       anchorUrl: 'https://artsandculture.google.com/asset/sword-detail-unknown/SgEJJIhsBWl9YA',
@@ -163,7 +163,7 @@ export const FORMS: Record<ArchetypeKey, Form[]> = {
       anchorUrl: 'https://www.khm.at/en/objectdb/detail/100441',
       note: 'The Reichsschwert: gilded cross and pommel, a silver-wire grip, prayers on the hilt.',
       story: 'The Reichsschwert, the imperial sword now in Vienna, made between 1198 and 1218. Its pommel bears the imperial eagle and the arms of Otto IV, and the weakly gilded cross is inscribed CHRISTUS VINCIT CHRISTUS REGNAT CHRISTUS IMPERAT. The grip is wound with silver wire.',
-      blade: 'xii', guard: 'longBar', pommel: 'disc', grip: 'wire', steel: 'polished', fittings: 'brass' },
+      blade: 'xii', guard: 'longBar', pommel: 'disc', grip: 'wire', steel: 'polished', fittings: 'gilt' },
   ],
   longsword: [
     { id: 'italianGothic', name: 'Italian Gothic', era: '15th c.', years: [1400, 1500],
@@ -183,7 +183,7 @@ export const FORMS: Record<ArchetypeKey, Form[]> = {
       anchorUrl: wallace(60959),
       note: 'A gilt-bronze Italian fish-tail pommel and a black horn grip on a slim, acute blade.',
       story: 'An Italian longsword of about 1460 with what the Wallace calls an authentic medieval fish-tail pommel of gilt bronze. The grip is black horn. The catalogue notes a Visconti sword at the Cluny with the same kind of pommel.',
-      blade: 'xv', guard: 'roundCross', pommel: 'fishtail', grip: 'wood', gripColor: '#1f1b18', steel: 'polished', fittings: 'brass', terminal: 'finial' },
+      blade: 'xv', guard: 'roundCross', pommel: 'fishtail', grip: 'wood', gripColor: '#1f1b18', steel: 'polished', fittings: 'gilt', terminal: 'finial' },
   ],
   bastardSword: [
     // The writhen pommel is the bastard sword's instant tell (research), so this Form leads.
@@ -277,7 +277,7 @@ export const FORMS: Record<ArchetypeKey, Form[]> = {
       anchorUrl: 'https://www.khm.at/en/artworks/panzerstecher-373635-1',
       note: 'An all-gilt hilt: a short arched cross, a pear pommel and a sheathed grip.',
       story: 'A Hungarian thrusting sword of about 1550, now in Vienna. The hilt is fire-gilt silver with granulation: a short arched cross, a pear-shaped pommel and a metal-sheathed grip. Its wooden scabbard is covered in what may be fish leather.',
-      blade: 'panzerstecher', guard: 'arched', pommel: 'scentStopper', grip: 'wire', steel: 'polished', fittings: 'brass' },
+      blade: 'panzerstecher', guard: 'arched', pommel: 'scentStopper', grip: 'wire', steel: 'polished', fittings: 'gilt' },
   ],
 };
 

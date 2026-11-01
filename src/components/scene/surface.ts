@@ -22,7 +22,10 @@ TARNISH.wrapS = TARNISH.wrapT = THREE.RepeatWrapping;
 TARNISH.colorSpace = THREE.NoColorSpace;
 TARNISH.anisotropy = 16;
 // Engravings (height maps: light grey = the metal's surface, dark = the cut). Loaded on first use.
-type Engrave = { kind: 'guard' } | { kind: 'face'; radius: number };
+type Engrave = { kind: 'guard' } | { kind: 'face'; radius: number; enamel?: 'azure' | 'gules' };
+export type Wire = 'chequer' | 'lozenge' | 'bands';
+const WIRE_INDEX: Record<Wire, number> = { chequer: 1, lozenge: 2, bands: 3 };
+const ENAMEL_RGB = { azure: '0.03, 0.09, 0.36', gules: '0.42, 0.03, 0.02' } as const;
 const ENGRAVINGS: Partial<Record<'scroll' | 'medallion', { map: THREE.Texture; ready: { value: number } }>> = {};
 function engraving(name: 'scroll' | 'medallion') {
   if (!ENGRAVINGS[name]) {
@@ -59,6 +62,7 @@ type Recipe = {
   mapping: 'blade' | 'triplanar';
   kind: 'blade' | 'iron' | 'copper' | 'leather';
   engrave?: Engrave;
+  wire?: Wire;
 };
 
 const GLSL_VERTEX = /* glsl */ `varying vec3 vSurfPos;
@@ -136,6 +140,29 @@ function compile(recipe: Recipe) {
   const eg = recipe.engrave;
   if (eg) defines[eg.kind === 'face' ? 'SURF_ENGRAVE_FACE' : 'SURF_ENGRAVE_GUARD'] = '';
   if (eg?.kind === 'face') defines.SURF_ENGRAVE_R = eg.radius.toFixed(5);
+  const enamel = eg?.kind === 'face' ? eg.enamel : undefined;
+  if (recipe.wire) defines.SURF_WIRE = String(WIRE_INDEX[recipe.wire]);
+  // Viking wire inlay: two metals in fine furrows over the whole guard, with thin lines of iron between cells.
+  // Projected on the face the surface looks at most; wires run along the guard (24–28 to the centimetre).
+  const wireColor = recipe.wire ? `
+    {
+      vec3 an = abs(normalize(vSurfNormal));
+      vec2 wp = an.z > max(an.x, an.y) ? vSurfPos.xy : (an.y > an.x ? vSurfPos.xz : vSurfPos.zy);
+      float pick, edge;
+      #if SURF_WIRE == 1
+        vec2 cc = wp / 0.0042; pick = mod(floor(cc.x) + floor(cc.y), 2.0);
+        vec2 fc = abs(fract(cc) - 0.5); edge = smoothstep(0.43, 0.49, max(fc.x, fc.y));
+      #elif SURF_WIRE == 2
+        vec2 dd = vec2(wp.x + wp.y, wp.x - wp.y) / 0.0065; pick = mod(floor(dd.x) + floor(dd.y), 2.0);
+        vec2 fd = abs(fract(dd) - 0.5); edge = smoothstep(0.42, 0.49, max(fd.x, fd.y));
+      #else
+        float bb = wp.x / 0.0055; pick = mod(floor(bb), 2.0); edge = smoothstep(0.42, 0.49, abs(fract(bb) - 0.5));
+      #endif
+      vec3 silver = vec3(0.93, 0.93, 0.95), other = SURF_WIRE == 2 ? vec3(0.86, 0.68, 0.36) : vec3(0.86, 0.47, 0.3);
+      float wires = 0.5 + 0.5 * cos(wp.y * 6.2832 / 0.00042), wf = 1.0 - smoothstep(0.3, 1.0, fwidth(wp.y) / 0.00042);
+      vec3 inlay = mix(silver, other, pick) * mix(1.0, 0.84 + 0.16 * wires, wf);
+      diffuseColor.rgb = mix(inlay, diffuseColor.rgb * 0.7, edge);
+    }` : '';
   // Engraving: cuts on the faces that look at you; old dirt and patina gather in them with age.
   const engraveColor = eg ? `
     float eMask = smoothstep(0.55, 0.85, abs(normalize(vSurfNormal).z));
@@ -148,10 +175,17 @@ function compile(recipe: Recipe) {
     float eFade = 1.0 - smoothstep(0.6, 1.6, length(fwidth(euv)) * SURF_TEX);
     float sCut = clamp((0.78 - texture2D(uEngrave, euv).r) / 0.55, 0.0, 1.0) * eMask * uEngraveReady;
     // Cuts read dark: they are shadowed and catch less reflection (never rougher, which would turn them milky).
-    diffuseColor.rgb *= 1.0 - sCut * (0.62 + 0.3 * aPatina);` : '';
+    ${enamel ? `
+    // Champlevé: the field inside the medallion's ring is enamel; the engraved device stays bright metal.
+    #ifdef SURF_ENGRAVE_FACE
+      float sField = (1.0 - sCut) * (1.0 - smoothstep(0.7, 0.74, length(vSurfPos.xy) / SURF_ENGRAVE_R)) * eMask * uEngraveReady;
+    #else
+      float sField = 0.0;
+    #endif
+    diffuseColor.rgb = mix(diffuseColor.rgb * (1.0 - sCut * 0.4), vec3(${ENAMEL_RGB[enamel]}) * (1.0 - 0.35 * aPatina), sField);` : 'diffuseColor.rgb *= 1.0 - sCut * (0.62 + 0.3 * aPatina);'}` : '';
   // Stages of age, each easing in over its own span: scratches (Carried), a honed edge (Carried–Heirloom),
   // patina in recesses and softened polish (Heirloom), pits, rust and rot (Excavated).
-  const color = `
+  const color = `${wireColor}
     float aWear = smoothstep(0.08, 0.45, uSurfAge) * uSurfReady;
     float aHoned = smoothstep(0.15, 0.4, uSurfAge) * (1.0 - smoothstep(0.9, 1.0, uSurfAge));
     // Tarnish: a light bloom from Carried, a clear grey-brown mottling by Heirloom.
@@ -205,14 +239,16 @@ function compile(recipe: Recipe) {
     roughnessFactor = clamp(roughnessFactor + (sDetail - 0.5) * ${f(d.rough)} + sWear * 0.05 + ${k === 'leather' ? '0.0' : '0.1'} * sTarnish, 0.04, 1.0);
     ${k === 'blade' ? 'roughnessFactor = clamp(roughnessFactor - 0.14 * aHoned * vSurfEdge + 0.22 * aPatina * vSurfRecess + sInsc * (uInscInlay < 0.5 ? 0.12 : 0.42), 0.04, 1.0);' : ''}
     ${k === 'leather' ? 'roughnessFactor = mix(roughnessFactor - 0.25 * aWear * (1.0 - aRust), 0.97, aRust);' : 'roughnessFactor = mix(roughnessFactor, 0.9, sRust);'}
+    ${enamel ? 'roughnessFactor = mix(roughnessFactor, 0.24 + 0.3 * aPatina, sField);' : ''}
 `;
-  const metal = metalPart ? 'metalnessFactor = mix(metalnessFactor, 0.05, sRust);' : '';
+  // Enamel is glass: not a metal, and glossy.
+  const metal = (metalPart ? 'metalnessFactor = mix(metalnessFactor, 0.05, sRust);' : '') + (enamel ? 'metalnessFactor = mix(metalnessFactor, 0.0, sField);' : '');
   const relief = `
     ${d.ch ? `normal = surfBump(normal, sDetail, ${f(d.bump)} * ${k === 'leather' ? '(1.0 + 1.5 * aPatina + 1.5 * aRust)' : '1.0'} * surfFade(${f(d.tile)}));` : ''}
     normal = surfBump(normal, sWear, 0.0009 * surfFade(${f(d.wearTile)}));
     ${k === 'blade' ? 'if (uInscOn > 0.5) normal = surfBump(normal, 1.0 - sInsc, 0.0003 * (1.0 - smoothstep(0.6, 1.6, length(fwidth(inscUv)) * 1024.0)));' : ''}
     ${metalPart ? `normal = surfBump(normal, sPit * aRust, 0.0025 * (0.35 + sRust) * surfFade(${f(d.rustTile)}));` : ''}
-    ${eg ? 'normal = surfBump(normal, 1.0 - sCut, 0.0007 * eFade);' : ''}`;
+    ${eg && !enamel ? 'normal = surfBump(normal, 1.0 - sCut, 0.0007 * eFade);' : ''}`;
   return (shader: THREE.WebGLProgramParametersWithUniforms) => {
     shader.uniforms.uSurfMap = { value: MAP };
     shader.uniforms.uSurfTarnish = { value: TARNISH };
@@ -240,9 +276,9 @@ const shaderFor = (key: string, recipe: Recipe) => {
 };
 
 /** Props for a material that should carry surface detail (the age comes from the shared AGE uniform). */
-export function surface(kind: Recipe['kind'], engrave?: Engrave) {
-  const key = `surf-${kind}${engrave ? `-eng-${engrave.kind}${engrave.kind === 'face' ? engrave.radius : ''}` : ''}`;
-  const onBeforeCompile = shaderFor(key, { mapping: kind === 'blade' ? 'blade' : 'triplanar', kind, engrave });
+export function surface(kind: Recipe['kind'], engrave?: Engrave, wire?: Wire) {
+  const key = `surf-${kind}${engrave ? `-eng-${engrave.kind}${engrave.kind === 'face' ? `${engrave.radius}${engrave.enamel ?? ''}` : ''}` : ''}${wire ? `-wire-${wire}` : ''}`;
+  const onBeforeCompile = shaderFor(key, { mapping: kind === 'blade' ? 'blade' : 'triplanar', kind, engrave, wire });
   return { key, props: { onBeforeCompile, customProgramCacheKey: () => key } };
 }
 

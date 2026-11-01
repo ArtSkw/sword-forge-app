@@ -115,6 +115,7 @@ type CrossguardProps = {
   terminal: GuardTerminal;
   ecusson: boolean;
   rings: 0 | 1 | 2;
+  wire?: 'chequer' | 'lozenge' | 'bands';
   archetype: ArchetypeKey;
   style: GuardStyle;
   color: string;
@@ -151,12 +152,12 @@ function ecusson(): THREE.BufferGeometry {
   return geo;
 }
 
-export function Crossguard({ tone, engraved, archetype, style, terminal, ecusson: withEcusson, rings, color, emissive, emissiveIntensity, roughness, position }: CrossguardProps) {
+export function Crossguard({ tone, engraved, wire, archetype, style, terminal, ecusson: withEcusson, rings, color, emissive, emissiveIntensity, roughness, position }: CrossguardProps) {
   // Brass and bronze age to a brown-green patina, iron and steel to rust.
   const metal = tone === 'brass' || tone === 'bronze' ? 'copper' : 'iron';
   const fit = surface(metal);
   // An engraved guard carries a running scroll along the faces of its arms.
-  const bar = engraved ? surface(metal, { kind: 'guard' }) : fit;
+  const bar = engraved ? surface(metal, { kind: 'guard' }, wire) : wire ? surface(metal, undefined, wire) : fit;
   const def = useMemo(() => guardDef(style, archetype), [style, archetype]);
   const geo = useMemo(() => buildGuardGeometry(def, terminal), [def, terminal]);
   const end = armEnd(def, terminal);

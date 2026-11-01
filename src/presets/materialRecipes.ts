@@ -68,6 +68,12 @@ const HARDWARE_COLORS: Record<HardwareTone, Record<SwordCondition, string>> = {
     battleWorn: '#6F4A2B',
     ancient: '#5A3D27',
   },
+  gilt: {
+    pristine: '#D9B866',
+    used: '#CDAE62',
+    battleWorn: '#B39657',
+    ancient: '#8C7448',
+  },
   darkIron: {
     pristine: '#585450',
     used: '#4C4A46',
@@ -88,6 +94,7 @@ const HARDWARE_EMISSIVE: Record<HardwareTone, string> = {
   brass: '#B8925A',
   bronze: '#9B6A35',
   darkIron: '#000000',
+  gilt: '#C9A040',
 };
 
 const HARDWARE_EMISSIVE_INTENSITY: Record<HardwareTone, number> = {
@@ -95,6 +102,7 @@ const HARDWARE_EMISSIVE_INTENSITY: Record<HardwareTone, number> = {
   brass: 0.05,
   bronze: 0.035,
   darkIron: 0,
+  gilt: 0.04,
 };
 
 const GRIP_ROUGHNESS: Record<SwordCondition, number> = {

@@ -55,6 +55,7 @@ export function Sword() {
         <Blade spec={spec} color={materials.blade.color} steelFinish={steelFinish} age={age} />
       </group>
       <Crossguard
+        wire={config.archetype === 'vikingSword' ? config.guard.wire : undefined}
         {...hilt}
         engraved={config.guard.engraved}
         tone={config.finish.hardwareTone}
@@ -104,6 +105,8 @@ export function Sword() {
 {!messer && (
       <Pommel
         engraved={config.pommel.engraved}
+        enamel={config.pommel.enamel}
+        wire={config.archetype === 'vikingSword' ? config.guard.wire : undefined}
         tone={config.finish.hardwareTone}
         style={config.pommel.style}
         color={materials.hardware.color}

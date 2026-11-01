@@ -86,6 +86,14 @@ export const MESSER_CAPS: { id: MesserCap; name: string; era: string; years: [nu
   { id: 'beak', name: 'Bird’s beak', era: '15th–16th c.', years: [1400, 1600], note: 'A metal cap over the grip’s end, bent sideways into a beak toward the edge.' },
   { id: 'cylinder', name: 'Plain cap', era: 'c. 1500', years: [1480, 1530], note: 'A short, flat-topped metal cap over the grip’s end.' },
 ];
+// Viking wire inlay (research: viking-arming, Petersen H and V): wire hammered into fine furrows.
+export const WIRE_INLAYS: { id: 'none' | 'chequer' | 'lozenge' | 'bands'; name: string; note: string }[] = [
+  { id: 'none', name: 'None', note: '' },
+  { id: 'chequer', name: 'Chequer', note: 'Silver and copper wire hammered into fine furrows in a chequerboard, 24 wires to the centimetre (Finnish Heritage Agency KM 18402:1).' },
+  { id: 'lozenge', name: 'Lozenges', note: 'Silver and brass wire in a diamond pattern, 28 to the centimetre (KM 15175:1, Petersen type V).' },
+  { id: 'bands', name: 'Bands', note: 'Alternating bands of silver and copper wire across the guard.' },
+];
+export const ENAMEL_NOTE = 'The medallion’s cuts filled with coloured enamel, fired hard and polished flush (champlevé).';
 export const ECUSSON_NOTE = 'A small leaf-shaped plate at the centre of the cross, lying over the blade on both faces.';
 export const RING_CHOICES: { id: 0 | 1 | 2; name: string; note: string }[] = [
   { id: 0, name: 'None', note: '' },
@@ -120,6 +128,8 @@ export type Form = {
   cap?: MesserCap;
   inscription?: string;        // presets/inscriptions.ts
   mark?: string;
+  wire?: 'chequer' | 'lozenge' | 'bands';
+  enamel?: 'azure' | 'gules';
   ecusson?: boolean;
   rings?: 1 | 2;
 };
@@ -171,6 +181,7 @@ export const FITTINGS: { id: HardwareTone; name: string; swatch: string }[] = [
   { id: 'darkIron', name: 'Dark iron', swatch: 'radial-gradient(circle at 35% 30%, #8a857e, #3c3b38 60%, #1d1c1a)' },
   { id: 'steel', name: 'Steel', swatch: 'radial-gradient(circle at 35% 30%, #f2f4f6, #aeb2b1 55%, #5f6262)' },
   { id: 'bronze', name: 'Bronze', swatch: 'radial-gradient(circle at 35% 30%, #e7b47a, #9b6a35 55%, #4a2f16)' },
+  { id: 'gilt', name: 'Gilt', swatch: 'radial-gradient(circle at 35% 30%, #fff1b8, #d9b866 50%, #7a5a1e)' },
   { id: 'brass', name: 'Brass', swatch: 'radial-gradient(circle at 35% 30%, #f6dfa4, #b8925a 55%, #5e4524)' },
 ];
 // The sword's age is continuous; these are the named stops on the way (a slider in the Finish station).

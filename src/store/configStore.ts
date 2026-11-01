@@ -41,7 +41,9 @@ export type PommelStyle =
 // The four named stages of a sword's life, used for tables and labels; the sword itself carries a continuous age.
 export type SwordCondition = 'pristine' | 'used' | 'battleWorn' | 'ancient';
 export type SteelFinish = 'polished' | 'satin' | 'patternWelded';
-export type HardwareTone = 'steel' | 'brass' | 'bronze' | 'darkIron';
+export type HardwareTone = 'steel' | 'brass' | 'bronze' | 'darkIron' | 'gilt';
+// Viking wire inlay on the guards: silver and copper chequer, silver and brass lozenges, or bands.
+export type WireInlay = 'chequer' | 'lozenge' | 'bands';
 export type GripMaterial = 'leather' | 'wood' | 'cord' | 'wire';
 
 export interface SwordConfig {
@@ -53,10 +55,11 @@ export interface SwordConfig {
   // inscription / mark: ids from presets/inscriptions.ts; inlay overrides the inscription's own metal.
   blade: { length: BladeLength; width: BladeWidth; fuller: FullerStyle; profile?: string; shape?: BladeShape; section?: Section; ricasso?: 'none' | RicassoCover; flame?: boolean; inscription?: string; inlay?: 'iron' | 'latten' | 'silver'; mark?: string };
   // terminal / ecusson / rings: omitted = the guard style's own (see lib/hilt.ts).
-  guard: { style: GuardStyle; engraved?: boolean; terminal?: GuardTerminal; ecusson?: boolean; rings?: 1 | 2 };
+  guard: { style: GuardStyle; engraved?: boolean; terminal?: GuardTerminal; ecusson?: boolean; rings?: 1 | 2; wire?: WireInlay };
   // shape omitted = the type's own (GRIP_SHAPES); hilt 'messer' = riveted scales, Nagel and cap (falchion).
   grip: { length: GripLength; shape?: GripShape; hilt?: 'messer'; cap?: MesserCap };
-  pommel: { style: PommelStyle; engraved?: boolean };
+  // enamel: the engraved medallion's recesses filled with coloured enamel (champlevé).
+  pommel: { style: PommelStyle; engraved?: boolean; enamel?: 'azure' | 'gules' };
   finish: {
     age: number;              // 0 = from the forge … 1 = excavated (see AGE_STOPS)
     steelFinish: SteelFinish;

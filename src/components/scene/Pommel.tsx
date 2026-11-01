@@ -12,6 +12,8 @@ const ENGRAVE_RADIUS: Partial<Record<PommelStyle, number>> = { wheel: 0.0205, di
 type PommelProps = {
   tone: HardwareTone;
   engraved?: boolean;
+  enamel?: 'azure' | 'gules';
+  wire?: 'chequer' | 'lozenge' | 'bands';   // a Viking pommel's upper guard is inlaid like the guard
   style: PommelStyle;
   color: string;
   emissive: string;
@@ -20,13 +22,14 @@ type PommelProps = {
   position: [number, number, number];
 };
 
-export function Pommel({ tone, engraved, style, color, emissive, emissiveIntensity, roughness, position }: PommelProps) {
+export function Pommel({ tone, engraved, enamel, wire, style, color, emissive, emissiveIntensity, roughness, position }: PommelProps) {
   // Brass and bronze age to a brown-green patina, iron and steel to rust.
   const metal = tone === 'brass' || tone === 'bronze' ? 'copper' : 'iron';
   const fit = surface(metal);
   const form = POMMEL_FORM[style];
   const faceOn = form.axis === 'z';
-  const body = engraved && faceOn ? surface(metal, { kind: 'face', radius: ENGRAVE_RADIUS[style] ?? 0.019 }) : fit;
+  const viking = form.axis === 'viking';
+  const body = engraved && faceOn ? surface(metal, { kind: 'face', radius: ENGRAVE_RADIUS[style] ?? 0.019, enamel }) : viking && wire ? surface(metal, undefined, wire) : fit;
 
   const geo = useMemo(() => pommelGeometry(style), [style]);
   const peen = useMemo(() => (hasPeen(style) ? peenGeometry() : null), [style]);
