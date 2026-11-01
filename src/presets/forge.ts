@@ -142,32 +142,33 @@ export type Form = {
 
 // ── Variants with their notes ──────────────────────────────────────────────────
 // years: when the part was in use, for period-harmony notes (none = no historical model).
-type Variant<T extends string> = { id: T; name: string; era?: string; years?: [number, number]; note: string };
+// anchor / anchorUrl: the surviving object a part follows (shown as "After …" with a link in the inspector).
+type Variant<T extends string> = { id: T; name: string; era?: string; years?: [number, number]; note: string; anchor?: string; anchorUrl?: string };
 
 export const GUARDS: Variant<GuardStyle>[] = [
-  { id: 'vikingBar', name: 'Short bar', era: '8th–11th c.', years: [750, 1050], note: 'A short, heavy guard, elliptical in section with gently domed faces: 8 to 12 cm across.' },
+  { id: 'vikingBar', name: 'Short bar', era: '8th–11th c.', years: [750, 1050], note: 'A short, heavy guard, elliptical in section with gently domed faces: 8 to 12 cm across.', anchor: 'Finnish Heritage Agency KM 18402:1', anchorUrl: 'http://museovirasto.finna.fi/Record/museovirasto.FE4D68B51D0D5FEE17E1354056773CBA' },
   { id: 'vikingCurved', name: 'Curved bar', era: 'late 9th–11th c.', years: [870, 1100], note: 'A short guard curved toward the blade, as on the English and late Viking hilts.' },
   { id: 'longBar', name: 'Long cross', era: '10th–16th c.', years: [950, 1600], note: 'The knightly cross: a slim straight bar, 17 to 20 cm across.' },
-  { id: 'bowtie', name: 'Bow-tie', era: '12th–14th c.', years: [1150, 1350], note: 'A flat cross flaring toward its ends, like a bow tie.' },
-  { id: 'curvedDown', name: 'Curved cross', era: 'late 13th–15th c.', years: [1270, 1450], note: 'Slender arms curving toward the blade, often over a short, broad blade.' },
+  { id: 'bowtie', name: 'Bow-tie', era: '12th–14th c.', years: [1150, 1350], note: 'A flat cross flaring toward its ends, like a bow tie.', anchor: 'the Szczerbiec, Wawel', anchorUrl: 'https://en.wikipedia.org/wiki/Szczerbiec' },
+  { id: 'curvedDown', name: 'Curved cross', era: 'late 13th–15th c.', years: [1270, 1450], note: 'Slender arms curving toward the blade, often over a short, broad blade.', anchor: 'V&A M.53-1921', anchorUrl: 'https://collections.vam.ac.uk/item/O97444/' },
   { id: 'roundCross', name: 'Round cross', era: '15th–16th c.', years: [1400, 1550], note: 'A straight bar of round section ending in knobs, as on the English and Castillon crosses.' },
-  { id: 'recurved', name: 'S-recurved', era: 'c. 1400–1450', years: [1400, 1450], note: 'Seen from above, the arms bend opposite ways in a flat S.' },
-  { id: 'flatBroad', name: 'Broad flat', era: '15th–16th c.', years: [1400, 1600], note: 'A flat cross broadening toward its ends.' },
-  { id: 'arched', name: 'Arched', era: '13th–16th c.', years: [1240, 1600], note: 'A short cross arched hard toward the blade.' },
-  { id: 'longQuillons', name: 'Long quillons', era: '16th c.', years: [1500, 1600], note: 'The great two-hander’s quillons, half a metre across.' },
+  { id: 'recurved', name: 'S-recurved', era: 'c. 1400–1450', years: [1400, 1450], note: 'Seen from above, the arms bend opposite ways in a flat S.', anchor: 'the Met 2006.564', anchorUrl: 'https://www.metmuseum.org/art/collection/search/27966' },
+  { id: 'flatBroad', name: 'Broad flat', era: '15th–16th c.', years: [1400, 1600], note: 'A flat cross broadening toward its ends.', anchor: 'the Met 14.25.1196', anchorUrl: 'https://www.metmuseum.org/art/collection/search/35888' },
+  { id: 'arched', name: 'Arched', era: '13th–16th c.', years: [1240, 1600], note: 'A short cross arched hard toward the blade.', anchor: 'Kunsthistorisches Museum C 104', anchorUrl: 'https://www.khm.at/en/artworks/panzerstecher-373635-1' },
+  { id: 'longQuillons', name: 'Long quillons', era: '16th c.', years: [1500, 1600], note: 'The great two-hander’s quillons, half a metre across.', anchor: 'Cleveland Museum of Art 1919.70', anchorUrl: 'https://clevelandart.org/art/1919.70' },
   { id: 'scottish', name: 'Highland', era: 'c. 1500–1650', years: [1500, 1650], note: 'Quillons sloping forward toward the point and ending in quatrefoils: the Scottish two-hander.' },
 ];
 export const POMMELS: Variant<PommelStyle>[] = [
-  { id: 'brazilNut', name: 'Brazil nut', era: '10th–13th c.', years: [950, 1250], note: 'The common Viking counterweight, peened over the end of the tang.' },
+  { id: 'brazilNut', name: 'Brazil nut', era: '10th–13th c.', years: [950, 1250], note: 'The common Viking counterweight, peened over the end of the tang.', anchor: 'Portable Antiquities Scheme PUBLIC-4221F3', anchorUrl: 'https://finds.org.uk/database/artefacts/record/id/567833' },
   { id: 'disc', name: 'Disc', era: '10th–16th c.', years: [950, 1550], note: 'A flat disc. It weighs less, so the balance drifts toward the point.' },
-  { id: 'wheel', name: 'Wheel', era: '12th–15th c.', years: [1100, 1500], note: 'A disc with raised rims, the knightly pommel of the high Middle Ages.' },
+  { id: 'wheel', name: 'Wheel', era: '12th–15th c.', years: [1100, 1500], note: 'A disc with raised rims, the knightly pommel of the high Middle Ages.', anchor: 'the Met 14.25.1196', anchorUrl: 'https://www.metmuseum.org/art/collection/search/35888' },
   { id: 'scentStopper', name: 'Scent stopper', era: '14th–16th c.', years: [1350, 1600], note: 'Shaped like the stopper of a perfume bottle; popular in the late Middle Ages.' },
   { id: 'fishtail', name: 'Fishtail', era: '15th c.', years: [1400, 1500], note: 'A flared, faceted pommel of the late fifteenth century.' },
   { id: 'ornate', name: 'Ornate', era: '15th–16th c.', years: [1400, 1550], note: 'A grooved wheel with a decorative band.' },
-  { id: 'pyramid', name: 'Pyramid cap', era: 'c. 775–950', years: [775, 950], note: 'A small three-sided cap riveted to a wide, domed upper guard: the commonest Norwegian hilt.' },
-  { id: 'lobed5', name: 'Five-lobe', era: '9th–10th c.', years: [800, 1000], note: 'Five even lobes in a row over a short, square-ish upper guard: the Frankish hilt.' },
-  { id: 'writhen', name: 'Writhen', era: 'c. 1490–1530', years: [1490, 1530], note: 'A pear-shaped pommel cut with spiral flutes: the mark of a South German or Swiss sword of about 1500.' },
-  { id: 'lobed3', name: 'Three-lobe', era: 'late 9th–10th c.', years: [870, 1000], note: 'A great rounded central lobe between two smaller ones, over its own upper guard.' },
+  { id: 'pyramid', name: 'Pyramid cap', era: 'c. 775–950', years: [775, 950], note: 'A small three-sided cap riveted to a wide, domed upper guard: the commonest Norwegian hilt.', anchor: 'Finnish Heritage Agency KM 18402:1', anchorUrl: 'http://museovirasto.finna.fi/Record/museovirasto.FE4D68B51D0D5FEE17E1354056773CBA' },
+  { id: 'lobed5', name: 'Five-lobe', era: '9th–10th c.', years: [800, 1000], note: 'Five even lobes in a row over a short, square-ish upper guard: the Frankish hilt.', anchor: 'Wallace Collection A456', anchorUrl: 'https://artsandculture.google.com/asset/sword-detail-unknown/SgEJJIhsBWl9YA' },
+  { id: 'writhen', name: 'Writhen', era: 'c. 1490–1530', years: [1490, 1530], note: 'A pear-shaped pommel cut with spiral flutes: the mark of a South German or Swiss sword of about 1500.', anchor: 'Cleveland Museum of Art 1921.1253', anchorUrl: 'https://clevelandart.org/art/1921.1253' },
+  { id: 'lobed3', name: 'Three-lobe', era: 'late 9th–10th c.', years: [870, 1000], note: 'A great rounded central lobe between two smaller ones, over its own upper guard.', anchor: 'Portable Antiquities Scheme KENT-328AD5', anchorUrl: 'https://finds.org.uk/database/artefacts/record/id/237370' },
 ];
 export const GRIPS: Variant<GripMaterial>[] = [
   { id: 'wood', name: 'Wood', years: [700, 1600], note: 'Two halves of wood around the tang, planed and oiled; the grain shows.' },

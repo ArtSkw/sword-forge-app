@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AGE_STOPS, ageLabel } from '../../presets/forge';
-import { playTick } from '../../lib/audio';
+import { playStrike } from '../../lib/audio';
 
 // The sword's age as one continuous slider with four named stops. Dragging ages the whole sword live;
 // a stop's name glides to it; near a stop the thumb settles onto it. Keys: ←/→ fine steps,
@@ -19,15 +19,15 @@ export function AgeSlider({ value, onChange }: { value: number; onChange: (v: nu
   const [dragging, setDragging] = useState(false);
   useEffect(() => () => cancelAnimationFrame(glide.current), []);
 
-  // A tick each time the age passes a stop, whichever way it moves.
+  // One soft strike per change (on release, a stop's name, or a key), never one per frame of a drag.
   const set = (raw: number) => {
-    const v = clamp01(raw), prev = last.current;
-    if (AGE_STOPS.some((s) => (prev < s.at && v >= s.at) || (prev > s.at && v <= s.at))) playTick();
+    const v = clamp01(raw);
     last.current = v;
     onChange(v);
   };
   const glideTo = (target: number) => {
     cancelAnimationFrame(glide.current);
+    if (Math.abs(target - last.current) > 0.001) playStrike('soft');
     if (reduceMotion()) { set(target); return; }
     const from = last.current, t0 = performance.now(), ms = GLIDE_MS * Math.max(0.35, Math.abs(target - from));
     const frame = (now: number) => {
@@ -38,14 +38,15 @@ export function AgeSlider({ value, onChange }: { value: number; onChange: (v: nu
     glide.current = requestAnimationFrame(frame);
   };
   const atPointer = (x: number) => { const r = track.current!.getBoundingClientRect(); return clamp01((x - r.left) / r.width); };
-  const settle = (v: number) => { const near = AGE_STOPS.find((s) => Math.abs(s.at - v) < SNAP); if (near) glideTo(near.at); };
+  // Released: settle onto a nearby stop (its glide strikes), or strike where it was let go.
+  const settle = (v: number) => { const near = AGE_STOPS.find((s) => Math.abs(s.at - v) < SNAP); if (near && Math.abs(near.at - v) > 0.001) glideTo(near.at); else playStrike('soft'); };
 
   const onKey = (e: React.KeyboardEvent) => {
     const next = AGE_STOPS.find((s) => s.at > value + 0.001)?.at ?? 1, prev = [...AGE_STOPS].reverse().find((s) => s.at < value - 0.001)?.at ?? 0;
     const to = { ArrowRight: clamp01(value + STEP), ArrowLeft: clamp01(value - STEP), ArrowUp: next, PageUp: next, ArrowDown: prev, PageDown: prev, Home: 0, End: 1 }[e.key];
     if (to === undefined) return;
     e.preventDefault(); e.stopPropagation();
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { cancelAnimationFrame(glide.current); set(to); } else glideTo(to);
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { cancelAnimationFrame(glide.current); if (to !== value) playStrike('soft'); set(to); } else glideTo(to);
   };
 
   const label = ageLabel(value);

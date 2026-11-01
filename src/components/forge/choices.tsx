@@ -12,7 +12,7 @@ import { BladeSilhouette, CapSilhouette, GripSwatch, GuardSilhouette, PommelSilh
 // The choices offered at each station, as one model shared by the chooser, the inspector and the keyboard.
 
 // `off` explains why a part sits outside the Form's age (shown as a badge on its card).
-export type Choice = { id: string; name: string; era?: string; period: boolean; off: PeriodNote | null; selected: boolean; note: string; art: ReactNode; apply: () => void };
+export type Choice = { id: string; name: string; era?: string; period: boolean; off: PeriodNote | null; selected: boolean; note: string; anchor?: string; anchorUrl?: string; art: ReactNode; apply: () => void };
 export type OptionRow = { label: string; kind: 'dots' | 'chips' | 'list' | 'age'; value?: number; set?: (v: number) => void; items: { id: string; name: string; swatch?: string; selected: boolean; apply: () => void }[] };
 export type StationChoices = { cards: Choice[]; rows: OptionRow[]; note: string };
 

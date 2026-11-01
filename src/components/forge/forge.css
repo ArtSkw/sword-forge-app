@@ -114,6 +114,9 @@
 .forge .inspector h2 { margin: 6px 0 0; font: var(--type-subheading); letter-spacing: var(--track-heading); color: var(--gold-hi); }
 .forge .insp-era { display: block; margin-top: 2px; font: var(--type-meta); color: var(--gold); }
 .forge .insp-note { margin: 12px 0 14px; padding-top: 12px; border-top: 1px solid var(--gold-line); font: var(--type-body); color: var(--gold-text); text-wrap: pretty; }
+.forge .insp-after { margin: -6px 0 14px; font: var(--type-meta); color: var(--gold-dim); }
+.forge .insp-after a { color: var(--gold); text-decoration: underline; text-decoration-color: rgba(201, 169, 97, .35); text-underline-offset: 3px; transition: color 160ms, text-decoration-color 160ms; }
+.forge .insp-after a:hover { color: var(--gold-hi); text-decoration-color: var(--gold-hi); }
 .forge .insp-group { padding: 12px 0 14px; border-top: 1px solid var(--gold-line); }
 .forge .insp-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
 .forge .insp-row span { font: var(--type-label-sm); letter-spacing: var(--track-label-sm); color: var(--gold); }

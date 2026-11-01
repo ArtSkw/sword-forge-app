@@ -7,7 +7,7 @@ import { SWORD_TYPES, SWORD_TYPE_ORDER } from '../../presets/swordTypes';
 import { ARCHETYPE_ERA, STATIONS, ageLabel, type StationId } from '../../presets/forge';
 import { currentForm, formsOf, matchesForm } from '../../lib/forms';
 import { anchors, interaction, onAnchors } from '../../lib/anchors';
-import { audioState, playBellows, playCling, playHiss, playOneShot, playTick, type ClingParams } from '../../lib/audio';
+import { audioState, playCling, playStrike, type ClingParams, type StrikeVoice } from '../../lib/audio';
 import { takeScreenshot } from '../../lib/screenshot';
 import { useStationChoices, type Choice, type StationChoices } from './choices';
 import { HistoricalScroll } from './HistoricalScroll';
@@ -15,7 +15,7 @@ import { AgeSlider } from './AgeSlider';
 
 const ageName = (age: number) => { const l = ageLabel(age); return l.between ? `${l.between[0]} → ${l.between[1]}` : l.stop.name; };
 const BASE = import.meta.env.BASE_URL;
-const ANVIL = `${BASE}sounds/anvil.wav`, CLING = `${BASE}sounds/sword-cling.mp3`;
+const CLING = `${BASE}sounds/sword-cling.mp3`;
 // Subtle per-sword colouring of the same cling: pitch within ±3%, gentle filtering.
 const CLING_PARAMS: Record<ArchetypeKey, ClingParams> = {
   armingSword: { playbackRate: 1.00, filterType: 'peaking', filterFreq: 4000, volume: 0.40 },
@@ -43,7 +43,14 @@ const ICONS = {
 // True while the forge moves keyboard focus itself (focusin fires synchronously inside focus()).
 let autoFocusing = false;
 
-function forgeSound() { playTick(); setTimeout(() => playOneShot(ANVIL, 0.32), 60); setTimeout(() => playHiss(), 420); }
+// One strike per change, voiced by the station (and, in the grip, by its material).
+function strikeFor(station: StationId | null, material?: string): StrikeVoice {
+  if (station === 'grip') return material === 'wood' ? 'wood' : material === 'wire' ? 'fitting' : 'leather';
+  if (station === 'guard' || station === 'pommel') return 'fitting';
+  if (station === 'finish') return 'soft';
+  return 'steel';
+}
+const forgeSound = (voice: StrikeVoice = 'steel') => playStrike(voice);
 
 // ── Tooltips: styled, delayed, shared by every element with data-tip ──────────
 // Usage: data-tip="Title" (+ optional data-tip-body="One line"). Shows above the element, or below it near the top edge.
@@ -160,7 +167,7 @@ function Chooser({ station, choices }: { station: StationId; choices: StationCho
     { duration: view.flip ? 240 : 380, delay: (view.flip ? 0 : 140) + k * 30, easing: 'cubic-bezier(.2,.85,.25,1.04)', fill: 'backwards' }));
   }, [view]);
 
-  const toggle = (on: boolean) => { setView({ rest: on, flip: true }); playTick(); };
+  const toggle = (on: boolean) => setView({ rest: on, flip: true });   // navigation: silent
   return (
     <div className="chooser" ref={rowRef}>
       {items.map((it) => {
@@ -177,7 +184,7 @@ function Chooser({ station, choices }: { station: StationId; choices: StationCho
           </button>
         );
         return (
-          <button key={it.id} className="item" aria-pressed={it.selected} data-tip={it.name} data-tip-body={it.note} onClick={() => { if (!it.selected) { it.apply(); forgeSound(); } }}>
+          <button key={it.id} className="item" aria-pressed={it.selected} data-tip={it.name} data-tip-body={it.note} onClick={() => { if (!it.selected) { it.apply(); forgeSound(strikeFor(station, station === 'grip' ? it.id : undefined)); } }}>
             <div className="card glass">
               {it.art}
               {it.off && <span className="badge" data-tip={it.off.title} data-tip-body={it.off.body} aria-hidden="true">{ICONS.info}</span>}
@@ -203,14 +210,15 @@ function Inspector({ station, choices }: { station: StationId; choices: StationC
         {sel?.era && <span className="insp-era">{sel.era}</span>}
       </div>
       <p className="insp-note">{choices.note}</p>
+      {sel?.anchor && <p className="insp-after">After {sel.anchorUrl ? <a href={sel.anchorUrl} target="_blank" rel="noreferrer">{sel.anchor}</a> : sel.anchor}</p>}
       {choices.rows.map((row) => (
         <section key={row.label} className="insp-group">
           <div className="insp-row"><span>{row.label}</span><b>{row.kind === 'age' ? ageName(row.value ?? 0) : row.items.find((x) => x.selected)?.name}</b></div>
           {row.kind === 'age' && row.set && <AgeSlider value={row.value ?? 0} onChange={row.set} />}
           {row.kind !== 'age' && <div className={row.kind === 'dots' ? 'insp-swatches' : row.kind === 'list' ? 'insp-seg insp-list' : 'insp-seg'}>
             {row.items.map((it) => row.kind === 'dots'
-              ? <button key={it.id} className="dot" aria-label={it.name} aria-pressed={it.selected} data-tip={it.name} style={{ background: it.swatch }} onClick={() => { if (!it.selected) { it.apply(); playTick(); } }} />
-              : <button key={it.id} className="seg" aria-pressed={it.selected} onClick={() => { if (!it.selected) { it.apply(); forgeSound(); } }}>{it.name}</button>)}
+              ? <button key={it.id} className="dot" aria-label={it.name} aria-pressed={it.selected} data-tip={it.name} style={{ background: it.swatch }} onClick={() => { if (!it.selected) { it.apply(); forgeSound(strikeFor(station, useConfigStore.getState().config.finish.gripMaterial)); } }} />
+              : <button key={it.id} className="seg" aria-pressed={it.selected} onClick={() => { if (!it.selected) { it.apply(); forgeSound(strikeFor(station)); } }}>{it.name}</button>)}
           </div>}
         </section>
       ))}
@@ -294,7 +302,7 @@ function ResetButton() {
     return () => clearTimeout(t);
   }, [beforeReset]);
   if (beforeReset) return (
-    <button className="btn icon" aria-label="Undo reset" data-tip="Undo" data-tip-body="Bring back the sword as it was" onClick={() => { undoReset(); playTick(); }}>{ICONS.undo}</button>
+    <button className="btn icon" aria-label="Undo reset" data-tip="Undo" data-tip-body="Bring back the sword as it was" onClick={() => { undoReset(); forgeSound(); }}>{ICONS.undo}</button>
   );
   return (
     <button className="btn icon" aria-label="Back to default" aria-disabled={atDefault} data-tip="Back to default" data-tip-body={atDefault ? 'This sword is as it first opens' : 'Return this sword type to how it first opens'}
@@ -336,7 +344,7 @@ export function ForgeUI() {
   const [muted, setMuted] = useState(audioState.muted);
   useEffect(() => { const off = audioState.subscribe(setMuted); return () => { off(); }; }, []);
 
-  const open = (id: StationId | null) => { if (id && id !== station) playBellows(); setStation(id); };
+  const open = (id: StationId | null) => setStation(id);   // moving between parts is silent
   const step = (d: number) => {
     const i = station ? STATIONS.findIndex((s) => s.id === station) : -1;
     open(STATIONS[(i + d + STATIONS.length) % STATIONS.length].id);
@@ -381,7 +389,7 @@ export function ForgeUI() {
       if ((e.key === 'ArrowRight' || e.key === 'ArrowLeft') && !L.reading) L.step(e.key === 'ArrowRight' ? 1 : -1);
       else if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && L.station && L.choices) {
         const list = L.choices.cards, i = list.findIndex((c) => c.selected), n = list[(i + (e.key === 'ArrowDown' ? 1 : -1) + list.length) % list.length];
-        e.preventDefault(); if (n && !n.selected) { n.apply(); forgeSound(); }
+        e.preventDefault(); if (n && !n.selected) { n.apply(); forgeSound(strikeFor(L.station, L.station === 'grip' ? n.id : undefined)); }
       } else if (e.key.toLowerCase() === 'h') L.setReading(!L.reading);
     };
     addEventListener('keydown', onKey);

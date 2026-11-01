@@ -145,7 +145,7 @@ export function makeAudioLayer(src: string, target: number, delayMs: number): ()
   };
 }
 
-// --- Procedural UI sounds (no extra assets): tick, bellows breath, paper rustle, quench hiss ---
+// --- Procedural UI sound (no extra asset): the paper rustle of the historical account ---
 
 async function noiseBurst(dur: number, type: BiquadFilterType, f0: number, f1: number, gain: number, wobbleHz = 0) {
   if (_muted) return;
@@ -163,16 +163,26 @@ async function noiseBurst(dur: number, type: BiquadFilterType, f0: number, f1: n
   } catch { /* audio unavailable: stay silent */ }
 }
 
-export async function playTick(freq = 1500, gain = 0.05) {
-  if (_muted) return;
-  try {
-    const ctx = await getCtx();
-    const t = ctx.currentTime, osc = ctx.createOscillator(), g = ctx.createGain();
-    osc.frequency.value = freq;
-    g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
-    osc.connect(g).connect(ctx.destination); osc.start(t); osc.stop(t + 0.06);
-  } catch { /* audio unavailable */ }
-}
-export const playBellows = () => noiseBurst(0.35, 'lowpass', 600, 200, 0.05);
 export const playPaper = () => noiseBurst(0.65, 'bandpass', 2600, 1200, 0.06, 18);
-export const playHiss = () => noiseBurst(0.7, 'highpass', 3000, 6000, 0.045);
+
+// --- The forge strike: one sound for every change to the sword ---
+// The same anvil sample, played once, voiced by what was changed: steel rings bright, fittings a little
+// lower, wood knocks, leather and cord thud. Small random variation keeps repeated changes alive.
+const STRIKE_SRC = `${import.meta.env.BASE_URL}sounds/anvil.wav`;
+export type StrikeVoice = 'steel' | 'fitting' | 'wood' | 'leather' | 'soft';
+const VOICES: Record<StrikeVoice, ClingParams> = {
+  steel: { playbackRate: 1.06, filterType: 'peaking', filterFreq: 4200, volume: 0.34 },
+  fitting: { playbackRate: 0.94, filterType: 'peaking', filterFreq: 2800, volume: 0.32 },
+  wood: { playbackRate: 0.82, filterType: 'lowpass', filterFreq: 2400, volume: 0.36 },
+  leather: { playbackRate: 0.74, filterType: 'lowpass', filterFreq: 1300, volume: 0.4 },
+  soft: { playbackRate: 0.9, filterType: 'lowpass', filterFreq: 3200, volume: 0.2 },
+};
+let lastStrike = 0;
+export function playStrike(voice: StrikeVoice = 'steel') {
+  // Never two strikes on top of each other (a burst of key presses rings once).
+  const now = performance.now();
+  if (now - lastStrike < 70) return;
+  lastStrike = now;
+  const v = VOICES[voice];
+  playCling(STRIKE_SRC, { ...v, playbackRate: v.playbackRate * (0.97 + Math.random() * 0.06) });
+}

@@ -14,6 +14,7 @@ import { Grip } from './Grip';
 import { HiltDetails } from './HiltDetails';
 import { Pommel } from './Pommel';
 import { MesserHilt } from './MesserHilt';
+import { Beat } from './Beat';
 
 export function Sword() {
   const config = useConfigStore((s) => s.config);
@@ -36,8 +37,11 @@ export function Sword() {
     <group>
       {/* A single-edged blade turns its edge to face the same way as the curved guards and the swell. */}
       <group position={[0, bladeY, 0]} rotation={[0, spec.singleEdged ? Math.PI : 0, 0]}>
-        <Blade spec={spec} color={materials.blade.color} steelFinish={steelFinish} age={age} />
+        <Beat scope={config.archetype} k={`${config.blade.profile}|${spec.section}|${spec.ricasso?.cover ?? ''}|${spec.flame}`} from={[0, -0.06, 0]}>
+          <Blade spec={spec} color={materials.blade.color} steelFinish={steelFinish} age={age} />
+        </Beat>
       </group>
+      <Beat scope={config.archetype} k={`${config.guard.style}|${hilt.terminal}|${hilt.rings}|${hilt.ecusson}`} from={[0, 0.045, 0]}>
       <Crossguard
         cm={config.guard.cm}
         wire={config.archetype === 'vikingSword' ? config.guard.wire : undefined}
@@ -52,6 +56,7 @@ export function Sword() {
         roughness={materials.hardware.roughness}
         position={[0, guardY, 0]}
       />
+      </Beat>
       <HiltDetails
         ferrules={!messer}
         tone={config.finish.hardwareTone}
@@ -76,6 +81,7 @@ export function Sword() {
           metal={gripMetal}
         />
       ) : (
+      <Beat scope={config.archetype} k={`${config.finish.gripMaterial}|${config.grip.shape ?? ''}`} from={[0, -0.03, 0]}>
       <Grip
         archetype={config.archetype}
         length={gripLen}
@@ -86,8 +92,10 @@ export function Sword() {
         metal={gripMetal}
         position={[0, gripY, 0]}
       />
+      </Beat>
       )}
 {!messer && (
+      <Beat scope={config.archetype} k={config.pommel.style} from={[0, -0.04, 0]} spin={Math.PI * 0.9}>
       <Pommel
         engraved={config.pommel.engraved}
         scale={POMMEL_SCALE[config.archetype] ?? 1}
@@ -101,6 +109,7 @@ export function Sword() {
         roughness={materials.hardware.roughness}
         position={[0, pommelY, 0]}
       />
+      </Beat>
       )}
     </group>
   );
