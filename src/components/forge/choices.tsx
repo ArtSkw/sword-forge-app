@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { useConfigStore } from '../../store/configStore';
 import { SWORD_TYPES } from '../../presets/swordTypes';
-import { ageLabel, DYES, ECUSSON_NOTE, RING_CHOICES, TERMINALS, EDGE_CHOICES, FITTINGS, GRIPS, GUARDS, POMMELS, RICASSO_CHOICES, SECTIONS, SECTION_CHOICES, STEELS, type StationId } from '../../presets/forge';
+import { ageLabel, DEFAULT_GRIP_SHAPE, DYES, GRIP_SHAPES, GRIP_SHAPE_OFFERED, ECUSSON_NOTE, RING_CHOICES, TERMINALS, EDGE_CHOICES, FITTINGS, GRIPS, GUARDS, POMMELS, RICASSO_CHOICES, SECTIONS, SECTION_CHOICES, STEELS, type StationId } from '../../presets/forge';
 import { currentForm, currentProfile, overlaps, periodNote, profileBlade, profilesOf, type PeriodNote } from '../../lib/forms';
 import { bladeSpec, profileSpec } from '../../lib/bladeSpec';
 import { POMMEL_FORM } from '../../presets/pommelProfiles';
@@ -81,8 +81,14 @@ export function useStationChoices(station: StationId | null): StationChoices | n
   }
   if (station === 'grip') {
     cards = GRIPS.map((g) => ({ ...g, period: ofForm(g, form?.grip), off: off(g, form?.grip), selected: config.finish.gripMaterial === g.id, art: <GripSwatch material={g.id} color={config.finish.gripColor} />, apply: () => update('finish', { gripMaterial: g.id }) }));
+    if (GRIP_SHAPE_OFFERED.includes(arch)) {
+      const own = DEFAULT_GRIP_SHAPE[arch], cur = config.grip.shape ?? own;
+      rows.push({ label: 'Shape', kind: 'chips', items: GRIP_SHAPES.map((g) => ({ id: g.id, name: g.name, selected: cur === g.id, apply: () => update('grip', { shape: g.id === own ? undefined : g.id }) })) });
+      extraNote = GRIP_SHAPES.find((g) => g.id === cur)?.note ?? '';
+    }
     const natural = preset.defaults.finish.gripColor.toLowerCase(), current = config.finish.gripColor.toLowerCase();
-    rows.push({ label: 'Dye', kind: 'dots', items: DYES.map((d) => ({ id: d.id, name: d.name, swatch: d.color ?? natural, selected: (d.color ?? natural).toLowerCase() === current, apply: () => update('finish', { gripColor: d.color ?? preset.defaults.finish.gripColor }) })) });
+    // Only leather and cord take a dye: wood shows its grain, wire is metal.
+    if (config.finish.gripMaterial === 'leather' || config.finish.gripMaterial === 'cord') rows.push({ label: 'Dye', kind: 'dots', items: DYES.map((d) => ({ id: d.id, name: d.name, swatch: d.color ?? natural, selected: (d.color ?? natural).toLowerCase() === current, apply: () => update('finish', { gripColor: d.color ?? preset.defaults.finish.gripColor }) })) });
   }
   if (station === 'finish') {
     cards = STEELS.map((s) => ({ ...s, period: ofForm(s, form?.steel), off: off(s, form?.steel), selected: config.finish.steelFinish === s.id, art: <SteelSwatch finish={s.id} />, apply: () => update('finish', { steelFinish: s.id }) }));

@@ -5,6 +5,7 @@ import { getSwordMaterialRecipes } from '../../presets/materialRecipes';
 import { Blade } from './Blade';
 import { bladeSpec } from '../../lib/bladeSpec';
 import { hiltSpec } from '../../lib/hilt';
+import { DEFAULT_GRIP_SHAPE } from '../../presets/forge';
 import { setSurfaceAge } from './surface';
 import { Crossguard } from './Crossguard';
 import { Grip } from './Grip';
@@ -60,11 +61,11 @@ export function Sword() {
       <Grip
         archetype={config.archetype}
         length={config.grip.length}
+        shape={config.grip.shape ?? DEFAULT_GRIP_SHAPE[config.archetype]}
         material={materials.grip.material}
         color={materials.grip.color}
-        metalness={materials.grip.metalness}
-        normalScale={materials.grip.normalScale}
         roughness={materials.grip.roughness}
+        metal={{ color: materials.hardware.color, roughness: materials.hardware.roughness, tone: config.finish.hardwareTone === 'brass' || config.finish.hardwareTone === 'bronze' ? 'copper' : 'iron' }}
         position={[0, gripY, 0]}
       />
       <Pommel

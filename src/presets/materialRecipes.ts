@@ -216,7 +216,8 @@ export function getSwordMaterialRecipes(finish: SwordConfig['finish']): SwordMat
     },
     grip: {
       material: gripMaterial,
-      color: shadeHex(gripColor, atAge(GRIP_FINISH_SHADE, age) * gripRecipe.colorFactor),
+      // Wood shows its own grain (a white tint that darkens with age); leather and cord take the dye.
+      color: gripMaterial === 'wood' ? shadeHex('#c9ab8a', atAge(GRIP_FINISH_SHADE, age)) : shadeHex(gripColor, atAge(GRIP_FINISH_SHADE, age) * gripRecipe.colorFactor),
       metalness: gripRecipe.metalness,
       roughness: clamp(atAge(GRIP_ROUGHNESS, age) + gripRecipe.roughnessOffset, 0.18, 0.98),
       normalScale: gripRecipe.normalScale,

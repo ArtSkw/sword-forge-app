@@ -1,5 +1,5 @@
 import type {
-  ArchetypeKey, BladeLength, BladeWidth, FullerStyle, GripMaterial, GuardStyle, GuardTerminal,
+  ArchetypeKey, BladeLength, BladeWidth, FullerStyle, GripMaterial, GripShape, GuardStyle, GuardTerminal,
   HardwareTone, PommelStyle, SteelFinish, SwordCondition,
 } from '../store/configStore';
 import type { Section } from './bladeSections';
@@ -69,6 +69,17 @@ export const TERMINALS: { id: GuardTerminal; name: string; note: string }[] = [
   { id: 'hooked', name: 'Hooked', note: 'The tips turn sharply toward the blade, as on an early fifteenth-century French cross.' },
   { id: 'quatrefoil', name: 'Quatrefoil', note: 'Each arm ends in a flat four-lobed plate.' },
 ];
+// Grip shapes and the shape each type has by default (research: long-bastard-great).
+export const GRIP_SHAPES: { id: GripShape; name: string; note: string }[] = [
+  { id: 'straight', name: 'Straight', note: 'An even grip, the same thickness all along.' },
+  { id: 'swell', name: 'Swelling', note: 'A gentle swell in the middle fills the hand.' },
+  { id: 'waisted', name: 'Waisted', note: 'Narrow in the middle and swelling toward each hand: the late fifteenth-century hand-and-a-half grip.' },
+  { id: 'twoStage', name: 'Two-stage', note: 'Two grips in one, parted by a raised moulding: a place for each hand on a great two-hander.' },
+];
+export const DEFAULT_GRIP_SHAPE: Record<ArchetypeKey, GripShape> = {
+  armingSword: 'swell', longsword: 'swell', bastardSword: 'waisted', vikingSword: 'straight', falchion: 'swell', estoc: 'straight', greatsword: 'twoStage',
+};
+export const GRIP_SHAPE_OFFERED: ArchetypeKey[] = ['longsword', 'bastardSword', 'estoc', 'greatsword'];
 export const ECUSSON_NOTE = 'A small leaf-shaped plate at the centre of the cross, lying over the blade on both faces.';
 export const RING_CHOICES: { id: 0 | 1 | 2; name: string; note: string }[] = [
   { id: 0, name: 'None', note: '' },
@@ -129,10 +140,10 @@ export const POMMELS: Variant<PommelStyle>[] = [
   { id: 'lobed3', name: 'Three-lobe', era: 'late 9th–10th c.', years: [870, 1000], note: 'A great rounded central lobe between two smaller ones, over its own upper guard.' },
 ];
 export const GRIPS: Variant<GripMaterial>[] = [
-  { id: 'wood', name: 'Wood', years: [700, 1600], note: 'Two halves of wood around the tang, bound tight.' },
-  { id: 'leather', name: 'Leather', years: [700, 1600], note: 'Leather over a wooden core. It darkens with handling.' },
-  { id: 'cord', name: 'Cord', years: [1100, 1600], note: 'Cord under the leather gives a ridged, sure grip.' },
-  { id: 'wire', name: 'Wire', era: '12th–16th c.', years: [1150, 1600], note: 'Twisted wire, hard-wearing and bright.' },
+  { id: 'wood', name: 'Wood', years: [700, 1600], note: 'Two halves of wood around the tang, planed and oiled; the grain shows.' },
+  { id: 'leather', name: 'Leather', years: [700, 1600], note: 'A leather strip wound in a spiral over a wooden core. It darkens with handling.' },
+  { id: 'cord', name: 'Cord', years: [1100, 1600], note: 'Tight turns of cord over the core: a ridged, sure grip.' },
+  { id: 'wire', name: 'Wire', era: '12th–16th c.', years: [1150, 1600], note: 'Twisted wire wound in tight turns, in the same metal as the fittings.' },
 ];
 export const STEELS: Variant<SteelFinish>[] = [
   { id: 'satin', name: 'Satin', years: [700, 1600], note: 'A plain hand polish, the everyday finish.' },
