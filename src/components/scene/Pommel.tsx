@@ -47,7 +47,7 @@ export function Pommel({ tone, engraved, style, color, emissive, emissiveIntensi
 
   const gemColor = gemstone !== 'none' ? GEM_COLORS[gemstone] : null;
   // A face-on pommel shows its gem in the face's centre; a turned one in its end cap.
-  const faceDepth = faceOn ? Math.max(...POMMEL_PROFILES[style].map(([, z]) => z)) : 0;
+  const faceDepth = faceOn ? Math.max(...(POMMEL_PROFILES[style] ?? []).map(([, z]) => z)) : 0;
   const metalProps = { color, metalness: 1, emissive, emissiveIntensity };
 
   return (

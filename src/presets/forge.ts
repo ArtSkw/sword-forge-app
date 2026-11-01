@@ -105,6 +105,9 @@ export const POMMELS: Variant<PommelStyle>[] = [
   { id: 'fishtail', name: 'Fishtail', era: '15th c.', years: [1400, 1500], note: 'A flared, faceted pommel of the late fifteenth century.' },
   { id: 'ornate', name: 'Ornate', era: '15th–16th c.', years: [1400, 1550], note: 'A grooved wheel with a decorative band.' },
   { id: 'fantasy', name: 'Fantastic', era: 'Fantasy', note: 'An angular pommel with a sharp point and a flared crown.' },
+  { id: 'pyramid', name: 'Pyramid cap', era: 'c. 775–950', years: [775, 950], note: 'A small three-sided cap riveted to a wide, domed upper guard: the commonest Norwegian hilt.' },
+  { id: 'lobed5', name: 'Five-lobe', era: '9th–10th c.', years: [800, 1000], note: 'Five even lobes in a row over a short, square-ish upper guard: the Frankish hilt.' },
+  { id: 'lobed3', name: 'Three-lobe', era: 'late 9th–10th c.', years: [870, 1000], note: 'A great rounded central lobe between two smaller ones, over its own upper guard.' },
 ];
 export const GRIPS: Variant<GripMaterial>[] = [
   { id: 'wood', name: 'Wood', years: [700, 1600], note: 'Two halves of wood around the tang, bound tight.' },

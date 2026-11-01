@@ -9,7 +9,8 @@ import { bladeSpec, halfWidths } from './bladeSpec';
 const WIDTH_PER_HALF = 2.8 / 0.014 / 2;   // cm of real blade width per metre of model half-width (narrow = 2.8 cm)
 const FULLER_CUT = { none: 0, single: 0.12, double: 0.15, decorative: 0.1 } as const;
 const GUARD_G = { straight: 160, curved: 150, ornate: 175, fantasy: 220 } as const;
-const POMMEL_G = { brazilNut: 260, disc: 190, wheel: 230, scentStopper: 210, fishtail: 245, ornate: 250, fantasy: 230 } as const;
+// Viking pommels include their upper guard.
+const POMMEL_G = { brazilNut: 260, disc: 190, wheel: 230, scentStopper: 210, fishtail: 245, ornate: 250, fantasy: 230, pyramid: 230, lobed3: 310, lobed5: 260 } as const;
 const GRIP_G = { wood: 45, leather: 55, cord: 60, wire: 90 } as const;
 const STEEL = 7.85; // g/cm³
 

@@ -1,7 +1,7 @@
 import type { ArchetypeKey, GripMaterial, GuardStyle, PommelStyle, SteelFinish } from '../../store/configStore';
 import { getGuardParams } from '../../presets/guardShapes';
 import { getGuardTerminalRecipe } from '../../presets/archetypeDetails';
-import { BRAZIL_NUT, FISHTAIL_OUTLINE, POMMEL_FORM, POMMEL_PROFILES } from '../../presets/pommelProfiles';
+import { BRAZIL_NUT, FISHTAIL_OUTLINE, POMMEL_FORM, POMMEL_PROFILES, VIKING_POMMELS } from '../../presets/pommelProfiles';
 import type { BladeProfile } from '../../presets/forge';
 import { RICASSO, halfWidths, profileSpec } from '../../lib/bladeSpec';
 import { takesFuller } from '../../presets/bladeSections';
@@ -35,9 +35,21 @@ export function GuardSilhouette({ archetype, style }: { archetype: ArchetypeKey;
 }
 
 export function PommelSilhouette({ style }: { style: PommelStyle }) {
-  const prof = POMMEL_PROFILES[style], sc = 680, cx = 32, cy = 38;
-  // Flat and shaped pommels: their front outline, from the same data as the 3D solid.
+  const prof = POMMEL_PROFILES[style] ?? [], sc = 680, cx = 32, cy = 38;
   const form = POMMEL_FORM[style].axis;
+  // Viking hilts: the upper guard bar with the crown beneath it.
+  if (form === 'viking') {
+    const v = VIKING_POMMELS[style as keyof typeof VIKING_POMMELS], k = 640, top = 14, gh = v.upper.halfHeight * 2 * k;
+    const crown = v.crown.map(([x, y]): [number, number] => [cx + x * k, top + gh + -y * k]);
+    return (
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d={`M32 2 V${top}`} {...STROKE} strokeWidth={3.2} opacity={0.45} />
+        <rect x={cx - v.upper.halfWidth * k} y={top} width={v.upper.halfWidth * 2 * k} height={gh} rx={gh / 2} {...STROKE} fill="currentColor" fillOpacity={0.18} />
+        <polygon points={pts(crown)} {...STROKE} fill="currentColor" fillOpacity={0.14} />
+      </svg>
+    );
+  }
+  // Flat and shaped pommels: their front outline, from the same data as the 3D solid.
   if (form === 'solid' || form === 'plate') {
     const k = 780, c = 34;
     const outline: [number, number][] = form === 'plate'

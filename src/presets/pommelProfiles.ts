@@ -14,6 +14,9 @@ export const POMMEL_HALF_HEIGHTS: Record<PommelStyle, number> = {
   fishtail:     0.022,
   ornate:       0.027,
   fantasy:      0.026,
+  pyramid:      0.0245,  // upper guard + crown (see VIKING_POMMELS)
+  lobed3:       0.0275,
+  lobed5:       0.0205,
 };
 
 // Y coordinate of the bottom surface at center (r=0) for each pommel profile.
@@ -26,6 +29,9 @@ export const POMMEL_GEM_BOTTOM_Y: Record<PommelStyle, number> = {
   fishtail:     -0.022,
   ornate:       -0.020,
   fantasy:      -0.026,
+  pyramid:      -0.0245,
+  lobed3:       -0.0275,
+  lobed5:       -0.0205,
 };
 
 export type ProfilePoint2 = readonly [number, number];
@@ -34,7 +40,7 @@ export type ProfilePoint2 = readonly [number, number];
 // 'z': turned around the axis through the blade's flat, so a wheel or disc faces you as on the originals,
 // and the profile's second value is depth, not height. `flatten` squeezes a 'y' solid front to back
 // (a brazil nut and a fishtail are flat, not round).
-export const POMMEL_FORM: Record<PommelStyle, { axis: 'y' | 'z' | 'solid' | 'plate'; flatten?: number }> = {
+export const POMMEL_FORM: Record<PommelStyle, { axis: 'y' | 'z' | 'solid' | 'plate' | 'viking'; flatten?: number }> = {
   wheel: { axis: 'z' },
   disc: { axis: 'z' },
   ornate: { axis: 'z' },
@@ -42,6 +48,45 @@ export const POMMEL_FORM: Record<PommelStyle, { axis: 'y' | 'z' | 'solid' | 'pla
   fantasy: { axis: 'y' },
   brazilNut: { axis: 'solid' },   // a shaped solid (BRAZIL_NUT), not a turned one
   fishtail: { axis: 'plate' },    // a flat, bevelled plate (FISHTAIL_OUTLINE)
+  pyramid: { axis: 'viking' },     // upper guard + crown (VIKING_POMMELS)
+  lobed3: { axis: 'viking' },
+  lobed5: { axis: 'viking' },
+};
+
+// Viking hilts (Petersen): an upper guard (a rounded bar, grip side) with the pommel's crown riveted
+// beneath it. Measures from the research: type H upper guard 8.5 cm, guard + cap 4.9 cm tall (FHA KM
+// 18402:1); type S pommel 78.8 × 39.9 × 36.5 mm (PAS KENT-328AD5); type K a short square-ish bar under
+// five even lobes (Wallace A456). The crown is a front outline, top edge at y = 0, extruded with a bevel.
+type Lobe = { x: number; y: number; r: number };
+const lobedOutline = (halfWidth: number, lobes: Lobe[]): ProfilePoint2[] => {
+  const pts: ProfilePoint2[] = [[-halfWidth, 0], [halfWidth, 0]];
+  for (let i = 0; i <= 120; i++) {
+    const x = halfWidth - (i / 120) * 2 * halfWidth;
+    const y = Math.min(0, ...lobes.filter((l) => Math.abs(x - l.x) < l.r).map((l) => l.y - Math.sqrt(l.r * l.r - (x - l.x) ** 2)));
+    pts.push([x, y]);
+  }
+  return pts;
+};
+export type VikingPommel = { upper: { halfWidth: number; halfHeight: number; halfDepth: number }; crown: ProfilePoint2[]; depth: number; bevel: number; bevelSize: number };
+export const VIKING_POMMELS: Record<'pyramid' | 'lobed3' | 'lobed5', VikingPommel> = {
+  // Type H/I: a small three-sided cap on a wide, domed upper guard.
+  pyramid: {
+    upper: { halfWidth: 0.0425, halfHeight: 0.0078, halfDepth: 0.0135 },
+    crown: (() => { const pts: ProfilePoint2[] = [[-0.026, 0], [0.026, 0]]; for (let i = 0; i <= 16; i++) { const t = i / 16, u = 1 - t; pts.push([u * u * 0.026 + t * t * -0.026, u * u * -0.001 + 2 * u * t * -0.06 + t * t * -0.001]); } return pts.slice(0, -1); })(),
+    depth: 0.004, bevel: 0.0068, bevelSize: 0.0042,
+  },
+  // Type S: a great sub-spherical central lobe between two smaller ones.
+  lobed3: {
+    upper: { halfWidth: 0.04, halfHeight: 0.0072, halfDepth: 0.0165 },
+    crown: lobedOutline(0.035, [{ x: 0, y: -0.019, r: 0.0195 }, { x: -0.025, y: -0.007, r: 0.0105 }, { x: 0.025, y: -0.007, r: 0.0105 }]),
+    depth: 0.014, bevel: 0.0085, bevelSize: 0.0035,
+  },
+  // Type K: five even lobes in a row over a short, square-ish bar.
+  lobed5: {
+    upper: { halfWidth: 0.0315, halfHeight: 0.0072, halfDepth: 0.0105 },
+    crown: lobedOutline(0.03, [-0.024, -0.012, 0, 0.012, 0.024].map((x, i) => ({ x, y: -0.0082 - (i === 2 ? 0.003 : i === 1 || i === 3 ? 0.0015 : 0), r: i === 2 ? 0.0074 : 0.0066 }))),
+    depth: 0.008, bevel: 0.003, bevelSize: 0.0024,
+  },
 };
 
 // Brazil nut (Petersen's type X): wider than tall, flat where it meets the grip, domed toward the end.
@@ -68,7 +113,8 @@ function v(r: number, y: number): ProfilePoint2 {
   return [r, y];
 }
 
-export const POMMEL_PROFILES: Record<PommelStyle, ProfilePoint2[]> = {
+// Turned and face-on pommels only (the shaped, plate and Viking ones are defined above).
+export const POMMEL_PROFILES: Partial<Record<PommelStyle, ProfilePoint2[]>> = {
 
   // Wheel (Oakeshott H–K), in [radius, depth]: a raised central boss, a sunken ring around it and
   // chamfered rims, the same on both faces.

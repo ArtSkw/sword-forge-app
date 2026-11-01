@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { PommelStyle } from '../../store/configStore';
-import { BRAZIL_NUT, FISHTAIL_OUTLINE, POMMEL_FORM, POMMEL_HALF_HEIGHTS, POMMEL_PROFILES } from '../../presets/pommelProfiles';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { BRAZIL_NUT, FISHTAIL_OUTLINE, POMMEL_FORM, POMMEL_HALF_HEIGHTS, POMMEL_PROFILES, VIKING_POMMELS } from '../../presets/pommelProfiles';
 import { paramSolid, turnedGeometry } from './turned';
 
 // One solid per pommel style, centred on the pommel's slot (grip side up, +Y), each made the way the
@@ -28,16 +29,56 @@ function fishtail(): THREE.BufferGeometry {
   return geo;
 }
 
+// Viking hilt: the upper guard (a rounded bar, gently domed faces) and the crown riveted beneath it.
+function viking(style: 'pyramid' | 'lobed3' | 'lobed5'): THREE.BufferGeometry {
+  const v = VIKING_POMMELS[style], half = POMMEL_HALF_HEIGHTS[style], { halfWidth, halfHeight, halfDepth } = v.upper;
+  const upper = paramSolid((d) => new THREE.Vector3(halfWidth * sgnPow(d.x, 0.42), halfHeight * sgnPow(d.y, 0.62), halfDepth * sgnPow(d.z, 0.7)), 96, 48);
+  upper.translate(0, half - halfHeight, 0);
+  const top = half - 2 * halfHeight + 0.0012;   // tucked a little into the guard
+  let crown: THREE.BufferGeometry;
+  if (style === 'pyramid') {
+    // An inverted pyramid with softened edges: a rounded-square base under the guard tapering to a point.
+    const a = 0.025, c = 0.0105, h = 0.031;
+    crown = paramSolid((d) => {
+      const th = Math.atan2(d.z, d.x), t = d.y < 0 ? -d.y : 0, s = 1 - t;
+      return new THREE.Vector3(a * s * sgnPow(Math.cos(th), 0.5), d.y < 0 ? -t * h : d.y * 0.002, c * s * sgnPow(Math.sin(th), 0.5));
+    }, 96, 48).toNonIndexed();
+  } else if (style === 'lobed3') {
+    // Type S: a near-spherical central lobe (PAS KENT-328AD5: "sub-spherical") between two smaller ones.
+    const lobe = (cx: number, cy: number, r: number, depth: number) => {
+      const g = paramSolid((d) => new THREE.Vector3(cx + r * d.x, cy + r * d.y, depth * d.z), 64, 40);
+      return g.toNonIndexed();
+    };
+    // One mass: a broad base under the guard that the lobes grow out of, the side lobes melting into the centre.
+    const base = paramSolid((d) => new THREE.Vector3(0.0335 * sgnPow(d.x, 0.7), d.y > 0 ? d.y * 0.002 : 0.0125 * d.y, 0.0158 * sgnPow(d.z, 0.8)), 64, 40).toNonIndexed();
+    const parts = [base, lobe(0, -0.0172, 0.0182, 0.0168), lobe(-0.0212, -0.0098, 0.0112, 0.0138), lobe(0.0212, -0.0098, 0.0112, 0.0138)];
+    crown = mergeGeometries(parts, false)!;
+    parts.forEach((g) => g.dispose());
+  } else {
+    const shape = new THREE.Shape(v.crown.map(([x, y]) => new THREE.Vector2(x, y)));
+    crown = new THREE.ExtrudeGeometry(shape, { depth: v.depth, bevelEnabled: true, bevelThickness: v.bevel, bevelSize: v.bevelSize, bevelSegments: 6, curveSegments: 24 });
+    crown.translate(0, 0, -v.depth / 2);
+    crown.computeVertexNormals();
+  }
+  crown.translate(0, top, 0);
+  // ExtrudeGeometry is non-indexed; the merge needs both alike.
+  const merged = mergeGeometries([upper.toNonIndexed(), crown], false);
+  upper.dispose(); crown.dispose();
+  if (!merged) throw new Error(`pommel ${style}: parts did not merge`);
+  return merged;
+}
+
 export function pommelGeometry(style: PommelStyle): THREE.BufferGeometry {
   const form = POMMEL_FORM[style];
   if (form.axis === 'solid') return brazilNut();
   if (form.axis === 'plate') return fishtail();
-  return turnedGeometry(POMMEL_PROFILES[style], { axis: form.axis, flatten: form.flatten });
+  if (form.axis === 'viking') return viking(style as 'pyramid' | 'lobed3' | 'lobed5');
+  return turnedGeometry(POMMEL_PROFILES[style] ?? [], { axis: form.axis, flatten: form.flatten });
 }
 
 // The tang's end, peened over at the pommel's far end: a small domed button (turned pommels end in
 // their own cap and do not need one).
-export const hasPeen = (style: PommelStyle) => POMMEL_FORM[style].axis !== 'y';
+export const hasPeen = (style: PommelStyle) => POMMEL_FORM[style].axis !== 'y' && POMMEL_FORM[style].axis !== 'viking';
 export const peenGeometry = () => turnedGeometry([[0, 0], [0.0036, 0], [0.0042, -0.0012], [0.0034, -0.0027], [0, -0.0034]], { segments: 48, bevel: 0.0004 });
 // The fishtail's tang ends in the hollow between its lobes.
 export const peenY = (style: PommelStyle) => (style === 'fishtail' ? -0.0135 : -POMMEL_HALF_HEIGHTS[style] + 0.0006);

@@ -104,6 +104,25 @@ export const BLADE_PROFILES: Record<ArchetypeKey, BladeProfile[]> = {
 
 export const FORMS: Record<ArchetypeKey, Form[]> = {
   vikingSword: [
+    // Hersir's type H leads: the commonest Norwegian hilt, and the one only a Viking sword has.
+    { id: 'hersirH', name: 'Hersir’s type H', era: c('800–950'), years: [800, 950],
+      anchor: 'After Finnish Heritage Agency KM 18402:1',
+      anchorUrl: 'http://museovirasto.finna.fi/Record/museovirasto.FE4D68B51D0D5FEE17E1354056773CBA',
+      note: 'A wide, domed upper guard under a small three-sided cap, over an +VLFBERHT+ blade.',
+      story: 'Petersen’s type H, the commonest hilt in Viking Norway: elliptical guards with gently domed faces and a small pyramidal cap riveted to the upper guard. This sword, found in Finland, has a blade of 78.2 cm signed +VLFBERHT+, a guard of 10.6 cm and an upper guard of 8.5 cm, and weighs 1340 g. Its guards are inlaid with silver and copper wire in a chequerboard, 24 wires to the centimetre; that inlay is not shown here yet.',
+      blade: 'ulfberht', guard: 'straight', pommel: 'pyramid', grip: 'leather', steel: 'satin', fittings: 'darkIron' },
+    { id: 'frankishFive', name: 'Frankish five-lobe', era: '9th–10th c.', years: [800, 1000],
+      anchor: 'After Wallace Collection A456',
+      anchorUrl: 'https://artsandculture.google.com/asset/sword-detail-unknown/SgEJJIhsBWl9YA',
+      note: 'Five even lobes over a short square upper guard, and letters cut into the guard’s face.',
+      story: 'Probably Frankish, of the ninth or tenth century: a two-layer pommel with a five-lobed top (Petersen’s type K), a short straight guard of almost square section with “HLI” incised on its face, and a broad blade with a shallow fuller running almost to the point. The blade is 76.5 cm and the whole sword 90.2 cm. Such hilts were overlaid with a silver-rich copper alloy, shown here by bronze.',
+      blade: 'hedeby', guard: 'straight', pommel: 'lobed5', grip: 'leather', steel: 'satin', fittings: 'bronze' },
+    { id: 'jarlThree', name: 'Jarl’s three-lobe', era: 'late 9th–10th c.', years: [870, 1000],
+      anchor: 'After Portable Antiquities Scheme KENT-328AD5',
+      anchorUrl: 'https://finds.org.uk/database/artefacts/record/id/237370',
+      note: 'A great round central lobe between two smaller ones, sheathed in silver.',
+      story: 'Petersen’s type S, the big three-lobed pommel with a dominant round centre, often covered with thick silver sheet over a cross-hatched iron surface and engraved. This form follows a silver-sheeted iron pommel found in Kent, decorated with acanthus leaves and measuring 78.8 × 39.9 × 36.5 mm. Its silver is shown here by bright steel fittings.',
+      blade: 'hedeby', guard: 'straight', pommel: 'lobed3', grip: 'leather', steel: 'satin', fittings: 'steel' },
     { id: 'typeX', name: 'Type X', era: c('950–1000'), years: [950, 1000],
       anchor: 'After Portable Antiquities Scheme PUBLIC-4221F3',
       anchorUrl: 'https://finds.org.uk/database/artefacts/record/id/567833',
@@ -250,13 +269,10 @@ export const FORMS: Record<ArchetypeKey, Form[]> = {
  * Future Forms: anchored and verified in the research, but their defining feature needs a part that
  * does not exist yet. Each line: Form · anchor · parts it needs.
  *
- * Viking
- * - Hersir's type H · FHA KM 18402:1 · upper guard; small pyramidal cap pommel; silver-and-copper
- *   chequer wire inlay (24 wires/cm); +VLFBERHT+ inscription layer.
- * - Frankish five-lobe · Wallace A456 · upper guard; five-lobed pommel; inscribed guard face.
+ * Viking (Hersir's type H, Frankish five-lobe and Jarl's three-lobe are now Forms; they still lack
+ * the chequer wire inlay, the inscribed guard face and the engraved silver sheet — Step 4)
  * - Wessex / Trewhiddle · Ashmolean AN1890.14, YORYM 1977.51 · curved upper and lower guards; lobed
  *   pommel with animal heads; silver and niello mounts; silver grip bands; pattern-welded steel.
- * - Jarl's three-lobe (type S) · PAS KENT-328AD5 · three-lobed pommel; engraved silver sheet.
  * - Crescent (type Z) · SHM 836967_HST · crescent upper guard that is the pommel; silver inlay.
  * - Ulfberht · GNM FG2187, Klingenmuseum 1973.W.005 · inscription layer with reverse lattice;
  *   three-part riveted pommel (FG2187).
