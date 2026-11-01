@@ -1,5 +1,5 @@
 import type { ArchetypeKey, SwordConfig } from '../store/configStore';
-import type { ProfileFamily } from './bladeProfiles';
+import type { Section } from './bladeSections';
 
 export type SwordPreset = {
   key: ArchetypeKey;
@@ -15,16 +15,13 @@ export type SwordPreset = {
   // Smoothstep blend window (in t units) around bodyTaperEnd. 0 = sharp
   // shoulder corner; ~0.06 rounds the kink for a fingertip-rounded tip.
   tipShoulderRound: number;
-  // Cross-section family — drives the fundamental blade geometry.
-  crossSection: ProfileFamily;
-  // Edge-side outward bow as a fraction of halfWidth (0 = straight edge).
-  // Peaks mid-blade via sin(πt); combined with the default taper so the edge
-  // remains tapered at the base and tip.
-  edgeBow: number;
-  // Fraction of blade length where the spine starts its angular clip-drop to
-  // the tip. 1.0 = spine follows the default symmetric taper (no clip).
-  spineClipT: number;
-  // Optional fuller span along blade length. Defaults live in Blade.tsx.
+  // Cross-section (presets/bladeSections.ts); a blade profile or the user may choose another.
+  section: Section;
+  // Single-edged blades only ('wedge'): how far the edge swells toward the clip, as a multiple of
+  // half-width (0 = parallel), and where the back starts to drop to the point (1 = no clip).
+  swell: number;
+  clipT: number;
+  // Optional fuller span along blade length. Defaults live in lib/bladeSpec.ts.
   fullerStart?: number;
   fullerEnd?: number;
   defaults: Omit<SwordConfig, 'archetype'>;
@@ -56,9 +53,9 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     bodyTaperEnd: 0.84, // reference-like fuller section with deliberate terminal taper
     bodyTaperMidWidth: 0.42,
     tipShoulderRound: 0,
-    crossSection: 'lenticular',
-    edgeBow: 0,
-    spineClipT: 1,
+    section: 'lenticular',
+    swell: 0,
+    clipT: 1,
     fullerStart: 0.075,
     fullerEnd: 0.76,
     defaults: {
@@ -77,9 +74,9 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     bodyTaperEnd: 0.87, // long, steady blade body before the final acute point
     bodyTaperMidWidth: 0.44,
     tipShoulderRound: 0,
-    crossSection: 'lenticular',
-    edgeBow: 0,
-    spineClipT: 1,
+    section: 'diamond',
+    swell: 0,
+    clipT: 1,
     fullerStart: 0.080,
     fullerEnd: 0.735,
     defaults: {
@@ -98,9 +95,9 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     bodyTaperEnd: 0.83,
     bodyTaperMidWidth: 0.34,
     tipShoulderRound: 0,
-    crossSection: 'lenticular',
-    edgeBow: 0,
-    spineClipT: 1,
+    section: 'diamond',
+    swell: 0,
+    clipT: 1,
     fullerStart: 0.070,
     fullerEnd: 0.800,
     defaults: {
@@ -119,9 +116,9 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     bodyTaperEnd: 0.92, // near-parallel edges, short stubby tip over last 8%
     bodyTaperMidWidth: 0.88, // Viking blades retain almost full width along the body
     tipShoulderRound: 0.07,  // round the shoulder for the soft, blunted Viking tip
-    crossSection: 'lenticular',
-    edgeBow: 0,
-    spineClipT: 1,
+    section: 'lenticular',
+    swell: 0,
+    clipT: 1,
     defaults: {
       blade: { length: 'short', width: 'wide', fuller: 'single' },
       guard: { style: 'straight' },
@@ -138,9 +135,9 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     bodyTaperEnd: 0.70, // broad chopping body with a clipped, forward-leaning point
     bodyTaperMidWidth: 0.50,
     tipShoulderRound: 0.035,
-    crossSection: 'lenticular',
-    edgeBow: 0.95,     // strong cutting-edge belly; spine stays straighter
-    spineClipT: 0.78,  // spine drops over the last fifth for the falchion clip tip
+    section: 'wedge',
+    swell: 1.1,        // the edge widens toward the clip (Conyers: about twice as wide there as at the guard)
+    clipT: 0.8,        // the back drops over the last fifth to the point
     fullerStart: 0.120,
     fullerEnd: 0.690,
     defaults: {
@@ -159,9 +156,9 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     bodyTaperEnd: 0.86, // long rigid spike tapering steadily into a needle point
     bodyTaperMidWidth: 0.34,
     tipShoulderRound: 0,
-    crossSection: 'diamond',
-    edgeBow: 0,
-    spineClipT: 1,
+    section: 'triangular',
+    swell: 0,
+    clipT: 1,
     defaults: {
       blade: { length: 'extraLong', width: 'narrow', fuller: 'none' },
       guard: { style: 'straight' },
@@ -174,13 +171,13 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
   greatsword: {
     key: 'greatsword',
     name: 'Greatsword',
-    description: 'The largest two-hander, with parrying lugs above the guard.',
+    description: 'The largest two-hander, often with a second grip on the blade and parrying hooks.',
     bodyTaperEnd: 0.82, // long cutting body with a controlled two-handed taper
     bodyTaperMidWidth: 0.46,
     tipShoulderRound: 0,
-    crossSection: 'hexagonal',
-    edgeBow: 0,
-    spineClipT: 1,
+    section: 'hexagonal',
+    swell: 0,
+    clipT: 1,
     fullerStart: 0.085,
     fullerEnd: 0.650,
     defaults: {

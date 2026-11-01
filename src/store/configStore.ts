@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import { SWORD_TYPES } from '../presets/swordTypes';
 import { applyForm, formsOf } from '../lib/forms';
-import type { BladeShape, StationId } from '../presets/forge';
+import type { BladeShape, RicassoCover, StationId } from '../presets/forge';
+import type { Section } from '../presets/bladeSections';
 
 export type ArchetypeKey =
   | 'armingSword'
@@ -36,7 +37,8 @@ export interface SwordConfig {
   // form: the named starting point (presets/catalogue.ts). profile: the named blade (Geibig / Oakeshott);
   // shape overrides the archetype taper.
   form?: string;
-  blade: { length: BladeLength; width: BladeWidth; fuller: FullerStyle; profile?: string; shape?: BladeShape };
+  // section / ricasso / flame: the user's choices on top of the profile (omitted = the profile's own).
+  blade: { length: BladeLength; width: BladeWidth; fuller: FullerStyle; profile?: string; shape?: BladeShape; section?: Section; ricasso?: 'none' | RicassoCover; flame?: boolean };
   guard: { style: GuardStyle };
   grip: { length: GripLength };
   pommel: { style: PommelStyle };

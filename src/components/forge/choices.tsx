@@ -1,15 +1,16 @@
 import type { ReactNode } from 'react';
 import { useConfigStore } from '../../store/configStore';
 import { SWORD_TYPES } from '../../presets/swordTypes';
-import { CONDITIONS, DYES, FITTINGS, GRIPS, GUARDS, POMMELS, STEELS, type StationId } from '../../presets/forge';
-import { currentForm, overlaps, periodNote, profilesOf, type PeriodNote } from '../../lib/forms';
+import { CONDITIONS, DYES, EDGE_CHOICES, FITTINGS, GRIPS, GUARDS, POMMELS, RICASSO_CHOICES, SECTIONS, SECTION_CHOICES, STEELS, type StationId } from '../../presets/forge';
+import { currentForm, currentProfile, overlaps, periodNote, profileBlade, profilesOf, type PeriodNote } from '../../lib/forms';
+import { bladeSpec, profileSpec } from '../../lib/bladeSpec';
 import { BladeSilhouette, GripSwatch, GuardSilhouette, PommelSilhouette, SteelSwatch } from './Silhouettes';
 
 // The choices offered at each station, as one model shared by the chooser, the inspector and the keyboard.
 
 // `off` explains why a part sits outside the Form's age (shown as a badge on its card).
 export type Choice = { id: string; name: string; era?: string; period: boolean; off: PeriodNote | null; selected: boolean; note: string; art: ReactNode; apply: () => void };
-export type OptionRow = { label: string; kind: 'dots' | 'chips'; items: { id: string; name: string; swatch?: string; selected: boolean; apply: () => void }[] };
+export type OptionRow = { label: string; kind: 'dots' | 'chips' | 'list'; items: { id: string; name: string; swatch?: string; selected: boolean; apply: () => void }[] };
 export type StationChoices = { cards: Choice[]; rows: OptionRow[]; note: string };
 
 export function useStationChoices(station: StationId | null): StationChoices | null {
@@ -25,14 +26,31 @@ export function useStationChoices(station: StationId | null): StationChoices | n
   const ofForm = (part: { id: string; years?: [number, number] }, own?: string) => part.id === own || ofAge(part.years);
   let cards: Choice[] = [];
   const rows: OptionRow[] = [];
+  let extraNote = '';
 
   if (station === 'blade') {
     const profiles = profilesOf(config);
-    cards = profiles.length
-      ? profiles.map((p) => ({ id: p.id, name: p.name, era: p.era, period: true, off: null, selected: (config.blade.profile ?? profiles[0].id) === p.id, note: p.note,
-          art: <BladeSilhouette pattern={p} />,
-          apply: () => update('blade', { length: p.length, width: p.width, fuller: p.fuller, profile: p.id, shape: p.shape }) }))
-      : [{ id: 'classic', name: 'Classic', period: true, off: null, selected: true, note: preset.description, art: <BladeSilhouette pattern={preset.defaults.blade} />, apply: () => {} }];
+    cards = profiles.map((p) => ({ id: p.id, name: p.name, era: p.era, period: true, off: null, selected: (config.blade.profile ?? profiles[0].id) === p.id, note: p.note,
+      art: <BladeSilhouette archetype={arch} profile={p} />, apply: () => update('blade', profileBlade(p)) }));
+    // Options on top of the profile. A choice equal to the profile's own is stored as "not changed",
+    // so the Form still reads as itself.
+    const spec = bladeSpec(config), profile = currentProfile(config), own = profile ? profileSpec(arch, profile) : spec;
+    const offered = SECTION_CHOICES[arch];
+    // The profile's own section is always offered, so it can be chosen back (Type XX is a lens).
+    const sections = offered && (offered.includes(own.section) ? offered : [own.section, ...offered]);
+    if (sections) {
+      rows.push({ label: 'Section', kind: sections.length > 2 ? 'list' : 'chips', items: sections.map((id) => ({ id, name: SECTIONS.find((x) => x.id === id)?.name ?? id, selected: spec.section === id,
+        apply: () => update('blade', { section: id === own.section ? undefined : id }) })) });
+      extraNote = SECTIONS.find((x) => x.id === spec.section)?.note ?? '';
+    }
+    if (arch === 'greatsword') {
+      const cover = spec.ricasso?.cover ?? 'none', ownCover = own.ricasso?.cover ?? 'none';
+      rows.push({ label: 'Ricasso', kind: 'chips', items: RICASSO_CHOICES.map((r) => ({ id: r.id, name: r.name, selected: cover === r.id,
+        apply: () => update('blade', { ricasso: r.id === ownCover ? undefined : r.id }) })) });
+      rows.push({ label: 'Edge', kind: 'chips', items: EDGE_CHOICES.map((e) => ({ id: e.id, name: e.name, selected: (spec.flame ? 'flame' : 'straight') === e.id,
+        apply: () => update('blade', { flame: e.id === 'flame' ? true : undefined }) })) });
+      extraNote = [extraNote, cover !== ownCover ? RICASSO_CHOICES.find((r) => r.id === cover)?.note : '', spec.flame ? EDGE_CHOICES[1].note : ''].filter(Boolean).join(' ');
+    }
   }
   if (station === 'guard') {
     cards = GUARDS.map((g) => ({ ...g, period: ofForm(g, form?.guard), off: off(g, form?.guard), selected: config.guard.style === g.id, art: <GuardSilhouette archetype={arch} style={g.id} />, apply: () => update('guard', { style: g.id }) }));
@@ -51,6 +69,6 @@ export function useStationChoices(station: StationId | null): StationChoices | n
     rows.push({ label: 'Condition', kind: 'chips', items: CONDITIONS.map((c) => ({ id: c.id, name: c.name, selected: config.finish.condition === c.id, apply: () => update('finish', { condition: c.id }) })) });
   }
   const sel = cards.find((c) => c.selected);
-  const note = station === 'finish' ? `${sel?.note ?? ''} ${CONDITIONS.find((c) => c.id === config.finish.condition)?.note ?? ''}`.trim() : sel?.note ?? '';
+  const note = station === 'finish' ? `${sel?.note ?? ''} ${CONDITIONS.find((c) => c.id === config.finish.condition)?.note ?? ''}`.trim() : `${sel?.note ?? ''} ${extraNote}`.trim();
   return { cards, rows, note };
 }

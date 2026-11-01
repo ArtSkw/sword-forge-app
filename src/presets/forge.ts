@@ -2,6 +2,7 @@ import type {
   ArchetypeKey, BladeLength, BladeWidth, FullerStyle, GripMaterial, GuardStyle,
   HardwareTone, PommelStyle, SteelFinish, SwordCondition,
 } from '../store/configStore';
+import type { Section } from './bladeSections';
 
 // Content and choices for the forge UI ("Smith's Eye"). Kept free of three.js.
 
@@ -17,6 +18,7 @@ export const STATIONS: { id: StationId; name: string }[] = [
 
 // ── Blade profiles: a named historical blade (Geibig / Oakeshott) maps to the blade parameters ──
 export type BladeShape = { bodyTaperEnd?: number; bodyTaperMidWidth?: number; tipShoulderRound?: number };
+export type RicassoCover = 'bare' | 'leather';
 export type BladeProfile = {
   id: string;
   name: string;
@@ -25,9 +27,42 @@ export type BladeProfile = {
   width: BladeWidth;
   fuller: FullerStyle;
   shape?: BladeShape;
+  section?: Section;            // omitted = the sword type's section
+  swell?: number;               // single-edged blades: how much the edge widens toward the clip (× half-width)
+  clip?: number;                // single-edged blades: where the back starts to drop to the point (0–1)
+  fullerSpan?: [number, number];  // fuller start and end along the blade (0–1); omitted = the type's
+  ricasso?: { cm: number; cover: RicassoCover; hooks: 'lugs' | 'crescent' };
   note: string;
   story: string;
 };
+
+// ── Blade sections and the blade options each type offers ────────────────────────
+export const SECTIONS: { id: Section; name: string; note: string }[] = [
+  { id: 'lenticular', name: 'Lens', note: 'A lens-shaped section: broad faces that flex a little in the cut.' },
+  { id: 'diamond', name: 'Diamond', note: 'Four flat faces meet in a central ridge: stiff, with one line of light down the middle.' },
+  { id: 'hexagonal', name: 'Hexagonal', note: 'A flat band runs between two shoulders: stiff, and broad across the faces.' },
+  { id: 'hollow', name: 'Hollow-ground', note: 'Hollowed faces either side of a sharp ridge: light, stiff and bright along the ridge.' },
+  { id: 'triangular', name: 'Triangular', note: 'Three hollowed faces and no real edge: a spike for the gaps in plate.' },
+  { id: 'square', name: 'Square', note: 'Four hollowed faces and four arrises: the stiffest, narrowest point of all.' },
+  { id: 'wedge', name: 'Single edge', note: 'A thick back thinning to one edge.' },
+];
+// Types whose sections changed with the period offer the choice (see research: longsword XV vs XVII,
+// hollow-ground late XV, the estoc's three sections, the two-hander's diamond or hexagonal blade).
+export const SECTION_CHOICES: Partial<Record<ArchetypeKey, Section[]>> = {
+  longsword: ['diamond', 'hexagonal', 'hollow'],
+  bastardSword: ['lenticular', 'diamond', 'hollow'],
+  estoc: ['triangular', 'square', 'diamond'],
+  greatsword: ['diamond', 'hexagonal'],
+};
+export const RICASSO_CHOICES: { id: 'none' | RicassoCover; name: string; note: string }[] = [
+  { id: 'none', name: 'None', note: '' },
+  { id: 'bare', name: 'Bare', note: 'An unsharpened stretch below the guard, for a second hand on the blade.' },
+  { id: 'leather', name: 'Leather', note: 'The ricasso wrapped in tooled leather over wood: a second grip on the blade.' },
+];
+export const EDGE_CHOICES: { id: 'straight' | 'flame'; name: string; note: string }[] = [
+  { id: 'straight', name: 'Straight', note: '' },
+  { id: 'flame', name: 'Flame', note: 'A flamboyant edge that waves down the blade; the light snakes along it.' },
+];
 
 // ── Forms: named starting points per type, each anchored to a surviving object ──
 export type Form = {

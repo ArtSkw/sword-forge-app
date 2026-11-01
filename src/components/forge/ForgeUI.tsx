@@ -204,7 +204,7 @@ function Inspector({ station, choices }: { station: StationId; choices: StationC
       {choices.rows.map((row) => (
         <section key={row.label} className="insp-group">
           <div className="insp-row"><span>{row.label}</span><b>{row.items.find((x) => x.selected)?.name}</b></div>
-          <div className={row.kind === 'dots' ? 'insp-swatches' : 'insp-seg'}>
+          <div className={row.kind === 'dots' ? 'insp-swatches' : row.kind === 'list' ? 'insp-seg insp-list' : 'insp-seg'}>
             {row.items.map((it) => row.kind === 'dots'
               ? <button key={it.id} className="dot" aria-label={it.name} aria-pressed={it.selected} data-tip={it.name} style={{ background: it.swatch }} onClick={() => { if (!it.selected) { it.apply(); playTick(); } }} />
               : <button key={it.id} className="seg" aria-pressed={it.selected} onClick={() => { if (!it.selected) { it.apply(); forgeSound(); } }}>{it.name}</button>)}

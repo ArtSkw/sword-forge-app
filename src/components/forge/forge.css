@@ -119,6 +119,8 @@
 .forge .insp-row b { font: var(--type-meta); color: var(--gold-hi); }
 .forge .insp-swatches { display: flex; gap: 10px; flex-wrap: wrap; padding: 2px; }
 .forge .insp-seg { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.forge .insp-list { grid-template-columns: 1fr; }
+.forge .insp-seg:not(.insp-list):has(> :nth-child(3):last-child) { grid-template-columns: repeat(3, 1fr); }
 .forge .seg { height: 32px; border-radius: 5px; border: 1px solid var(--gold-line); background: rgba(18, 13, 9, .5); font: var(--type-label-sm); letter-spacing: var(--track-label); color: var(--gold); transition: border-color 160ms, color 160ms, background 160ms, transform 160ms var(--ease-out); }
 .forge .seg:hover { border-color: var(--gold); color: var(--gold-hi); }
 .forge .seg:active { transform: scale(.97); transition-duration: 70ms; }

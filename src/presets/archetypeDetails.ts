@@ -16,12 +16,6 @@ export type HiltDetailRecipe = {
     tube: number;
     offsetY?: number;
   }>;
-  parryingLugs?: {
-    offsetY: number;
-    length: number;
-    baseRadius: number;
-    tipRadius: number;
-  };
 };
 
 export type GuardTerminalRecipe = {
@@ -146,12 +140,6 @@ export const HILT_DETAIL_RECIPES: Record<ArchetypeKey, HiltDetailRecipe> = {
       { anchor: 'topSpacer', radius: 0.0195, tube: 0.00055 },
       { anchor: 'bottomSpacer', radius: 0.0205, tube: 0.00055 },
     ],
-    parryingLugs: {
-      offsetY: 0.068,
-      length: 0.060,
-      baseRadius: 0.0065,
-      tipRadius: 0.0018,
-    },
   },
 };
 

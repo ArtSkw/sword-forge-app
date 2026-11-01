@@ -54,40 +54,6 @@ export function HiltDetails({ archetype, color, emissive, emissiveIntensity, rou
           {material}
         </mesh>
       ))}
-      {recipe.parryingLugs && (
-        <>
-          <mesh
-            position={[-recipe.parryingLugs.length / 2, guardY + recipe.parryingLugs.offsetY, 0]}
-            rotation={[0, 0, Math.PI / 2]}
-            scale={[1, 1, 0.72]}
-          >
-            <cylinderGeometry
-              args={[
-                recipe.parryingLugs.tipRadius,
-                recipe.parryingLugs.baseRadius,
-                recipe.parryingLugs.length,
-                18,
-              ]}
-            />
-            {material}
-          </mesh>
-          <mesh
-            position={[recipe.parryingLugs.length / 2, guardY + recipe.parryingLugs.offsetY, 0]}
-            rotation={[0, 0, -Math.PI / 2]}
-            scale={[1, 1, 0.72]}
-          >
-            <cylinderGeometry
-              args={[
-                recipe.parryingLugs.tipRadius,
-                recipe.parryingLugs.baseRadius,
-                recipe.parryingLugs.length,
-                18,
-              ]}
-            />
-            {material}
-          </mesh>
-        </>
-      )}
     </>
   );
 }

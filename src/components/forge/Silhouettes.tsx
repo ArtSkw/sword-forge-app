@@ -3,6 +3,8 @@ import { getGuardParams } from '../../presets/guardShapes';
 import { getGuardTerminalRecipe } from '../../presets/archetypeDetails';
 import { POMMEL_PROFILES } from '../../presets/pommelProfiles';
 import type { BladeProfile } from '../../presets/forge';
+import { RICASSO, halfWidths, profileSpec } from '../../lib/bladeSpec';
+import { takesFuller } from '../../presets/bladeSections';
 
 // Engraved-style silhouettes for the variant cards, drawn from the same data as the 3D parts.
 // Upright like the sword (blade up, pommel down). 64×64 viewBox, gold line art.
@@ -94,25 +96,33 @@ export function SteelSwatch({ finish }: { finish: SteelFinish }) {
   );
 }
 
-const WIDTH_CM = { narrow: 2.8, standard: 4.4, wide: 6.0 } as const;
-const LENGTH_CM = { short: 70, medium: 82, long: 98, extraLong: 118 } as const;
-// Drawn for legibility, not to scale: width, taper and point are exaggerated so patterns read apart.
-export function BladeSilhouette({ pattern }: { pattern: Pick<BladeProfile, 'length' | 'width' | 'fuller' | 'shape'> }) {
-  const len = 0.78 + (LENGTH_CM[pattern.length] - 70) / 180, base = 2 + (WIDTH_CM[pattern.width] - 2.4) * 1.05;
-  const mid = 1 - (1 - (pattern.shape?.bodyTaperMidWidth ?? 0.88)) * 1.5, te = pattern.shape?.bodyTaperEnd ?? 0.9, round = (pattern.shape?.tipShoulderRound ?? 0.07) > 0.05;
-  const L = 50 * len, top: [number, number][] = [], bot: [number, number][] = [], cy = 32;
-  for (let i = 0; i <= 30; i++) {
-    const t = i / 30;
-    let w = t < te ? base * (1 - (t / te) * (1 - mid)) : base * mid * (1 - (t - te) / (1 - te));
-    if (round && t > te) w = base * mid * Math.sqrt(Math.max(0, 1 - ((t - te) / (1 - te)) ** 2));
-    const x = 9 + t * L; top.push([x, cy - w]); bot.push([x, cy + w]);
+// Drawn from the same outline as the 3D blade (lib/bladeSpec.ts), lying point-right; widths are doubled so
+// profiles read apart at card size. Shows the swell and clip of a single edge, the ricasso and its hooks.
+const LENGTH_PX = { short: 44, medium: 48, long: 52, extraLong: 54 } as const;
+export function BladeSilhouette({ archetype, profile }: { archetype: ArchetypeKey; profile: BladeProfile }) {
+  const s = profileSpec(archetype, profile), L = LENGTH_PX[profile.length], k = 190, cy = 32, x0 = 9;
+  const top: [number, number][] = [], bot: [number, number][] = [];
+  for (let i = 0; i <= 48; i++) {
+    const t = i / 48, w = halfWidths(s, t), x = x0 + t * L;
+    top.push([x, cy - w.spine * k]); bot.push([x, cy + w.edge * k]);
   }
+  const base = s.halfWidth * k, ric = s.ricasso, rx = x0 + (ric?.t ?? 0) * L, rw = s.halfWidth * RICASSO.width * k;
+  const hook = (dir: 1 | -1) => ric?.hooks === 'crescent'
+    ? `M${rx - 0.6} ${cy + dir * rw} q 1 ${dir * 3.5} -2.6 ${dir * 6.2} q 2.4 ${-dir * 1.2} 4.4 ${-dir * 6.2}`
+    : `M${rx - 0.6} ${cy + dir * rw} l -1.4 ${dir * 3.2} l 2.6 ${-dir * 3.2}`;
+  const fuller = s.fuller !== 'none' && takesFuller(s.section);
+  const fy = s.singleEdged ? cy - base * 0.35 : cy;
   return (
     <svg viewBox="0 0 64 64" aria-hidden="true">
       <path d={`M2 ${cy} H8`} {...STROKE} strokeWidth={3} />
       <path d={`M8 ${cy - base - 3} V${cy + base + 3}`} {...STROKE} strokeWidth={2.2} />
+      {ric?.cover === 'leather' && <rect x={x0} y={cy - rw} width={rx - x0 - 0.8} height={rw * 2} fill="currentColor" opacity={0.42} />}
       <polygon points={pts([...top, ...bot.reverse()])} {...STROKE} fill="currentColor" fillOpacity={0.12} />
-      {pattern.fuller !== 'none' && <path d={`M11 ${cy} H${(9 + L * 0.62).toFixed(1)}`} stroke="currentColor" strokeWidth={base * 0.5} strokeLinecap="round" opacity={0.32} />}
+      {ric && <><path d={hook(-1)} {...STROKE} fill="currentColor" fillOpacity={0.2} /><path d={hook(1)} {...STROKE} fill="currentColor" fillOpacity={0.2} /></>}
+      {fuller && <path d={`M${(x0 + s.fullerStart * L).toFixed(1)} ${fy} H${(x0 + s.fullerEnd * L).toFixed(1)}`} stroke="currentColor" strokeWidth={s.singleEdged ? 1 : base * 0.5} strokeLinecap="round" opacity={0.32} />}
+      {!fuller && (s.section === 'diamond' || s.section === 'hollow' || s.section === 'triangular' || s.section === 'square') && (
+        <path d={`M${(x0 + (ric ? ric.t + 0.03 : 0.02) * L).toFixed(1)} ${cy} L${(x0 + L * 0.97).toFixed(1)} ${cy}`} stroke="currentColor" strokeWidth={0.7} opacity={0.5} />
+      )}
     </svg>
   );
 }

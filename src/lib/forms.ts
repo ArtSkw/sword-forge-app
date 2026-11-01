@@ -20,6 +20,12 @@ export function currentProfile(config: SwordConfig): BladeProfile | undefined {
   return profiles.find((p) => p.id === config.blade.profile) ?? profiles[0];
 }
 
+/** The blade fields a profile sets (its own section and ricasso; the user's choices start fresh). */
+export const profileBlade = (p: BladeProfile): Partial<SwordConfig['blade']> => ({
+  length: p.length, width: p.width, fuller: p.fuller, profile: p.id, shape: p.shape,
+  section: undefined, ricasso: undefined, flame: undefined,
+});
+
 /** The config a Form produces on this sword type (condition is kept: it is the sword's history, not its form). */
 export function applyForm(config: SwordConfig, form: Form): SwordConfig {
   const preset = SWORD_TYPES[config.archetype];
@@ -27,9 +33,7 @@ export function applyForm(config: SwordConfig, form: Form): SwordConfig {
   return {
     ...config,
     form: form.id,
-    blade: profile
-      ? { ...config.blade, length: profile.length, width: profile.width, fuller: profile.fuller, profile: profile.id, shape: profile.shape }
-      : config.blade,
+    blade: profile ? { ...config.blade, ...profileBlade(profile) } : config.blade,
     guard: { ...config.guard, style: form.guard },
     pommel: { ...config.pommel, style: form.pommel },
     finish: {
@@ -45,7 +49,8 @@ export function applyForm(config: SwordConfig, form: Form): SwordConfig {
 /** True while every part the Form sets is still as the Form left it. */
 export function matchesForm(config: SwordConfig, form: Form): boolean {
   const preset = SWORD_TYPES[config.archetype];
-  return (config.blade.profile ?? profilesOf(config)[0]?.id) === form.blade
+  const b = config.blade;
+  return (b.profile ?? profilesOf(config)[0]?.id) === form.blade && b.section === undefined && b.ricasso === undefined && !b.flame
     && config.guard.style === form.guard
     && config.pommel.style === form.pommel
     && config.finish.gripMaterial === form.grip

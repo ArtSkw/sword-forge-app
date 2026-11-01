@@ -1,8 +1,8 @@
 import { useConfigStore } from '../../store/configStore';
 import { getSwordLayout } from './swordLayout';
-import { SWORD_TYPES } from '../../presets/swordTypes';
 import { getSwordMaterialRecipes } from '../../presets/materialRecipes';
 import { Blade } from './Blade';
+import { bladeSpec } from '../../lib/bladeSpec';
 import { Crossguard } from './Crossguard';
 import { Grip } from './Grip';
 import { HiltDetails } from './HiltDetails';
@@ -10,12 +10,7 @@ import { Pommel } from './Pommel';
 
 export function Sword() {
   const config = useConfigStore((s) => s.config);
-  const preset = SWORD_TYPES[config.archetype];
-  const { crossSection, edgeBow, spineClipT, fullerStart, fullerEnd } = preset;
-  // A blade pattern may override the archetype's taper (see presets/forge.ts).
-  const bodyTaperEnd = config.blade.shape?.bodyTaperEnd ?? preset.bodyTaperEnd;
-  const bodyTaperMidWidth = config.blade.shape?.bodyTaperMidWidth ?? preset.bodyTaperMidWidth;
-  const tipShoulderRound = config.blade.shape?.tipShoulderRound ?? preset.tipShoulderRound;
+  const spec = bladeSpec(config);
 
   const { gripLen, bladeY, guardY, gripY, pommelY } = getSwordLayout(config);
   const gripTopY = gripY + gripLen / 2;
@@ -29,26 +24,9 @@ export function Sword() {
 
   return (
     <group>
-      <group position={[0, bladeY, 0]} rotation={[0, edgeBow > 0 ? Math.PI : 0, 0]}>
-        <Blade
-          archetype={config.archetype}
-          length={config.blade.length}
-          width={config.blade.width}
-          fuller={config.blade.fuller}
-          bodyTaperEnd={bodyTaperEnd}
-          bodyTaperMidWidth={bodyTaperMidWidth}
-          tipShoulderRound={tipShoulderRound}
-          crossSection={crossSection}
-          edgeBow={edgeBow}
-          spineClipT={spineClipT}
-          fullerStart={fullerStart}
-          fullerEnd={fullerEnd}
-          color={materials.blade.color}
-          steelFinish={steelFinish}
-          condition={condition}
-          runes={runes}
-          position={[0, 0, 0]}
-        />
+      {/* A single-edged blade turns its edge to face the same way as the curved guards and the swell. */}
+      <group position={[0, bladeY, 0]} rotation={[0, spec.singleEdged ? Math.PI : 0, 0]}>
+        <Blade spec={spec} color={materials.blade.color} steelFinish={steelFinish} condition={condition} runes={runes} />
       </group>
       <Crossguard
         archetype={config.archetype}
