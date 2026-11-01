@@ -37,11 +37,11 @@ export function Sword() {
     <group>
       {/* A single-edged blade turns its edge to face the same way as the curved guards and the swell. */}
       <group position={[0, bladeY, 0]} rotation={[0, spec.singleEdged ? Math.PI : 0, 0]}>
-        <Beat scope={config.archetype} k={`${config.blade.profile}|${spec.section}|${spec.ricasso?.cover ?? ''}|${spec.flame}`} from={[0, -0.06, 0]}>
+        <Beat scope={config.archetype} k={`${config.blade.profile}|${spec.section}|${spec.ricasso?.cover ?? ''}|${spec.flame}`}>
           <Blade spec={spec} color={materials.blade.color} steelFinish={steelFinish} age={age} />
         </Beat>
       </group>
-      <Beat scope={config.archetype} k={`${config.guard.style}|${hilt.terminal}|${hilt.rings}|${hilt.ecusson}`} from={[0, 0.045, 0]}>
+      <Beat scope={config.archetype} k={`${config.guard.style}|${hilt.terminal}|${hilt.rings}|${hilt.ecusson}`}>
       <Crossguard
         cm={config.guard.cm}
         wire={config.archetype === 'vikingSword' ? config.guard.wire : undefined}
@@ -81,7 +81,7 @@ export function Sword() {
           metal={gripMetal}
         />
       ) : (
-      <Beat scope={config.archetype} k={`${config.finish.gripMaterial}|${config.grip.shape ?? ''}`} from={[0, -0.03, 0]}>
+      <Beat scope={config.archetype} k={`${config.finish.gripMaterial}|${config.grip.shape ?? ''}`} soft={config.finish.gripMaterial !== 'wire'}>
       <Grip
         archetype={config.archetype}
         length={gripLen}
@@ -95,7 +95,7 @@ export function Sword() {
       </Beat>
       )}
 {!messer && (
-      <Beat scope={config.archetype} k={config.pommel.style} from={[0, -0.04, 0]} spin={Math.PI * 0.9}>
+      <Beat scope={config.archetype} k={config.pommel.style}>
       <Pommel
         engraved={config.pommel.engraved}
         scale={POMMEL_SCALE[config.archetype] ?? 1}
