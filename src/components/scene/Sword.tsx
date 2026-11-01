@@ -11,11 +11,13 @@ import { Crossguard } from './Crossguard';
 import { Grip } from './Grip';
 import { HiltDetails } from './HiltDetails';
 import { Pommel } from './Pommel';
+import { MesserHilt } from './MesserHilt';
 
 export function Sword() {
   const config = useConfigStore((s) => s.config);
   const spec = bladeSpec(config);
   const hilt = hiltSpec(config);
+  const messer = config.archetype === 'falchion' && config.grip.hilt === 'messer';
   // Every surface shader reads the sword's age from one shared uniform (set before the frame renders).
   useLayoutEffect(() => { setSurfaceAge(config.finish.age); }, [config.finish.age]);
 
@@ -28,6 +30,7 @@ export function Sword() {
   const runes     = fantasyOn && config.fantasy.runes;
   const gemstone  = fantasyOn ? config.fantasy.gemstone : 'none' as const;
   const materials = getSwordMaterialRecipes(config.finish);
+  const gripMetal = { color: materials.hardware.color, roughness: materials.hardware.roughness, tone: (config.finish.hardwareTone === 'brass' || config.finish.hardwareTone === 'bronze' ? 'copper' : 'iron') as 'iron' | 'copper' };
 
   return (
     <group>
@@ -48,6 +51,7 @@ export function Sword() {
         position={[0, guardY, 0]}
       />
       <HiltDetails
+        ferrules={!messer}
         tone={config.finish.hardwareTone}
         archetype={config.archetype}
         color={materials.hardware.color}
@@ -58,6 +62,18 @@ export function Sword() {
         gripTopY={gripTopY}
         gripBottomY={gripBottomY}
       />
+      {messer ? (
+        <MesserHilt
+          gripTopY={gripTopY}
+          gripBottomY={gripBottomY}
+          guardY={guardY}
+          cap={config.grip.cap ?? 'beak'}
+          material={materials.grip.material}
+          color={materials.grip.color}
+          roughness={materials.grip.roughness}
+          metal={gripMetal}
+        />
+      ) : (
       <Grip
         archetype={config.archetype}
         length={config.grip.length}
@@ -65,9 +81,11 @@ export function Sword() {
         material={materials.grip.material}
         color={materials.grip.color}
         roughness={materials.grip.roughness}
-        metal={{ color: materials.hardware.color, roughness: materials.hardware.roughness, tone: config.finish.hardwareTone === 'brass' || config.finish.hardwareTone === 'bronze' ? 'copper' : 'iron' }}
+        metal={gripMetal}
         position={[0, gripY, 0]}
       />
+      )}
+{!messer && (
       <Pommel
         engraved={config.pommel.engraved}
         tone={config.finish.hardwareTone}
@@ -79,6 +97,7 @@ export function Sword() {
         gemstone={gemstone}
         position={[0, pommelY, 0]}
       />
+      )}
     </group>
   );
 }

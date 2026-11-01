@@ -88,6 +88,9 @@ export const BLADE_PROFILES: Record<ArchetypeKey, BladeProfile[]> = {
     { id: 'short', name: 'Short broad', era: c('1250'), length: 'short', width: 'wide', fuller: 'none', swell: 0.9, clip: 0.76, shape: { bodyTaperEnd: 0.72, bodyTaperMidWidth: 0.95, tipShoulderRound: 0.05 },
       note: 'Short and broad, swelling to the tip, as painted in thirteenth-century manuscripts.',
       story: 'Known mostly from pictures: the Maciejowski Bible of about 1250 shows short, broad falchions swelling toward the tip. Surviving falchion blades run from 62 to 80 cm; this is the short end.' },
+    { id: 'messer', name: 'Messer', era: c('1500'), length: 'long', width: 'standard', fuller: 'none', swell: 0.04, clip: 0.9, shape: { bodyTaperEnd: 0.9, bodyTaperMidWidth: 0.95, tipShoulderRound: 0 },
+      note: 'Dead straight and parallel, the back cut off at a steep angle near the point.',
+      story: 'The blade of a Grosses Messer of about 1500: straight, parallel and single-edged, with plain flat faces and the back cut off steeply near the point, a chisel-like clip.' },
   ],
   estoc: [
     { id: 'gothicStiff', name: 'Gothic stiff', era: c('1375–1400'), length: 'long', width: 'narrow', fuller: 'none', section: 'diamond', shape: { bodyTaperEnd: 0.8, bodyTaperMidWidth: 0.45 },
@@ -248,6 +251,12 @@ export const FORMS: Record<ArchetypeKey, Form[]> = {
       note: 'As painted about 1250: a short, broad blade under a gilt cross bent hard toward it.',
       story: 'The Maciejowski Bible, painted in northern France about 1250, shows falchions with short, broad blades swelling to the tip. This one has a gilt hilt whose cross bends strongly toward the blade.',
       blade: 'short', guard: 'curved', pommel: 'wheel', grip: 'leather', steel: 'polished', fittings: 'brass' },
+    { id: 'grossesMesser', name: 'Grosses Messer', era: c('1500'), years: [1480, 1530],
+      anchor: 'After Kunsthistorisches Museum A 173',
+      anchorUrl: 'https://www.khm.at/en/object/372127/',
+      note: 'A straight knife-hilted blade with a steep clip, a lug on the cross and a plain end cap.',
+      story: 'The German Messer was the falchion’s knife-hilted cousin of the fifteenth and sixteenth centuries: a flat tang between riveted wooden grip plates, a lug (Nagel) on the cross to guard the knuckles, and a metal cap over the end. This Grosses Messer in Vienna, of about 1500 and 135 cm long, has a dead-straight blade cut off at a steep angle near the point, a small lug at the centre of the cross, a plain flat-topped cap, and a grip long enough for one and a half hands.',
+      blade: 'messer', guard: 'straight', pommel: 'disc', grip: 'leather', steel: 'satin', fittings: 'darkIron', gripLength: 'long', hilt: 'messer', cap: 'cylinder' },
   ],
   estoc: [
     // The saddle estoc leads: its triangular hollow-ground blade is the most documented estoc section.
@@ -318,9 +327,8 @@ export const FORMS: Record<ArchetypeKey, Form[]> = {
  * - Milanese · Wallace A471 · baluster cross; side rings; etched-and-gilt ricasso.
  *
  * Falchion
- * - Landsknecht Messer · KHM A 123 · knife hilt (slab tang, riveted scales, Nagel shell, hooked cap);
- *   curved blade with clipped false edge.
- * - Grosses Messer · KHM A 173 · straight blade with chisel clip; cylindrical cap; Nagel lug.
+ * - Landsknecht Messer · KHM A 123 · curved blade with clipped false edge; gilt fluted Nagel shell
+ *   (the knife hilt and beak cap now exist; A 123 is a two-handed Kriegsmesser, kept out by design).
  * - Medici · Wallace A710 · gilt lion's-head pommel; etched and gilt blade.
  * - Venetian · Met 1984.73 · knuckle bow and S-quillons; spiked disc pommel.
  * - All falchions: single-edged wedge section with a back groove.

@@ -21,6 +21,8 @@ export type GuardStyle = 'straight' | 'curved' | 'ornate' | 'fantasy';
 export type GuardTerminal = 'plain' | 'knob' | 'finial' | 'flared' | 'hooked' | 'quatrefoil';
 export type GripLength = 'short' | 'long';
 export type GripShape = 'straight' | 'swell' | 'waisted' | 'twoStage';
+// Falchion only: a knife hilt (Messer) instead of a sword hilt, with its cap bent into a beak or plain.
+export type MesserCap = 'beak' | 'cylinder';
 export type PommelStyle =
   | 'wheel'
   | 'disc'
@@ -51,7 +53,8 @@ export interface SwordConfig {
   blade: { length: BladeLength; width: BladeWidth; fuller: FullerStyle; profile?: string; shape?: BladeShape; section?: Section; ricasso?: 'none' | RicassoCover; flame?: boolean };
   // terminal / ecusson / rings: omitted = the guard style's own (see lib/hilt.ts).
   guard: { style: GuardStyle; engraved?: boolean; terminal?: GuardTerminal; ecusson?: boolean; rings?: 1 | 2 };
-  grip: { length: GripLength; shape?: GripShape };   // shape omitted = the type's own (GRIP_SHAPES)
+  // shape omitted = the type's own (GRIP_SHAPES); hilt 'messer' = riveted scales, Nagel and cap (falchion).
+  grip: { length: GripLength; shape?: GripShape; hilt?: 'messer'; cap?: MesserCap };
   pommel: { style: PommelStyle; engraved?: boolean };
   finish: {
     age: number;              // 0 = from the forge … 1 = excavated (see AGE_STOPS)

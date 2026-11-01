@@ -102,6 +102,18 @@ export function PommelSilhouette({ style }: { style: PommelStyle }) {
   );
 }
 
+// Messer caps, side view (edge side to the right): the end of the grip under a plain cap or a bird's beak.
+export function CapSilhouette({ cap }: { cap: 'beak' | 'cylinder' }) {
+  return (
+    <svg viewBox="0 0 64 64" aria-hidden="true">
+      <rect x="22" y="4" width="20" height="30" rx="3" {...STROKE} fill="currentColor" fillOpacity={0.1} />
+      {cap === 'beak'
+        ? <path d="M20 32 H44 V36 C50 37 55 41 57 50 C52 47 48 46 44 46 L24 45 C21 44 20 42 20 40 Z" {...STROKE} fill="currentColor" fillOpacity={0.2} />
+        : <rect x="20" y="32" width="24" height="12" rx="2.5" {...STROKE} fill="currentColor" fillOpacity={0.2} />}
+    </svg>
+  );
+}
+
 export function GripSwatch({ material, color }: { material: GripMaterial; color: string }) {
   const id = `g-${material}`;
   const fill = material === 'wire' ? '#b9a27a' : color;

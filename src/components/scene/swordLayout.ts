@@ -3,12 +3,15 @@ import { GUARD_HEIGHT } from './Crossguard';
 import { POMMEL_HALF_HEIGHTS } from '../../presets/pommelProfiles';
 import { BLADE_LENGTHS, GRIP_LENGTHS } from './dimensions';
 
+export const MESSER_CAP_HALF = 0.0065;
+
 // Vertical layout of the sword's parts (sword space, origin at the middle), shared by the
 // sword assembly, the scene's anchors and the camera focus.
 export function getSwordLayout(config: SwordConfig) {
   const bladeLen    = BLADE_LENGTHS[config.blade.length];
   const gripLen     = GRIP_LENGTHS[config.grip.length];
-  const pommelHalfH = POMMEL_HALF_HEIGHTS[config.pommel.style];
+  // A Messer ends in a short cap over the grip instead of a pommel.
+  const pommelHalfH = config.grip.hilt === 'messer' ? MESSER_CAP_HALF : POMMEL_HALF_HEIGHTS[config.pommel.style];
   const total       = bladeLen + GUARD_HEIGHT + gripLen + pommelHalfH * 2;
   const tipY        = total / 2;
   return {

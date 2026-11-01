@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
 import { useConfigStore } from '../../store/configStore';
 import { SWORD_TYPES } from '../../presets/swordTypes';
-import { ageLabel, DEFAULT_GRIP_SHAPE, DYES, GRIP_SHAPES, GRIP_SHAPE_OFFERED, ECUSSON_NOTE, RING_CHOICES, TERMINALS, EDGE_CHOICES, FITTINGS, GRIPS, GUARDS, POMMELS, RICASSO_CHOICES, SECTIONS, SECTION_CHOICES, STEELS, type StationId } from '../../presets/forge';
+import { ageLabel, DEFAULT_GRIP_SHAPE, HILT_NOTE, MESSER_CAPS, DYES, GRIP_SHAPES, GRIP_SHAPE_OFFERED, ECUSSON_NOTE, RING_CHOICES, TERMINALS, EDGE_CHOICES, FITTINGS, GRIPS, GUARDS, POMMELS, RICASSO_CHOICES, SECTIONS, SECTION_CHOICES, STEELS, type StationId } from '../../presets/forge';
 import { currentForm, currentProfile, overlaps, periodNote, profileBlade, profilesOf, type PeriodNote } from '../../lib/forms';
 import { bladeSpec, profileSpec } from '../../lib/bladeSpec';
 import { POMMEL_FORM } from '../../presets/pommelProfiles';
 import { HILT_OPTIONS, defaultTerminal, hiltSpec } from '../../lib/hilt';
-import { BladeSilhouette, GripSwatch, GuardSilhouette, PommelSilhouette, SteelSwatch } from './Silhouettes';
+import { BladeSilhouette, CapSilhouette, GripSwatch, GuardSilhouette, PommelSilhouette, SteelSwatch } from './Silhouettes';
 
 // The choices offered at each station, as one model shared by the chooser, the inspector and the keyboard.
 
@@ -75,13 +75,25 @@ export function useStationChoices(station: StationId | null): StationChoices | n
     engraving('guard', !!config.guard.engraved);
     cards = GUARDS.map((g) => ({ ...g, period: ofForm(g, form?.guard), off: off(g, form?.guard), selected: config.guard.style === g.id, art: <GuardSilhouette archetype={arch} style={g.id} />, apply: () => update('guard', { style: g.id }) }));
   }
-  if (station === 'pommel') {
+  if (station === 'pommel' && config.grip.hilt === 'messer') {
+    // A Messer has a cap over the grip's end instead of a pommel.
+    const own = form?.cap ?? 'beak', cur = config.grip.cap ?? 'beak';
+    cards = MESSER_CAPS.map((m) => ({ ...m, period: m.id === own || ofAge(m.years), off: form ? periodNote(m, form, own) : null, selected: cur === m.id,
+      art: <CapSilhouette cap={m.id} />, apply: () => update('grip', { cap: m.id === 'beak' ? undefined : m.id }) }));
+  } else if (station === 'pommel') {
     if (POMMEL_FORM[config.pommel.style].axis === 'z') engraving('pommel', !!config.pommel.engraved);
     cards = POMMELS.map((g) => ({ ...g, period: ofForm(g, form?.pommel), off: off(g, form?.pommel), selected: config.pommel.style === g.id, art: <PommelSilhouette style={g.id} />, apply: () => update('pommel', { style: g.id }) }));
   }
   if (station === 'grip') {
     cards = GRIPS.map((g) => ({ ...g, period: ofForm(g, form?.grip), off: off(g, form?.grip), selected: config.finish.gripMaterial === g.id, art: <GripSwatch material={g.id} color={config.finish.gripColor} />, apply: () => update('finish', { gripMaterial: g.id }) }));
-    if (GRIP_SHAPE_OFFERED.includes(arch)) {
+    // Falchion: a sword hilt or the Messer's knife hilt.
+    if (arch === 'falchion') {
+      const knife = config.grip.hilt === 'messer';
+      rows.push({ label: 'Hilt', kind: 'chips', items: [false, true].map((v) => ({ id: v ? 'messer' : 'sword', name: v ? 'Knife (Messer)' : 'Sword', selected: knife === v,
+        apply: () => update('grip', { hilt: v ? 'messer' : undefined }) })) });
+      if (knife) extraNote = HILT_NOTE.messer;
+    }
+    if (GRIP_SHAPE_OFFERED.includes(arch) && config.grip.hilt !== 'messer') {
       const own = DEFAULT_GRIP_SHAPE[arch], cur = config.grip.shape ?? own;
       rows.push({ label: 'Shape', kind: 'chips', items: GRIP_SHAPES.map((g) => ({ id: g.id, name: g.name, selected: cur === g.id, apply: () => update('grip', { shape: g.id === own ? undefined : g.id }) })) });
       extraNote = GRIP_SHAPES.find((g) => g.id === cur)?.note ?? '';

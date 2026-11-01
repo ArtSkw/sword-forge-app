@@ -1,5 +1,5 @@
 import type {
-  ArchetypeKey, BladeLength, BladeWidth, FullerStyle, GripMaterial, GripShape, GuardStyle, GuardTerminal,
+  ArchetypeKey, BladeLength, BladeWidth, FullerStyle, GripLength, GripMaterial, GripShape, GuardStyle, GuardTerminal, MesserCap,
   HardwareTone, PommelStyle, SteelFinish, SwordCondition,
 } from '../store/configStore';
 import type { Section } from './bladeSections';
@@ -80,6 +80,12 @@ export const DEFAULT_GRIP_SHAPE: Record<ArchetypeKey, GripShape> = {
   armingSword: 'swell', longsword: 'swell', bastardSword: 'waisted', vikingSword: 'straight', falchion: 'swell', estoc: 'straight', greatsword: 'twoStage',
 };
 export const GRIP_SHAPE_OFFERED: ArchetypeKey[] = ['longsword', 'bastardSword', 'estoc', 'greatsword'];
+// The Messer: the German knife-hilted cousin of the falchion (research: falchion-estoc).
+export const HILT_NOTE = { sword: '', messer: 'A knife hilt: wooden scales riveted to a flat tang, a lug (Nagel) on the cross to guard the knuckles, and a metal cap over the end.' };
+export const MESSER_CAPS: { id: MesserCap; name: string; era: string; years: [number, number]; note: string }[] = [
+  { id: 'beak', name: 'Bird’s beak', era: '15th–16th c.', years: [1400, 1600], note: 'A metal cap over the grip’s end, bent sideways into a beak toward the edge.' },
+  { id: 'cylinder', name: 'Plain cap', era: 'c. 1500', years: [1480, 1530], note: 'A short, flat-topped metal cap over the grip’s end.' },
+];
 export const ECUSSON_NOTE = 'A small leaf-shaped plate at the centre of the cross, lying over the blade on both faces.';
 export const RING_CHOICES: { id: 0 | 1 | 2; name: string; note: string }[] = [
   { id: 0, name: 'None', note: '' },
@@ -109,6 +115,9 @@ export type Form = {
   steel: SteelFinish;
   fittings: HardwareTone;
   terminal?: GuardTerminal;    // only where the object differs from the guard style's own
+  gripLength?: GripLength;     // omitted = the type's own
+  hilt?: 'messer';
+  cap?: MesserCap;
   ecusson?: boolean;
   rings?: 1 | 2;
 };

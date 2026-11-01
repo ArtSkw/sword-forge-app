@@ -18,6 +18,7 @@ type HiltDetailsProps = {
   guardY: number;
   gripTopY: number;
   gripBottomY: number;
+  ferrules?: boolean;   // false for the Messer, whose scales run to the cap
 };
 
 // [radius, y] for a ferrule of half-height h and outer radius r; closed at both ends.
@@ -27,7 +28,7 @@ const ferrule = (r: number, h: number): [number, number][] => [
 // The guard's central block: a short barrel with chamfered ends.
 const block = (r: number, h: number): [number, number][] => [[0, -h], [r * 0.88, -h], [r, -h * 0.45], [r, h * 0.45], [r * 0.88, h], [0, h]];
 
-export function HiltDetails({ tone, archetype, color, emissive, emissiveIntensity, roughness, guardY, gripTopY, gripBottomY }: HiltDetailsProps) {
+export function HiltDetails({ ferrules = true, tone, archetype, color, emissive, emissiveIntensity, roughness, guardY, gripTopY, gripBottomY }: HiltDetailsProps) {
   // Brass and bronze age to a brown-green patina, iron and steel to rust.
   const fit = surface(tone === 'brass' || tone === 'bronze' ? 'copper' : 'iron');
   const r = HILT_DETAIL_RECIPES[archetype], h = r.spacerHeight * 0.7;
@@ -41,8 +42,8 @@ export function HiltDetails({ tone, archetype, color, emissive, emissiveIntensit
   return (
     <>
       <mesh geometry={geos.block} position={[0, guardY, 0]}>{material}</mesh>
-      <mesh geometry={geos.top} position={[0, gripTopY - h, 0]}>{material}</mesh>
-      <mesh geometry={geos.bottom} position={[0, gripBottomY + h, 0]}>{material}</mesh>
+      {ferrules && <mesh geometry={geos.top} position={[0, gripTopY - h, 0]}>{material}</mesh>}
+      {ferrules && <mesh geometry={geos.bottom} position={[0, gripBottomY + h, 0]}>{material}</mesh>}
     </>
   );
 }

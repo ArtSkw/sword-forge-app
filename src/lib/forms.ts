@@ -36,6 +36,7 @@ export function applyForm(config: SwordConfig, form: Form): SwordConfig {
     form: form.id,
     blade: profile ? { ...config.blade, ...profileBlade(profile) } : config.blade,
     guard: { ...config.guard, style: form.guard, terminal: form.terminal, ecusson: form.ecusson, rings: form.rings },
+    grip: { ...config.grip, length: form.gripLength ?? preset.defaults.grip.length, hilt: form.hilt, cap: form.cap },
     pommel: { ...config.pommel, style: form.pommel },
     finish: {
       ...config.finish,
@@ -54,6 +55,7 @@ export function matchesForm(config: SwordConfig, form: Form): boolean {
   return (b.profile ?? profilesOf(config)[0]?.id) === form.blade && b.section === undefined && b.ricasso === undefined && !b.flame
     && config.guard.style === form.guard
     && sameHilt(config, form)
+    && config.grip.hilt === form.hilt && (config.grip.cap ?? 'beak') === (form.cap ?? 'beak')
     && config.pommel.style === form.pommel
     && config.finish.gripMaterial === form.grip
     && config.finish.gripColor.toLowerCase() === (form.gripColor ?? preset.defaults.finish.gripColor).toLowerCase()
