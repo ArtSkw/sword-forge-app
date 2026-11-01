@@ -126,14 +126,21 @@ export function makeAudioLayer(src: string, target: number, delayMs: number): ()
 
   const unsub = audioState.subscribe((m) => {
     if (m) audio.pause();
-    else audio.play().catch(() => {});
+    else if (!document.hidden) audio.play().catch(() => {});
   });
+  // Quiet while the tab is hidden (another tab, a minimised window); back when it is shown again.
+  const onVisibility = () => {
+    if (document.hidden) audio.pause();
+    else if (!_muted && audio.volume > 0) audio.play().catch(() => {});
+  };
+  document.addEventListener('visibilitychange', onVisibility);
 
   return () => {
     clearTimeout(startDelay);
     if (retryRamp !== null) clearInterval(retryRamp);
     if (resumeListener !== null) window.removeEventListener('pointerdown', resumeListener);
     unsub();
+    document.removeEventListener('visibilitychange', onVisibility);
     audio.pause();
   };
 }
