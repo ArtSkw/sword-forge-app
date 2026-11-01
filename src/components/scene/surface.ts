@@ -40,6 +40,19 @@ function engraving(name: 'scroll' | 'medallion') {
 // The sword's age (0 = from the forge, 1 = excavated), shared by every surface material and set by Sword
 // before each render, so scrubbing the age never rebuilds a material. Each layer fades in over its own span of age.
 const AGE = { value: 0 };
+// The blade's inscription and mark (one sword on screen, so the uniforms are shared): a mask texture over
+// a stretch of the blade, its start and length along the blade, the base half-width, and the inlay.
+const INSC = {
+  uInsc: { value: null as THREE.Texture | null },
+  uInscOn: { value: 0 },
+  uInscRect: { value: new THREE.Vector3(0, 0.3, 0.022) },   // y0 (m, blade space), length, half-width
+  uInscInlay: { value: 0 },                                  // 0 iron, 1 latten, 2 silver
+};
+const INLAY_INDEX = { iron: 0, latten: 1, silver: 2 } as const;
+export function setBladeMarkings(map: THREE.Texture | null, y0: number, len: number, halfWidth: number, inlay: keyof typeof INLAY_INDEX) {
+  INSC.uInsc.value = map; INSC.uInscOn.value = map ? 1 : 0;
+  INSC.uInscRect.value.set(y0, len, halfWidth); INSC.uInscInlay.value = INLAY_INDEX[inlay];
+}
 export const setSurfaceAge = (age: number) => { AGE.value = age; };
 
 type Recipe = {
@@ -64,6 +77,9 @@ uniform sampler2D uSurfMap;
 uniform sampler2D uSurfTarnish;
 uniform float uSurfReady;
 uniform float uSurfAge;
+#ifdef SURF_BLADE
+uniform sampler2D uInsc; uniform float uInscOn; uniform vec3 uInscRect; uniform float uInscInlay;
+#endif
 varying vec2 vEngraveUv;
 uniform sampler2D uEngrave;
 uniform float uEngraveReady;
@@ -150,6 +166,24 @@ function compile(recipe: Recipe) {
     // Darkening where the tarnish map is dark; edges and high points stay bright (they are wiped and honed).
     float sTarnish = smoothstep(0.22, 0.82, 1.0 - surfTarnish(${f(d.rustTile * 1.6)})) * aTarnish${k === 'blade' ? ' * (1.0 - 0.85 * vSurfEdge)' : ''};
     ${k === 'blade' ? `
+    // Inscription and mark: welded-in letters (front face upper half, reverse lower half, mirrored).
+    float sInsc = 0.0; vec2 inscUv = vec2(0.0);
+    if (uInscOn > 0.5) {
+      float iu = (vSurfPos.y - uInscRect.x) / uInscRect.y, across = vSurfPos.x / (2.0 * uInscRect.z);
+      inscUv = vec2(iu, vSurfNormal.z >= 0.0 ? 0.75 - across * 0.5 : 0.25 + across * 0.5);
+      float inside = step(0.0, iu) * step(iu, 1.0) * step(abs(across), 0.5);
+      sInsc = texture2D(uInsc, inscUv).r * inside * smoothstep(0.15, 0.6, abs(vSurfNormal.z));
+      if (uInscInlay < 0.5) {
+        // Twisted pattern-welded rods: a slightly darker steel with a fine twisted grain.
+        float twist = 0.8 + 0.2 * sin(vSurfPos.y * 2600.0 + vSurfPos.x * 1900.0);
+        diffuseColor.rgb = mix(diffuseColor.rgb, diffuseColor.rgb * 0.68 * twist, sInsc);
+      } else if (uInscInlay < 1.5) {
+        // Latten is softer and duller than the polished blade: it catches the room's light as gold.
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(1.0, 0.74, 0.34) * (1.0 - 0.45 * aPatina), sInsc);
+      } else {
+        diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.94, 0.94, 0.96) * (1.0 - 0.35 * aPatina), sInsc);
+      }
+    }
     // A freshly honed edge reads brighter than the flats; patina gathers in the fuller.
     diffuseColor.rgb *= 1.0 + 0.3 * aHoned * vSurfEdge;
     diffuseColor.rgb *= 1.0 - 0.6 * aPatina * vSurfRecess;` : ''}
@@ -169,13 +203,14 @@ function compile(recipe: Recipe) {
     ${engraveColor}`;
   const rough = `
     roughnessFactor = clamp(roughnessFactor + (sDetail - 0.5) * ${f(d.rough)} + sWear * 0.05 + ${k === 'leather' ? '0.0' : '0.1'} * sTarnish, 0.04, 1.0);
-    ${k === 'blade' ? 'roughnessFactor = clamp(roughnessFactor - 0.14 * aHoned * vSurfEdge + 0.22 * aPatina * vSurfRecess, 0.04, 1.0);' : ''}
+    ${k === 'blade' ? 'roughnessFactor = clamp(roughnessFactor - 0.14 * aHoned * vSurfEdge + 0.22 * aPatina * vSurfRecess + sInsc * (uInscInlay < 0.5 ? 0.12 : 0.42), 0.04, 1.0);' : ''}
     ${k === 'leather' ? 'roughnessFactor = mix(roughnessFactor - 0.25 * aWear * (1.0 - aRust), 0.97, aRust);' : 'roughnessFactor = mix(roughnessFactor, 0.9, sRust);'}
 `;
   const metal = metalPart ? 'metalnessFactor = mix(metalnessFactor, 0.05, sRust);' : '';
   const relief = `
     ${d.ch ? `normal = surfBump(normal, sDetail, ${f(d.bump)} * ${k === 'leather' ? '(1.0 + 1.5 * aPatina + 1.5 * aRust)' : '1.0'} * surfFade(${f(d.tile)}));` : ''}
     normal = surfBump(normal, sWear, 0.0009 * surfFade(${f(d.wearTile)}));
+    ${k === 'blade' ? 'if (uInscOn > 0.5) normal = surfBump(normal, 1.0 - sInsc, 0.0003 * (1.0 - smoothstep(0.6, 1.6, length(fwidth(inscUv)) * 1024.0)));' : ''}
     ${metalPart ? `normal = surfBump(normal, sPit * aRust, 0.0025 * (0.35 + sRust) * surfFade(${f(d.rustTile)}));` : ''}
     ${eg ? 'normal = surfBump(normal, 1.0 - sCut, 0.0007 * eFade);' : ''}`;
   return (shader: THREE.WebGLProgramParametersWithUniforms) => {
@@ -183,6 +218,7 @@ function compile(recipe: Recipe) {
     shader.uniforms.uSurfTarnish = { value: TARNISH };
     shader.uniforms.uSurfReady = READY;
     shader.uniforms.uSurfAge = AGE;
+    if (k === 'blade') Object.assign(shader.uniforms, INSC);
     if (eg) { const e = engraving(eg.kind === 'face' ? 'medallion' : 'scroll'); shader.uniforms.uEngrave = { value: e.map }; shader.uniforms.uEngraveReady = e.ready; }
     shader.defines = { ...shader.defines, ...defines };
     shader.vertexShader = shader.vertexShader

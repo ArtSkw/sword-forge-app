@@ -118,6 +118,8 @@ export type Form = {
   gripLength?: GripLength;     // omitted = the type's own
   hilt?: 'messer';
   cap?: MesserCap;
+  inscription?: string;        // presets/inscriptions.ts
+  mark?: string;
   ecusson?: boolean;
   rings?: 1 | 2;
 };

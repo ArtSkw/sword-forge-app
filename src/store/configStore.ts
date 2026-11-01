@@ -50,7 +50,8 @@ export interface SwordConfig {
   // shape overrides the archetype taper.
   form?: string;
   // section / ricasso / flame: the user's choices on top of the profile (omitted = the profile's own).
-  blade: { length: BladeLength; width: BladeWidth; fuller: FullerStyle; profile?: string; shape?: BladeShape; section?: Section; ricasso?: 'none' | RicassoCover; flame?: boolean };
+  // inscription / mark: ids from presets/inscriptions.ts; inlay overrides the inscription's own metal.
+  blade: { length: BladeLength; width: BladeWidth; fuller: FullerStyle; profile?: string; shape?: BladeShape; section?: Section; ricasso?: 'none' | RicassoCover; flame?: boolean; inscription?: string; inlay?: 'iron' | 'latten' | 'silver'; mark?: string };
   // terminal / ecusson / rings: omitted = the guard style's own (see lib/hilt.ts).
   guard: { style: GuardStyle; engraved?: boolean; terminal?: GuardTerminal; ecusson?: boolean; rings?: 1 | 2 };
   // shape omitted = the type's own (GRIP_SHAPES); hilt 'messer' = riveted scales, Nagel and cap (falchion).
