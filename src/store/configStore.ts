@@ -52,8 +52,7 @@ export interface SwordConfig {
   // shape overrides the archetype taper.
   form?: string;
   // section / ricasso / flame: the user's choices on top of the profile (omitted = the profile's own).
-  // inscription / mark: ids from presets/inscriptions.ts; inlay overrides the inscription's own metal.
-  blade: { length: BladeLength; width: BladeWidth; fuller: FullerStyle; profile?: string; shape?: BladeShape; section?: Section; ricasso?: 'none' | RicassoCover; flame?: boolean; inscription?: string; inlay?: 'iron' | 'latten' | 'silver'; mark?: string };
+  blade: { length: BladeLength; width: BladeWidth; fuller: FullerStyle; profile?: string; shape?: BladeShape; section?: Section; ricasso?: 'none' | RicassoCover; flame?: boolean };
   // terminal / ecusson / rings: omitted = the guard style's own (see lib/hilt.ts).
   // cm: the cross tip to tip (omitted = the guard style's own length on this type).
   guard: { style: GuardStyle; engraved?: boolean; terminal?: GuardTerminal; ecusson?: boolean; rings?: 1 | 2; wire?: WireInlay; cm?: number };
@@ -78,6 +77,10 @@ interface ConfigStore {
   update: <K extends keyof SwordConfig>(key: K, value: Partial<SwordConfig[K]>) => void;
   viewResetTick: number;
   bumpResetTick: () => void;
+  // Back to default: the type as it opens (its first Form), with the sword before it kept for an undo.
+  resetSword: () => void;
+  undoReset: () => void;
+  beforeReset: SwordConfig | null;
   // Forge UI state: the part being worked on (edit mode) and the historical account.
   station: StationId | null;
   setStation: (id: StationId | null) => void;
@@ -86,7 +89,7 @@ interface ConfigStore {
 }
 
 // A type opens on its first Form (the most iconic one).
-function typeConfig(key: ArchetypeKey): SwordConfig {
+export function typeConfig(key: ArchetypeKey): SwordConfig {
   const base: SwordConfig = { archetype: key, ...SWORD_TYPES[key].defaults };
   const first = formsOf(base)[0];
   return first ? applyForm(base, first) : base;
@@ -96,17 +99,21 @@ const DEFAULT_CONFIG = typeConfig('armingSword');
 
 export const useConfigStore = create<ConfigStore>((set) => ({
   config: DEFAULT_CONFIG,
-  setArchetype: (key) => set({ config: typeConfig(key), station: null }),
+  setArchetype: (key) => set({ config: typeConfig(key), station: null, beforeReset: null }),
   setForm: (id) => set((state) => {
     const form = formsOf(state.config).find((f) => f.id === id);
-    return form ? { config: applyForm(state.config, form) } : {};
+    return form ? { config: applyForm(state.config, form), beforeReset: null } : {};
   }),
   update: (key, value) =>
     set((state) => ({
       config: { ...state.config, [key]: { ...(state.config[key] as object), ...value } },
+      beforeReset: null,
     })),
   viewResetTick: 0,
   bumpResetTick: () => set((s) => ({ viewResetTick: s.viewResetTick + 1 })),
+  beforeReset: null,
+  resetSword: () => set((s) => ({ beforeReset: s.config, config: typeConfig(s.config.archetype), viewResetTick: s.viewResetTick + 1 })),
+  undoReset: () => set((s) => (s.beforeReset ? { config: s.beforeReset, beforeReset: null } : {})),
   station: null,
   setStation: (id) => set({ station: id, reading: false }),
   reading: false,

@@ -41,6 +41,7 @@
 .forge .btn:active { transform: translateY(0) scale(.97); transition-duration: 70ms; }
 .forge .btn.primary { border-color: var(--gold); background: linear-gradient(180deg, rgba(201, 169, 97, .24), rgba(201, 169, 97, .07)), var(--glass); }
 .forge .btn.icon { width: 40px; padding: 0; }
+.forge .btn[aria-disabled="true"] { opacity: .42; cursor: default; transform: none; box-shadow: inset 0 0 0 3px rgba(18, 13, 9, .74), inset 0 0 0 4px rgba(201, 169, 97, .12), 0 8px 24px rgba(0, 0, 0, .45); border-color: var(--gold-line); }
 .forge .btn[aria-pressed="true"] { border-color: var(--gold-hi); color: var(--gold-hi); background: linear-gradient(180deg, rgba(201, 169, 97, .22), rgba(201, 169, 97, .06)), var(--glass); }
 .forge .corner-l { position: absolute; z-index: 11; left: 24px; bottom: 24px; }
 .forge .corner-r { position: absolute; z-index: 11; right: 24px; bottom: 24px; display: flex; gap: 8px; }

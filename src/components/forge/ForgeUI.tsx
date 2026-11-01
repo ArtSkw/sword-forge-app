@@ -1,8 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
-import { ArrowLeft01Icon, ArrowRight01Icon, Camera01Icon, InformationCircleIcon, UndoIcon, ScrollTextIcon, VolumeHighIcon, VolumeMute02Icon } from '@hugeicons/core-free-icons';
+import { ArrowLeft01Icon, ArrowReloadHorizontalIcon, ArrowRight01Icon, Camera01Icon, InformationCircleIcon, UndoIcon, ScrollTextIcon, VolumeHighIcon, VolumeMute02Icon } from '@hugeicons/core-free-icons';
 import './forge.css';
-import { useConfigStore, type ArchetypeKey } from '../../store/configStore';
+import { typeConfig, useConfigStore, type ArchetypeKey } from '../../store/configStore';
 import { SWORD_TYPES, SWORD_TYPE_ORDER } from '../../presets/swordTypes';
 import { ARCHETYPE_ERA, STATIONS, ageLabel, type StationId } from '../../presets/forge';
 import { currentForm, formsOf, matchesForm } from '../../lib/forms';
@@ -35,7 +35,7 @@ const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matche
 
 const icon = (svg: IconSvgElement) => <HugeiconsIcon icon={svg} size={16} strokeWidth={1.5} />;
 const ICONS = {
-  scroll: icon(ScrollTextIcon), reset: icon(UndoIcon), sound: icon(VolumeHighIcon), muted: icon(VolumeMute02Icon),
+  scroll: icon(ScrollTextIcon), reset: icon(ArrowReloadHorizontalIcon), undo: icon(UndoIcon), sound: icon(VolumeHighIcon), muted: icon(VolumeMute02Icon),
   shot: icon(Camera01Icon), prev: icon(ArrowLeft01Icon), next: icon(ArrowRight01Icon),
   info: <HugeiconsIcon icon={InformationCircleIcon} size={18} strokeWidth={1.5} />,
 };
@@ -279,6 +279,29 @@ function FormSwitcher() {
   );
 }
 
+// ── Back to default: the type as it opens. For a few seconds after, the same button undoes it.
+// Disabled while the sword is already as it opens, so it never pretends to do something.
+const UNDO_MS = 8000;
+function ResetButton() {
+  const config = useConfigStore((s) => s.config);
+  const beforeReset = useConfigStore((s) => s.beforeReset);
+  const resetSword = useConfigStore((s) => s.resetSword), undoReset = useConfigStore((s) => s.undoReset);
+  const atDefault = useMemo(() => JSON.stringify(config) === JSON.stringify(typeConfig(config.archetype)), [config]);
+  // The undo offer lapses after a while; any other change drops it at once (in the store).
+  useEffect(() => {
+    if (!beforeReset) return;
+    const t = setTimeout(() => useConfigStore.setState({ beforeReset: null }), UNDO_MS);
+    return () => clearTimeout(t);
+  }, [beforeReset]);
+  if (beforeReset) return (
+    <button className="btn icon" aria-label="Undo reset" data-tip="Undo" data-tip-body="Bring back the sword as it was" onClick={() => { undoReset(); playTick(); }}>{ICONS.undo}</button>
+  );
+  return (
+    <button className="btn icon" aria-label="Back to default" aria-disabled={atDefault} data-tip="Back to default" data-tip-body={atDefault ? 'This sword is as it first opens' : 'Return this sword type to how it first opens'}
+      onClick={() => { if (!atDefault) { resetSword(); forgeSound(); } }}>{ICONS.reset}</button>
+  );
+}
+
 // ── Nav: previous · part · next (no text below it, so nothing can push it around) ──
 function Nav({ station, onStep }: { station: StationId | null; onStep: (d: number) => void }) {
   const i = station ? STATIONS.findIndex((s) => s.id === station) : 0;
@@ -301,7 +324,6 @@ export function ForgeUI() {
   const setStation = useConfigStore((s) => s.setStation);
   const setReading = useConfigStore((s) => s.setReading);
   const setArchetype = useConfigStore((s) => s.setArchetype);
-  const bumpResetTick = useConfigStore((s) => s.bumpResetTick);
   // The last station stays rendered while the edit panels fade out after Done.
   const [last, setLast] = useState<StationId | null>(station);
   if (station && station !== last) setLast(station);
@@ -404,12 +426,12 @@ export function ForgeUI() {
           </button>
         </div>
         <div className="corner-r fade hide-focus hide-reading" inert={overviewOff}>
-          <button className="btn icon" aria-label="Reset view" data-tip="Reset view" data-tip-body="Return the camera to where it started" onClick={() => { open(null); bumpResetTick(); }}>{ICONS.reset}</button>
+          <ResetButton />
           <button className="btn icon" aria-label={muted ? 'Unmute' : 'Mute'} data-tip={muted ? 'Sound off' : 'Sound on'} data-tip-body="Forge ambience, music and the clang of the anvil" onClick={() => audioState.toggle()}>{muted ? ICONS.muted : ICONS.sound}</button>
           <button className="btn icon" aria-label="Screenshot" data-tip="Screenshot" data-tip-body="Save a picture of your sword" onClick={() => takeScreenshot()}>{ICONS.shot}</button>
         </div>
         <div className="corner-r focus-only" inert={!station}>
-          <button className="btn icon" aria-label="Reset view" data-tip="Reset view" data-tip-body="Back to this part's first shot (or double-click the sword)" onClick={() => bumpResetTick()}>{ICONS.reset}</button>
+          <ResetButton />
           <button className="btn primary" onClick={() => open(null)} data-tip="Done" data-tip-body="Back to the whole sword (Esc)">Done</button>
         </div>
         <HistoricalScroll />

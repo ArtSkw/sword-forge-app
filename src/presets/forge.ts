@@ -131,8 +131,6 @@ export type Form = {
   guardCm?: number;            // the object's cross tip to tip, where recorded
   hilt?: 'messer';
   cap?: MesserCap;
-  inscription?: string;        // presets/inscriptions.ts
-  mark?: string;
   wire?: 'chequer' | 'lozenge' | 'bands';
   enamel?: 'azure' | 'gules';
   ecusson?: boolean;

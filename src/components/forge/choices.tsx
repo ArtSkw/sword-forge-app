@@ -6,7 +6,6 @@ import { currentForm, currentProfile, overlaps, periodNote, profileBlade, profil
 import { bladeSpec, profileSpec } from '../../lib/bladeSpec';
 import { POMMEL_FORM } from '../../presets/pommelProfiles';
 import { GUARDS_BY_TYPE } from '../../presets/guardShapes';
-import { BLADE_MARKINGS, INLAYS, INSCRIPTIONS, SMITH_MARKS } from '../../presets/inscriptions';
 import { HILT_OPTIONS, defaultTerminal, hiltSpec } from '../../lib/hilt';
 import { BladeSilhouette, CapSilhouette, GripSwatch, GuardSilhouette, PommelSilhouette, SteelSwatch } from './Silhouettes';
 
@@ -46,23 +45,6 @@ export function useStationChoices(station: StationId | null): StationChoices | n
       rows.push({ label: 'Section', kind: sections.length > 2 ? 'list' : 'chips', items: sections.map((id) => ({ id, name: SECTIONS.find((x) => x.id === id)?.name ?? id, selected: spec.section === id,
         apply: () => update('blade', { section: id === own.section ? undefined : id }) })) });
       extraNote = SECTIONS.find((x) => x.id === spec.section)?.note ?? '';
-    }
-    // Inscription (front + reverse), its inlay metal, and a smith's mark.
-    const offer = BLADE_MARKINGS[arch], insc = INSCRIPTIONS.find((i) => i.id === config.blade.inscription);
-    if (offer.inscriptions.length) {
-      rows.push({ label: 'Inscription', kind: 'list', items: [{ id: 'none', name: 'None' }, ...INSCRIPTIONS.filter((i) => offer.inscriptions.includes(i.id))].map((i) => ({ id: i.id, name: i.name,
-        selected: (config.blade.inscription ?? 'none') === i.id, apply: () => update('blade', { inscription: i.id === 'none' ? undefined : i.id, inlay: undefined }) })) });
-      if (insc) {
-        const inlay = config.blade.inlay ?? insc.inlay;
-        rows.push({ label: 'Inlay', kind: 'chips', items: INLAYS.map((m) => ({ id: m.id, name: m.name, selected: inlay === m.id, apply: () => update('blade', { inlay: m.id === insc.inlay ? undefined : m.id }) })) });
-        extraNote = `${extraNote} ${insc.note}`.trim();
-      }
-    }
-    if (offer.marks.length) {
-      rows.push({ label: 'Smith’s mark', kind: 'chips', items: [{ id: 'none', name: 'None' }, ...SMITH_MARKS.filter((m) => offer.marks.includes(m.id))].map((m) => ({ id: m.id, name: m.name,
-        selected: (config.blade.mark ?? 'none') === m.id, apply: () => update('blade', { mark: m.id === 'none' ? undefined : m.id }) })) });
-      const mk = SMITH_MARKS.find((m) => m.id === config.blade.mark);
-      if (mk) extraNote = `${extraNote} ${mk.note}`.trim();
     }
     if (arch === 'greatsword') {
       const cover = spec.ricasso?.cover ?? 'none', ownCover = own.ricasso?.cover ?? 'none';

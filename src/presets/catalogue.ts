@@ -113,7 +113,7 @@ export const FORMS: Record<ArchetypeKey, Form[]> = {
       anchorUrl: 'http://museovirasto.finna.fi/Record/museovirasto.FE4D68B51D0D5FEE17E1354056773CBA',
       note: 'A wide, domed upper guard under a small three-sided cap, over an +VLFBERHT+ blade.',
       story: 'Petersen’s type H, the commonest hilt in Viking Norway: elliptical guards with gently domed faces and a small pyramidal cap riveted to the upper guard. This sword, found in Finland, has a blade of 78.2 cm signed +VLFBERHT+, a guard of 10.6 cm and an upper guard of 8.5 cm, and weighs 1340 g. Its guards are inlaid with silver and copper wire in a chequerboard, 24 wires to the centimetre.',
-      blade: 'ulfberht', guard: 'vikingBar', pommel: 'pyramid', grip: 'leather', steel: 'satin', fittings: 'darkIron', inscription: 'ulfberht', wire: 'chequer', guardCm: 10.6 },
+      blade: 'ulfberht', guard: 'vikingBar', pommel: 'pyramid', grip: 'leather', steel: 'satin', fittings: 'darkIron', wire: 'chequer', guardCm: 10.6 },
     { id: 'frankishFive', name: 'Frankish five-lobe', era: '9th–10th c.', years: [800, 1000],
       anchor: 'After Wallace Collection A456',
       anchorUrl: 'https://artsandculture.google.com/asset/sword-detail-unknown/SgEJJIhsBWl9YA',
@@ -131,7 +131,7 @@ export const FORMS: Record<ArchetypeKey, Form[]> = {
       anchorUrl: 'http://museovirasto.finna.fi/Record/museovirasto.453FB6C8D87044003B391646E7A082C4',
       note: 'A disc pommel and a blade signed GICELIN ME FECIT: the step to the knightly sword.',
       story: 'A disc replaces the nut-shaped pommel, and the guard ends are round and slightly drooped. The blade reads +INNOMINEDOMINI+ on one face and +GICELINMEFECIT+, Gicelin made me, on the other. Disc pommels in Finnish graves of about 1050 mark the bridge to the knightly sword.',
-      blade: 'late', guard: 'longBar', pommel: 'disc', grip: 'leather', steel: 'satin', fittings: 'darkIron', inscription: 'gicelin' },
+      blade: 'late', guard: 'longBar', pommel: 'disc', grip: 'leather', steel: 'satin', fittings: 'darkIron' },
   ],
   armingSword: [
     { id: 'whittlesea', name: 'Whittlesea Mere', era: c('1250–1300'), years: [1250, 1300],
