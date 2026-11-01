@@ -1,13 +1,11 @@
 import type { ArchetypeKey, GuardStyle, GuardTerminal, SwordConfig } from '../store/configStore';
-import { getGuardTerminalRecipe } from '../presets/archetypeDetails';
+import { GUARD_DEFS } from '../presets/guardShapes';
 
 // The guard's ends, écusson and side rings: what a guard style brings by default, and what the sword has.
 
 /** The ends a guard style has on this sword type when nothing else is chosen. */
-export function defaultTerminal(archetype: ArchetypeKey, style: GuardStyle): GuardTerminal {
-  if (style === 'ornate') return 'finial';
-  if (archetype === 'vikingSword') return 'plain';
-  return getGuardTerminalRecipe(archetype, style).kind === 'rounded' ? 'knob' : 'plain';
+export function defaultTerminal(_archetype: ArchetypeKey, style: GuardStyle): GuardTerminal {
+  return GUARD_DEFS[style].terminal;
 }
 
 export type HiltSpec = { terminal: GuardTerminal; ecusson: boolean; rings: 0 | 1 | 2 };

@@ -4,6 +4,7 @@ import type { GripMaterial, MesserCap } from '../../store/configStore';
 import { surface } from './surface';
 import { turnedGeometry } from './turned';
 import { MESSER_CAP_HALF } from './swordLayout';
+import { woodTexture } from './gripTextures';
 
 // The Messer's knife hilt (KHM A 123, A 173): two wooden scales riveted to a flat tang that shows as a
 // thin steel line along both narrow edges, a lug (Nagel) on the cross guarding the knuckles, and a metal
@@ -94,7 +95,7 @@ export function MesserHilt({ gripTopY, gripBottomY, guardY, cap, material, color
   const metalMat = <meshStandardMaterial key={steel.key} {...steel.props} color={metal.color} metalness={1} roughness={metal.roughness} />;
   const scaleMat = material === 'leather'
     ? <meshStandardMaterial key={leather.key} {...leather.props} color={color} metalness={0} roughness={roughness} />
-    : <meshStandardMaterial key="wood-scales" color={color} metalness={0} roughness={Math.max(0.4, roughness - 0.25)} />;
+    : <meshStandardMaterial key="wood-scales" map={woodTexture()} color={material === 'wood' ? color : '#c9ab8a'} metalness={0} roughness={Math.max(0.4, roughness - 0.25)} />;
   const rivets = Array.from({ length: RIVETS }, (_, k) => {
     const t = 0.18 + (k / (RIVETS - 1)) * 0.64;
     return { y: gripBottomY + t * len, z: half(t).z - 0.0004 };

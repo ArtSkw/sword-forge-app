@@ -89,7 +89,7 @@ function writhen(): THREE.BufferGeometry {
   });
   for (let i = 0; i < fine.length - 1; i++) for (let j = 0; j < segs; j++) {
     const a = i * (segs + 1) + j, b = a + 1, c = a + segs + 1, d = c + 1;
-    index.push(a, c, b, b, c, d);
+    index.push(a, b, c, b, d, c);   // the profile runs top to bottom: this winding faces outward
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));

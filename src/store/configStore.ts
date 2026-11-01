@@ -16,7 +16,9 @@ export type ArchetypeKey =
 export type BladeLength = 'short' | 'medium' | 'long' | 'extraLong';
 export type BladeWidth = 'narrow' | 'standard' | 'wide';
 export type FullerStyle = 'none' | 'single' | 'double' | 'decorative';
-export type GuardStyle = 'straight' | 'curved' | 'ornate' | 'fantasy';
+export type GuardStyle =
+  | 'vikingBar' | 'vikingCurved' | 'longBar' | 'bowtie' | 'curvedDown' | 'roundCross'
+  | 'recurved' | 'flatBroad' | 'arched' | 'longQuillons' | 'scottish';
 // Guard ends: plain domed, a ball knob, a turned (baluster) finial, flared, hooked toward the blade, a quatrefoil plate.
 export type GuardTerminal = 'plain' | 'knob' | 'finial' | 'flared' | 'hooked' | 'quatrefoil';
 export type GripLength = 'short' | 'long';
@@ -30,7 +32,6 @@ export type PommelStyle =
   | 'brazilNut'
   | 'fishtail'
   | 'ornate'
-  | 'fantasy'
   // Viking hilts: a pommel crown riveted to its own upper guard (Petersen types H, S and K)
   | 'pyramid'
   | 'lobed3'
@@ -42,7 +43,6 @@ export type SwordCondition = 'pristine' | 'used' | 'battleWorn' | 'ancient';
 export type SteelFinish = 'polished' | 'satin' | 'patternWelded';
 export type HardwareTone = 'steel' | 'brass' | 'bronze' | 'darkIron';
 export type GripMaterial = 'leather' | 'wood' | 'cord' | 'wire';
-export type GemstoneType = 'none' | 'ruby' | 'sapphire' | 'emerald' | 'amber';
 
 export interface SwordConfig {
   archetype: ArchetypeKey;
@@ -64,7 +64,6 @@ export interface SwordConfig {
     gripMaterial: GripMaterial;
     gripColor: string;
   };
-  fantasy: { enabled: boolean; runes: boolean; gemstone: GemstoneType };
 }
 
 interface ConfigStore {

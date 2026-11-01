@@ -12,37 +12,6 @@ import { chain, surface } from './surface';
 // and the outline in lib/bladeSpec.ts. Ridges and edges keep hard normals, so each facet catches its own
 // light; ricasso, parrying hooks and the leather wrap are added as separate meshes.
 
-// 9 rune patterns — each is a rotation in radians applied to the main stroke mark.
-// Secondary entries add a crossing stroke at a different angle.
-const RUNE_ROTATIONS: number[][] = [
-  [0], [0.4], [0, 0.35], [-0.4], [0, -0.35], [0.55], [-0.55], [0.35, -0.35], [0],
-];
-
-function Runes({ spec }: { spec: BladeSpec }) {
-  const key = JSON.stringify(spec);
-  const marks = useMemo(() => {
-    const startT = spec.fullerStart + 0.04, endT = spec.fullerEnd - 0.04, n = RUNE_ROTATIONS.length;
-    // Sit on the face at the blade's centre line, following the distal taper.
-    const per = sectionPerimeter(spec.section, 'none', spec.archetype).slice(0, 15);
-    const mid = per.reduce((a, b) => (Math.abs(b[0]) < Math.abs(a[0]) ? b : a))[1];
-    return RUNE_ROTATIONS.map((rotations, i) => {
-      const t = startT + (i / (n - 1)) * (endT - startT);
-      return { y: (t - 0.5) * spec.length, z: mid * spec.halfThick * (1 - t * (1 - TIP_THICK_T)) + 0.0004, hw: halfWidths(spec, t).edge, rotations };
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
-  return (
-    <>
-      {marks.map(({ y, z, hw, rotations }, i) => rotations.map((rot, j) => (
-        <mesh key={`${i}-${j}`} position={[0, y, z]} rotation={[0, 0, rot]}>
-          <planeGeometry args={[hw * 0.12, 0.0015]} />
-          <meshBasicMaterial color="#90C8FF" transparent opacity={0.78} depthWrite={false} polygonOffset polygonOffsetFactor={-2} polygonOffsetUnits={-2} side={THREE.DoubleSide} />
-        </mesh>
-      )))}
-    </>
-  );
-}
-
 const TIP_THICK_T = 0.02;
 const FULLER_BLEND = 0.05;
 const BLUNT = 0.6;           // ricasso: the edges are flattened to this share of the thickness
@@ -291,7 +260,7 @@ function makeBladeRoughnessMap(): THREE.CanvasTexture {
 const PATTERN_WELDED_MAP = makePatternWeldedMap();
 const BLADE_ROUGHNESS_MAP = makeBladeRoughnessMap();
 
-type BladeProps = { spec: BladeSpec; color: string; steelFinish: SteelFinish; age: number; runes: boolean };
+type BladeProps = { spec: BladeSpec; color: string; steelFinish: SteelFinish; age: number };
 
 // Grind lines worked out in the shader from the blade's own coordinates (metres), not from a texture, so
 // they stay crisp at any zoom. Lines run along the blade; where they would be finer than a pixel they fade,
@@ -331,7 +300,7 @@ function grindShader(strength: { value: number }) {
 // One compiled variant per finish (the material remounts when the finish changes).
 const GRIND_SHADERS = Object.fromEntries((Object.keys(GRIND) as SteelFinish[]).map((f) => [f, grindShader({ value: GRIND[f] })])) as Record<SteelFinish, ReturnType<typeof grindShader>>;
 
-function Steel({ color, steelFinish, age }: Omit<BladeProps, 'spec' | 'runes'>) {
+function Steel({ color, steelFinish, age }: Omit<BladeProps, 'spec'>) {
   const phys = getBladePhysicalRecipe(age, steelFinish);
   const wear = surface('blade');
 
@@ -356,7 +325,7 @@ function Steel({ color, steelFinish, age }: Omit<BladeProps, 'spec' | 'runes'>) 
 
 const LEATHER = { color: '#3a2416', band: '#24160d', pad: 0.0024, normal: new THREE.Vector2(0.6, 0.6) };
 
-export function Blade({ spec, color, steelFinish, age, runes }: BladeProps) {
+export function Blade({ spec, color, steelFinish, age }: BladeProps) {
   // The spec is rebuilt on every config change; rebuild the geometry only when it really differs.
   const key = JSON.stringify(spec);
   // Nicks are geometry: rebuilt only when their depth changes by a step, so scrubbing the age stays smooth
@@ -396,7 +365,6 @@ export function Blade({ spec, color, steelFinish, age, runes }: BladeProps) {
           <mesh geometry={wrap.band} position={[0, baseY + 0.003 + wrap.len - 0.006, 0]}><meshStandardMaterial color={LEATHER.band} roughness={0.6} metalness={0} /></mesh>
         </>
       )}
-      {runes && <Runes spec={spec} />}
     </group>
   );
 }

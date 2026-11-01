@@ -1,6 +1,5 @@
 import type { ArchetypeKey, GripMaterial, GuardStyle, PommelStyle, SteelFinish } from '../../store/configStore';
-import { getGuardParams } from '../../presets/guardShapes';
-import { getGuardTerminalRecipe } from '../../presets/archetypeDetails';
+import { GUARD_DEFS, guardDef } from '../../presets/guardShapes';
 import { BRAZIL_NUT, FISHTAIL_OUTLINE, POMMEL_FORM, POMMEL_PROFILES, VIKING_POMMELS } from '../../presets/pommelProfiles';
 import type { BladeProfile } from '../../presets/forge';
 import { RICASSO, halfWidths, profileSpec } from '../../lib/bladeSpec';
@@ -13,23 +12,24 @@ const STROKE = { fill: 'none', stroke: 'currentColor', strokeWidth: 1.25, stroke
 const pts = (list: [number, number][]) => list.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
 
 export function GuardSilhouette({ archetype, style }: { archetype: ArchetypeKey; style: GuardStyle }) {
-  const p = getGuardParams(style, archetype);
-  const sc = 54 / 0.29, cx = 32, cy = 33, n = 16, top: [number, number][] = [], bot: [number, number][] = [];
-  const half = 0.009 * (p.sectionScale ?? 1);
+  const d = guardDef(style, archetype), t = GUARD_DEFS[style].terminal;
+  // Fit the guard to the card: a two-hander's quillons are drawn at the same width as a Viking bar.
+  const sc = 50 / Math.max(0.15, d.width), cx = 32, cy = 34, n = 20, top: [number, number][] = [], bot: [number, number][] = [];
   for (let i = 0; i <= n; i++) {
-    const t = i / n, u = Math.abs(2 * t - 1), x = cx + (t - 0.5) * p.width * sc;
-    const y = cy - p.tipY * u * u * sc, h = half * (1 - u * (1 - p.tipScale)) * sc;
-    top.push([x, y - h]); bot.push([x, y + h]);
+    const tt = i / n, u = Math.abs(2 * tt - 1), x = cx + (tt - 0.5) * d.width * sc;
+    const bend = (d.linear ? d.tipY * u : d.tipY * u * u) * sc;
+    const flare = t === 'flared' ? 1 + 1.5 * Math.max(0, (u - 0.62) / 0.38) ** 2 : 1;
+    const h = Math.max(0.9, d.secY * (1 - u * (1 - d.tipScale)) * flare * sc * 1.6);
+    top.push([x, cy - bend - h]); bot.push([x, cy - bend + h]);
   }
-  const term = getGuardTerminalRecipe(archetype, style);
-  const endY = cy - p.tipY * sc, endX = (p.width / 2) * sc;
-  const r = term.kind !== 'none' ? (term.radius ?? 0.01) * sc * 0.9 : style === 'ornate' ? 2.6 : 0;
+  const endY = cy - (d.linear ? d.tipY : d.tipY) * sc, endX = (d.width / 2) * sc;
+  const r = t === 'knob' ? 2.4 : t === 'finial' ? 2.2 : t === 'quatrefoil' ? 3 : 0;
   return (
     <svg viewBox="0 0 64 64" aria-hidden="true">
-      <path d={`M32 4 V${cy - half * sc - 1}`} {...STROKE} strokeWidth={2.4} opacity={0.45} />
-      <path d={`M32 ${cy + half * sc + 1} V60`} {...STROKE} strokeWidth={3.2} opacity={0.45} />
+      <path d={`M32 4 V${cy - d.secY * sc * 1.6 - 1}`} {...STROKE} strokeWidth={2.4} opacity={0.45} />
+      <path d={`M32 ${cy + d.secY * sc * 1.6 + 1} V60`} {...STROKE} strokeWidth={3.2} opacity={0.45} />
       <polygon points={pts([...top, ...bot.reverse()])} {...STROKE} fill="currentColor" fillOpacity={0.14} />
-      {r > 0 && <><circle cx={cx - endX} cy={endY} r={r} {...STROKE} fill="currentColor" fillOpacity={0.14} /><circle cx={cx + endX} cy={endY} r={r} {...STROKE} fill="currentColor" fillOpacity={0.14} /></>}
+      {r > 0 && <><circle cx={cx - endX - r * 0.6} cy={endY} r={r} {...STROKE} fill="currentColor" fillOpacity={0.14} /><circle cx={cx + endX + r * 0.6} cy={endY} r={r} {...STROKE} fill="currentColor" fillOpacity={0.14} /></>}
     </svg>
   );
 }

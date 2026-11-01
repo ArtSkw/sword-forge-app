@@ -200,7 +200,7 @@ export function getBladePhysicalRecipe(age: number, steelFinish: SteelFinish): B
   };
 }
 
-export function getSwordMaterialRecipes(finish: SwordConfig['finish']): SwordMaterialRecipes {
+export function getSwordMaterialRecipes(finish: SwordConfig['finish'], woodTint?: string): SwordMaterialRecipes {
   const { age, steelFinish, hardwareTone, gripColor, gripMaterial } = finish;
   const gripRecipe = GRIP_MATERIAL_RECIPES[gripMaterial];
 
@@ -217,7 +217,8 @@ export function getSwordMaterialRecipes(finish: SwordConfig['finish']): SwordMat
     grip: {
       material: gripMaterial,
       // Wood shows its own grain (a white tint that darkens with age); leather and cord take the dye.
-      color: gripMaterial === 'wood' ? shadeHex('#c9ab8a', atAge(GRIP_FINISH_SHADE, age)) : shadeHex(gripColor, atAge(GRIP_FINISH_SHADE, age) * gripRecipe.colorFactor),
+      // A Form may give its wood a colour of its own (the Milanese court sword's black horn).
+      color: gripMaterial === 'wood' ? shadeHex(woodTint ?? '#c9ab8a', atAge(GRIP_FINISH_SHADE, age)) : shadeHex(gripColor, atAge(GRIP_FINISH_SHADE, age) * gripRecipe.colorFactor),
       metalness: gripRecipe.metalness,
       roughness: clamp(atAge(GRIP_ROUGHNESS, age) + gripRecipe.roughnessOffset, 0.18, 0.98),
       normalScale: gripRecipe.normalScale,

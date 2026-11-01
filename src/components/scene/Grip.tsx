@@ -4,6 +4,7 @@ import type { ArchetypeKey, GripLength, GripMaterial, GripShape } from '../../st
 import { getGripDetailRecipe } from '../../presets/archetypeDetails';
 import { GRIP_LENGTHS } from './dimensions';
 import { surface } from './surface';
+import { woodTexture } from './gripTextures';
 
 // The grip, built as one solid whose surface is the wrap itself, so each material reads by its shape:
 // - wood: two halves around the tang, planed and oiled (grain texture, a fine seam on each edge);
@@ -42,7 +43,7 @@ const MOULDING_T = 0.52;
 
 function gripGeometry(len: number, rBot: number, rTop: number, material: GripMaterial, shape: GripShape): THREE.BufferGeometry {
   const w = WRAPS[material];
-  const rows = Math.max(140, Math.ceil(w.pitch ? (len / w.pitch) * (w.kind === 'strip' ? 24 : 9) : 140));
+  const rows = Math.max(140, Math.ceil(w.pitch ? (len / w.pitch) * (w.kind === 'strip' ? 24 : 6) : 140));
   const positions: number[] = [], uvs: number[] = [], index: number[] = [];
   for (let i = 0; i <= rows; i++) {
     const t = i / rows, y = -len / 2 + t * len;
@@ -62,7 +63,7 @@ function gripGeometry(len: number, rBot: number, rTop: number, material: GripMat
         const phase = y / w.pitch + u, f = phase - Math.floor(phase);
         if (w.kind === 'cord') r += w.height * wrapOn * Math.sqrt(Math.max(0, 1 - (2 * f - 1) ** 2));
         if (w.kind === 'wire') {
-          const bead = 0.5 + 0.5 * Math.cos(a * 46 + phase * 2.4);   // the twist of the strands along the wire
+          const bead = 0.5 + 0.5 * Math.cos(a * 28);   // the twist of the strands, a whole number per turn (no seam)
           r += w.height * wrapOn * Math.sqrt(Math.max(0, 1 - (2 * f - 1) ** 2)) * (0.72 + 0.28 * bead);
         }
         // Leather strip: thickest at its overlapping edge, then a rounded step down onto the next turn.
@@ -84,20 +85,6 @@ function gripGeometry(len: number, rBot: number, rTop: number, material: GripMat
   geo.setIndex(index);
   geo.computeVertexNormals();
   return geo;
-}
-
-const BASE = import.meta.env.BASE_URL;
-const LOW_TIER = typeof window !== 'undefined' && (matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 700);
-let woodMap: THREE.Texture | null = null;
-function wood() {
-  if (!woodMap) {
-    woodMap = new THREE.TextureLoader().load(`${BASE}textures/wood${LOW_TIER ? '-512' : ''}.webp`);
-    woodMap.wrapS = woodMap.wrapT = THREE.RepeatWrapping;
-    woodMap.colorSpace = THREE.SRGBColorSpace;
-    woodMap.anisotropy = 16;
-    woodMap.repeat.set(1, 1 / 0.09);   // one tile round the grip and every 9 cm along it
-  }
-  return woodMap;
 }
 
 type GripProps = {
@@ -122,7 +109,7 @@ export function Grip({ archetype, length, shape, material, color, roughness, met
     <group position={position}>
       <mesh geometry={geo}>
         {material === 'wire' && <meshStandardMaterial key={wire.key} {...wire.props} color={metal.color} metalness={1} roughness={Math.max(0.22, metal.roughness - 0.08)} />}
-        {material === 'wood' && <meshStandardMaterial key="wood" map={wood()} color={color} metalness={0} roughness={Math.max(0.38, roughness - 0.3)} />}
+        {material === 'wood' && <meshStandardMaterial key="wood" map={woodTexture()} color={color} metalness={0} roughness={Math.max(0.38, roughness - 0.3)} />}
         {(material === 'leather' || material === 'cord') && <meshStandardMaterial key={leather.key} {...leather.props} color={color} metalness={0} roughness={roughness} />}
       </mesh>
     </group>

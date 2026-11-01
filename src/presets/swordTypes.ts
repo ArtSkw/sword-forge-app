@@ -27,12 +27,6 @@ export type SwordPreset = {
   defaults: Omit<SwordConfig, 'archetype'>;
 };
 
-const DEFAULT_FANTASY: SwordConfig['fantasy'] = {
-  enabled: false,
-  runes: false,
-  gemstone: 'none',
-};
-
 const finish = (
   gripColor: string,
   overrides: Partial<Omit<SwordConfig['finish'], 'gripColor'>> = {},
@@ -60,11 +54,10 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     fullerEnd: 0.76,
     defaults: {
       blade: { length: 'medium', width: 'standard', fuller: 'single' },
-      guard: { style: 'straight' },
+      guard: { style: 'longBar' },
       grip: { length: 'short' },
       pommel: { style: 'wheel' },
       finish: finish('#1C1008'), // near-black worn leather — most documented for knightly use
-      fantasy: DEFAULT_FANTASY,
     },
   },
   longsword: {
@@ -81,11 +74,10 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     fullerEnd: 0.735,
     defaults: {
       blade: { length: 'long', width: 'standard', fuller: 'single' },
-      guard: { style: 'straight' },
+      guard: { style: 'roundCross' },
       grip: { length: 'long' },
       pommel: { style: 'scentStopper' },
       finish: finish('#32150f'), // darker red-brown leather, matching restrained two-hand reproductions
-      fantasy: DEFAULT_FANTASY,
     },
   },
   bastardSword: {
@@ -102,11 +94,10 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     fullerEnd: 0.800,
     defaults: {
       blade: { length: 'long', width: 'standard', fuller: 'single' },
-      guard: { style: 'curved' },
+      guard: { style: 'roundCross' },
       grip: { length: 'long' },
       pommel: { style: 'fishtail' },
       finish: finish('#101A2C', { hardwareTone: 'brass' }), // deep navy leather with warmer brass fittings
-      fantasy: DEFAULT_FANTASY,
     },
   },
   vikingSword: {
@@ -121,11 +112,10 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     clipT: 1,
     defaults: {
       blade: { length: 'short', width: 'wide', fuller: 'single' },
-      guard: { style: 'straight' },
+      guard: { style: 'vikingBar' },
       grip: { length: 'short' },
       pommel: { style: 'brazilNut' },
       finish: finish('#655d49', { age: 1 / 3, steelFinish: 'satin', hardwareTone: 'darkIron', gripMaterial: 'wood' }), // darker aged ivory grip with a lightly used bright steel blade
-      fantasy: DEFAULT_FANTASY,
     },
   },
   falchion: {
@@ -142,11 +132,10 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     fullerEnd: 0.690,
     defaults: {
       blade: { length: 'medium', width: 'standard', fuller: 'none' },
-      guard: { style: 'curved' },
+      guard: { style: 'arched' },
       grip: { length: 'short' },
       pommel: { style: 'disc' },
       finish: finish('#11100E', { steelFinish: 'satin', hardwareTone: 'darkIron', gripMaterial: 'cord' }), // black cord grip and muted fittings for a practical chopping sword
-      fantasy: DEFAULT_FANTASY,
     },
   },
   estoc: {
@@ -161,11 +150,10 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     clipT: 1,
     defaults: {
       blade: { length: 'extraLong', width: 'narrow', fuller: 'none' },
-      guard: { style: 'straight' },
+      guard: { style: 'longBar' },
       grip: { length: 'long' },
       pommel: { style: 'scentStopper' },
       finish: finish('#2A1710', { steelFinish: 'satin' }), // dark brown grip, subdued steel for a utilitarian armor-piercer
-      fantasy: DEFAULT_FANTASY,
     },
   },
   greatsword: {
@@ -182,11 +170,10 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     fullerEnd: 0.650,
     defaults: {
       blade: { length: 'extraLong', width: 'standard', fuller: 'double' },
-      guard: { style: 'curved' },
+      guard: { style: 'longQuillons' },
       grip: { length: 'long' },
       pommel: { style: 'fishtail' },
       finish: finish('#4A1118', { steelFinish: 'satin', hardwareTone: 'darkIron', gripMaterial: 'cord' }), // maroon cord grip with subdued war-sword fittings
-      fantasy: DEFAULT_FANTASY,
     },
   },
 };

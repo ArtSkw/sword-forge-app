@@ -5,6 +5,7 @@ import { getSwordMaterialRecipes } from '../../presets/materialRecipes';
 import { Blade } from './Blade';
 import { bladeSpec } from '../../lib/bladeSpec';
 import { hiltSpec } from '../../lib/hilt';
+import { currentForm } from '../../lib/forms';
 import { DEFAULT_GRIP_SHAPE } from '../../presets/forge';
 import { setBladeMarkings, setSurfaceAge } from './surface';
 import { REGION_LEN, REGION_START, markingsTexture } from './markingsTexture';
@@ -42,17 +43,16 @@ export function Sword() {
   const gripBottomY = gripY - gripLen / 2;
 
   const { age, steelFinish } = config.finish;
-  const fantasyOn = config.fantasy.enabled;
-  const runes     = fantasyOn && config.fantasy.runes;
-  const gemstone  = fantasyOn ? config.fantasy.gemstone : 'none' as const;
-  const materials = getSwordMaterialRecipes(config.finish);
+  // Wood keeps its grain colour, unless a Form names one (black horn).
+  const form = currentForm(config);
+  const materials = getSwordMaterialRecipes(config.finish, config.finish.gripMaterial === 'wood' && form?.grip === 'wood' && form.gripColor && config.finish.gripColor.toLowerCase() === form.gripColor.toLowerCase() ? form.gripColor : undefined);
   const gripMetal = { color: materials.hardware.color, roughness: materials.hardware.roughness, tone: (config.finish.hardwareTone === 'brass' || config.finish.hardwareTone === 'bronze' ? 'copper' : 'iron') as 'iron' | 'copper' };
 
   return (
     <group>
       {/* A single-edged blade turns its edge to face the same way as the curved guards and the swell. */}
       <group position={[0, bladeY, 0]} rotation={[0, spec.singleEdged ? Math.PI : 0, 0]}>
-        <Blade spec={spec} color={materials.blade.color} steelFinish={steelFinish} age={age} runes={runes} />
+        <Blade spec={spec} color={materials.blade.color} steelFinish={steelFinish} age={age} />
       </group>
       <Crossguard
         {...hilt}
@@ -110,7 +110,6 @@ export function Sword() {
         emissive={materials.hardware.emissive}
         emissiveIntensity={materials.hardware.emissiveIntensity}
         roughness={materials.hardware.roughness}
-        gemstone={gemstone}
         position={[0, pommelY, 0]}
       />
       )}

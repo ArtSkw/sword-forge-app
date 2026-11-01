@@ -13,28 +13,12 @@ export const POMMEL_HALF_HEIGHTS: Record<PommelStyle, number> = {
   brazilNut:    0.0135,  // flat against the grip, domed outward (see BRAZIL_NUT)
   fishtail:     0.022,
   ornate:       0.027,
-  fantasy:      0.026,
   pyramid:      0.0245,  // upper guard + crown (see VIKING_POMMELS)
   lobed3:       0.0275,
   lobed5:       0.0205,
   writhen:      0.026,
 };
 
-// Y coordinate of the bottom surface at center (r=0) for each pommel profile.
-// Gems are set into the bottom end-cap (the visible end of the sword).
-export const POMMEL_GEM_BOTTOM_Y: Record<PommelStyle, number> = {
-  wheel:        -0.018,
-  disc:         -0.012,
-  scentStopper: -0.026,
-  brazilNut:    -0.018,
-  fishtail:     -0.022,
-  ornate:       -0.020,
-  fantasy:      -0.026,
-  pyramid:      -0.0245,
-  lobed3:       -0.0275,
-  lobed5:       -0.0205,
-  writhen:      -0.026,
-};
 
 export type ProfilePoint2 = readonly [number, number];
 
@@ -47,7 +31,6 @@ export const POMMEL_FORM: Record<PommelStyle, { axis: 'y' | 'z' | 'solid' | 'pla
   disc: { axis: 'z' },
   ornate: { axis: 'z' },
   scentStopper: { axis: 'y' },
-  fantasy: { axis: 'y' },
   brazilNut: { axis: 'solid' },   // a shaped solid (BRAZIL_NUT), not a turned one
   fishtail: { axis: 'plate' },    // a flat, bevelled plate (FISHTAIL_OUTLINE)
   pyramid: { axis: 'viking' },     // upper guard + crown (VIKING_POMMELS)
@@ -241,20 +224,5 @@ export const POMMEL_PROFILES: Partial<Record<PommelStyle, ProfilePoint2[]>> = {
     v(0,       0.0125),
   ],
 
-  // Dramatic angular form: sharp bottom point, pronounced equatorial swell,
-  // upper flare that tapers to a narrow neck and small top cap.
-  fantasy: [
-    v(0,     -0.026), // sharp bottom point
-    v(0.007, -0.020),
-    v(0.019, -0.012), // body widens
-    v(0.022, -0.004), // body equator
-    v(0.021,  0.003),
-    v(0.016,  0.010), // waist
-    v(0.021,  0.016), // upper flare (aggressive)
-    v(0.022,  0.018),
-    v(0.014,  0.022), // neck
-    v(0.009,  0.026), // small top cap
-    v(0,      0.025),
-  ],
 
 };

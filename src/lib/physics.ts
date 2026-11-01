@@ -8,9 +8,9 @@ import { bladeSpec, halfWidths } from './bladeSpec';
 
 const WIDTH_PER_HALF = 2.8 / 0.014 / 2;   // cm of real blade width per metre of model half-width (narrow = 2.8 cm)
 const FULLER_CUT = { none: 0, single: 0.12, double: 0.15, decorative: 0.1 } as const;
-const GUARD_G = { straight: 160, curved: 150, ornate: 175, fantasy: 220 } as const;
+const GUARD_G = { vikingBar: 190, vikingCurved: 190, longBar: 160, bowtie: 170, curvedDown: 150, roundCross: 165, recurved: 160, flatBroad: 190, arched: 140, longQuillons: 420, scottish: 380 } as const;
 // Viking pommels include their upper guard.
-const POMMEL_G = { brazilNut: 260, disc: 190, wheel: 230, scentStopper: 210, fishtail: 245, ornate: 250, fantasy: 230, pyramid: 230, lobed3: 310, lobed5: 260, writhen: 240 } as const;
+const POMMEL_G = { brazilNut: 260, disc: 190, wheel: 230, scentStopper: 210, fishtail: 245, ornate: 250, pyramid: 230, lobed3: 310, lobed5: 260, writhen: 240 } as const;
 const GRIP_G = { wood: 45, leather: 55, cord: 60, wire: 90 } as const;
 const STEEL = 7.85; // g/cm³
 
@@ -35,7 +35,7 @@ export function swordPhysics(config: SwordConfig) {
   const pommelG = POMMEL_G[config.pommel.style];
   // Two-hander hilts are far heavier: long quillons, side rings, a big pommel.
   const big = config.archetype === 'greatsword';
-  const guardG = GUARD_G[config.guard.style] * (big ? 2.6 : 1), pommelBig = pommelG * (big ? 1.6 : 1);
+  const guardG = GUARD_G[config.guard.style] * (big && config.guard.style !== 'longQuillons' && config.guard.style !== 'scottish' ? 1.8 : 1), pommelBig = pommelG * (big ? 1.6 : 1);
   mass += guardG + gripG + pommelBig;
   moment += -(grip / 2) * gripG - (grip + 1.8) * pommelBig;
   return { massKg: mass / 1000, bladeCm: Math.round(L), balanceCm: moment / mass };

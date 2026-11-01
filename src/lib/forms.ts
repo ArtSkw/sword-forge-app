@@ -56,8 +56,8 @@ export function matchesForm(config: SwordConfig, form: Form): boolean {
     && b.inscription === form.inscription && b.mark === form.mark && b.inlay === undefined
     && config.guard.style === form.guard
     && sameHilt(config, form)
-    && config.grip.hilt === form.hilt && (config.grip.cap ?? 'beak') === (form.cap ?? 'beak')
-    && config.pommel.style === form.pommel
+    && config.grip.hilt === form.hilt && (config.grip.hilt !== 'messer' || (config.grip.cap ?? 'beak') === (form.cap ?? 'beak'))
+    && (config.grip.hilt === 'messer' || config.pommel.style === form.pommel)
     && config.finish.gripMaterial === form.grip
     && config.finish.gripColor.toLowerCase() === (form.gripColor ?? preset.defaults.finish.gripColor).toLowerCase()
     && config.finish.steelFinish === form.steel
@@ -83,7 +83,7 @@ export function periodNote(part: { id: string; years?: [number, number] }, form:
   if (!form || part.id === own || overlaps(part.years, form.years)) return null;
   const era = form.era.endsWith('.') ? form.era : `${form.era}.`;
   // Three kinds, each one fact: when the part was in use against when this Form was made, or that it is invented.
-  if (!part.years) return { title: 'Fantasy', body: 'Invented for legend and games; no surviving sword has one.' };
+  if (!part.years) return null;
   return part.years[0] > form.years[1]
     ? { title: 'Later than this form', body: `In use from the ${century(part.years[0])} century. ${form.name} dates to ${era}` }
     : { title: 'Earlier than this form', body: `Out of use by about ${part.years[1]}. ${form.name} dates to ${era}` };

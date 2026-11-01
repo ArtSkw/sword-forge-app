@@ -165,7 +165,7 @@ function Chooser({ station, choices }: { station: StationId; choices: StationCho
     <div className="chooser" ref={rowRef}>
       {items.map((it) => {
         if (it === 'more') return (
-          <button key="more" className="item more" onClick={() => toggle(true)} data-tip="Other ages" data-tip-body={`${rest.length} ${station === 'grip' ? 'materials' : 'forms'} from other ages${rest.some((c) => c.era === 'Fantasy') ? ' and from legend' : ''}`}>
+          <button key="more" className="item more" onClick={() => toggle(true)} data-tip="Other ages" data-tip-body={`${rest.length} ${station === 'grip' ? 'materials' : 'forms'} from other ages`}>
             <div className="card glass"><span className="count">+{rest.length}</span></div>
             <span className="nm">Other ages</span>
           </button>

@@ -132,10 +132,17 @@ export type Form = {
 type Variant<T extends string> = { id: T; name: string; era?: string; years?: [number, number]; note: string };
 
 export const GUARDS: Variant<GuardStyle>[] = [
-  { id: 'straight', name: 'Straight', era: '9th–16th c.', years: [800, 1600], note: 'A plain straight cross. Strong, and quick to recover.' },
-  { id: 'curved', name: 'Curved', era: '13th–16th c.', years: [1250, 1600], note: 'Arms bent toward the blade to catch a sliding edge.' },
-  { id: 'ornate', name: 'Ornate', era: '15th–16th c.', years: [1450, 1600], note: 'Slender arms ending in turned finials.' },
-  { id: 'fantasy', name: 'Fantastic', era: 'Fantasy', note: 'Wide arms that flare at the tips and sweep up toward the blade.' },
+  { id: 'vikingBar', name: 'Short bar', era: '8th–11th c.', years: [750, 1050], note: 'A short, heavy guard, elliptical in section with gently domed faces: 8 to 12 cm across.' },
+  { id: 'vikingCurved', name: 'Curved bar', era: 'late 9th–11th c.', years: [870, 1100], note: 'A short guard curved toward the blade, as on the English and late Viking hilts.' },
+  { id: 'longBar', name: 'Long cross', era: '10th–16th c.', years: [950, 1600], note: 'The knightly cross: a slim straight bar, 17 to 20 cm across.' },
+  { id: 'bowtie', name: 'Bow-tie', era: '12th–14th c.', years: [1150, 1350], note: 'A flat cross flaring toward its ends, like a bow tie.' },
+  { id: 'curvedDown', name: 'Curved cross', era: 'late 13th–15th c.', years: [1270, 1450], note: 'Slender arms curving toward the blade, often over a short, broad blade.' },
+  { id: 'roundCross', name: 'Round cross', era: '15th–16th c.', years: [1400, 1550], note: 'A straight bar of round section ending in knobs, as on the English and Castillon crosses.' },
+  { id: 'recurved', name: 'S-recurved', era: 'c. 1400–1450', years: [1400, 1450], note: 'Seen from above, the arms bend opposite ways in a flat S.' },
+  { id: 'flatBroad', name: 'Broad flat', era: '15th–16th c.', years: [1400, 1600], note: 'A flat cross broadening toward its ends.' },
+  { id: 'arched', name: 'Arched', era: '13th–16th c.', years: [1240, 1600], note: 'A short cross arched hard toward the blade.' },
+  { id: 'longQuillons', name: 'Long quillons', era: '16th c.', years: [1500, 1600], note: 'The great two-hander’s quillons, half a metre across.' },
+  { id: 'scottish', name: 'Highland', era: 'c. 1500–1650', years: [1500, 1650], note: 'Quillons sloping forward toward the point and ending in quatrefoils: the Scottish two-hander.' },
 ];
 export const POMMELS: Variant<PommelStyle>[] = [
   { id: 'brazilNut', name: 'Brazil nut', era: '10th–13th c.', years: [950, 1250], note: 'The common Viking counterweight, peened over the end of the tang.' },
@@ -144,7 +151,6 @@ export const POMMELS: Variant<PommelStyle>[] = [
   { id: 'scentStopper', name: 'Scent stopper', era: '14th–16th c.', years: [1350, 1600], note: 'Shaped like the stopper of a perfume bottle; popular in the late Middle Ages.' },
   { id: 'fishtail', name: 'Fishtail', era: '15th c.', years: [1400, 1500], note: 'A flared, faceted pommel of the late fifteenth century.' },
   { id: 'ornate', name: 'Ornate', era: '15th–16th c.', years: [1400, 1550], note: 'A grooved wheel with a decorative band.' },
-  { id: 'fantasy', name: 'Fantastic', era: 'Fantasy', note: 'An angular pommel with a sharp point and a flared crown.' },
   { id: 'pyramid', name: 'Pyramid cap', era: 'c. 775–950', years: [775, 950], note: 'A small three-sided cap riveted to a wide, domed upper guard: the commonest Norwegian hilt.' },
   { id: 'lobed5', name: 'Five-lobe', era: '9th–10th c.', years: [800, 1000], note: 'Five even lobes in a row over a short, square-ish upper guard: the Frankish hilt.' },
   { id: 'writhen', name: 'Writhen', era: 'c. 1490–1530', years: [1490, 1530], note: 'A pear-shaped pommel cut with spiral flutes: the mark of a South German or Swiss sword of about 1500.' },

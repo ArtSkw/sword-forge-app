@@ -5,6 +5,7 @@ import { ageLabel, DEFAULT_GRIP_SHAPE, HILT_NOTE, MESSER_CAPS, DYES, GRIP_SHAPES
 import { currentForm, currentProfile, overlaps, periodNote, profileBlade, profilesOf, type PeriodNote } from '../../lib/forms';
 import { bladeSpec, profileSpec } from '../../lib/bladeSpec';
 import { POMMEL_FORM } from '../../presets/pommelProfiles';
+import { GUARDS_BY_TYPE } from '../../presets/guardShapes';
 import { BLADE_MARKINGS, INLAYS, INSCRIPTIONS, SMITH_MARKS } from '../../presets/inscriptions';
 import { HILT_OPTIONS, defaultTerminal, hiltSpec } from '../../lib/hilt';
 import { BladeSilhouette, CapSilhouette, GripSwatch, GuardSilhouette, PommelSilhouette, SteelSwatch } from './Silhouettes';
@@ -91,7 +92,7 @@ export function useStationChoices(station: StationId | null): StationChoices | n
       if (h.rings) extraNote = `${extraNote} ${RING_CHOICES[h.rings].note}`.trim();
     }
     engraving('guard', !!config.guard.engraved);
-    cards = GUARDS.map((g) => ({ ...g, period: ofForm(g, form?.guard), off: off(g, form?.guard), selected: config.guard.style === g.id, art: <GuardSilhouette archetype={arch} style={g.id} />, apply: () => update('guard', { style: g.id }) }));
+    cards = GUARDS.filter((g) => GUARDS_BY_TYPE[arch].includes(g.id)).sort((a, b) => GUARDS_BY_TYPE[arch].indexOf(a.id) - GUARDS_BY_TYPE[arch].indexOf(b.id)).map((g) => ({ ...g, period: ofForm(g, form?.guard), off: off(g, form?.guard), selected: config.guard.style === g.id, art: <GuardSilhouette archetype={arch} style={g.id} />, apply: () => update('guard', { style: g.id }) }));
   }
   if (station === 'pommel' && config.grip.hilt === 'messer') {
     // A Messer has a cap over the grip's end instead of a pommel.
@@ -103,12 +104,13 @@ export function useStationChoices(station: StationId | null): StationChoices | n
     cards = POMMELS.map((g) => ({ ...g, period: ofForm(g, form?.pommel), off: off(g, form?.pommel), selected: config.pommel.style === g.id, art: <PommelSilhouette style={g.id} />, apply: () => update('pommel', { style: g.id }) }));
   }
   if (station === 'grip') {
-    cards = GRIPS.map((g) => ({ ...g, period: ofForm(g, form?.grip), off: off(g, form?.grip), selected: config.finish.gripMaterial === g.id, art: <GripSwatch material={g.id} color={config.finish.gripColor} />, apply: () => update('finish', { gripMaterial: g.id }) }));
+    // A Messer's grip is wooden scales, bare or leather-covered.
+    cards = GRIPS.filter((g) => config.grip.hilt !== 'messer' || g.id === 'wood' || g.id === 'leather').map((g) => ({ ...g, period: ofForm(g, form?.grip), off: off(g, form?.grip), selected: config.finish.gripMaterial === g.id, art: <GripSwatch material={g.id} color={config.finish.gripColor} />, apply: () => update('finish', { gripMaterial: g.id }) }));
     // Falchion: a sword hilt or the Messer's knife hilt.
     if (arch === 'falchion') {
       const knife = config.grip.hilt === 'messer';
       rows.push({ label: 'Hilt', kind: 'chips', items: [false, true].map((v) => ({ id: v ? 'messer' : 'sword', name: v ? 'Knife (Messer)' : 'Sword', selected: knife === v,
-        apply: () => update('grip', { hilt: v ? 'messer' : undefined }) })) });
+        apply: () => update('grip', { hilt: v ? 'messer' : undefined, cap: undefined }) })) });
       if (knife) extraNote = HILT_NOTE.messer;
     }
     if (GRIP_SHAPE_OFFERED.includes(arch) && config.grip.hilt !== 'messer') {

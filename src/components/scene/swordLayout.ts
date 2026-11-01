@@ -11,7 +11,7 @@ export function getSwordLayout(config: SwordConfig) {
   const bladeLen    = BLADE_LENGTHS[config.blade.length];
   const gripLen     = GRIP_LENGTHS[config.grip.length];
   // A Messer ends in a short cap over the grip instead of a pommel.
-  const pommelHalfH = config.grip.hilt === 'messer' ? MESSER_CAP_HALF : POMMEL_HALF_HEIGHTS[config.pommel.style];
+  const pommelHalfH = config.archetype === 'falchion' && config.grip.hilt === 'messer' ? MESSER_CAP_HALF : POMMEL_HALF_HEIGHTS[config.pommel.style];
   const total       = bladeLen + GUARD_HEIGHT + gripLen + pommelHalfH * 2;
   const tipY        = total / 2;
   return {

@@ -1,4 +1,4 @@
-import type { ArchetypeKey, GripLength, GuardStyle } from '../store/configStore';
+import type { ArchetypeKey, GripLength } from '../store/configStore';
 
 export type HiltDetailRecipe = {
   guardCollarRadiusTop: number;
@@ -12,13 +12,6 @@ export type HiltDetailRecipe = {
   spacerHeight: number;
 };
 
-export type GuardTerminalRecipe = {
-  kind: 'none' | 'rounded' | 'disc';
-  radius?: number;
-  scaleX?: number;
-  scaleY?: number;
-  depth?: number;
-};
 
 export type GripDetailRecipe = {
   coreRadiusTop?: number;
@@ -107,45 +100,6 @@ export const HILT_DETAIL_RECIPES: Record<ArchetypeKey, HiltDetailRecipe> = {
   },
 };
 
-const DEFAULT_TERMINALS: Partial<Record<GuardStyle, GuardTerminalRecipe>> = {
-  straight: { kind: 'none' },
-  curved: { kind: 'none' },
-  ornate: { kind: 'none' },
-  fantasy: { kind: 'rounded', radius: 0.015, scaleX: 0.72, scaleY: 1.08 },
-};
-
-export const GUARD_TERMINAL_RECIPES: Record<ArchetypeKey, Partial<Record<GuardStyle, GuardTerminalRecipe>>> = {
-  armingSword: {
-    ...DEFAULT_TERMINALS,
-  },
-  longsword: {
-    ...DEFAULT_TERMINALS,
-  },
-  bastardSword: {
-    ...DEFAULT_TERMINALS,
-    curved: { kind: 'rounded', radius: 0.009, scaleX: 0.64, scaleY: 0.72 },
-  },
-  vikingSword: {
-    ...DEFAULT_TERMINALS,
-    straight: { kind: 'disc', radius: 0.010, depth: 0.004, scaleY: 0.76 },
-  },
-  falchion: {
-    ...DEFAULT_TERMINALS,
-    curved: { kind: 'rounded', radius: 0.009, scaleX: 0.55, scaleY: 0.72 },
-  },
-  estoc: {
-    ...DEFAULT_TERMINALS,
-    straight: { kind: 'rounded', radius: 0.0068, scaleX: 0.82, scaleY: 0.82 },
-  },
-  greatsword: {
-    ...DEFAULT_TERMINALS,
-    curved: { kind: 'rounded', radius: 0.013, scaleX: 0.66, scaleY: 0.82 },
-  },
-};
-
-export function getGuardTerminalRecipe(archetype: ArchetypeKey, style: GuardStyle): GuardTerminalRecipe {
-  return GUARD_TERMINAL_RECIPES[archetype][style] ?? DEFAULT_TERMINALS[style] ?? { kind: 'none' };
-}
 
 
 

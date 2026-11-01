@@ -1,112 +1,65 @@
-import type { ArchetypeKey, GuardStyle } from '../store/configStore';
+import type { ArchetypeKey, GuardStyle, GuardTerminal } from '../store/configStore';
 
-// Crossguard shape parameters, kept free of three.js so the UI can draw guard
-// silhouettes without pulling the 3D bundle into the main chunk.
+// The guards (crosses) a sword can carry, each after the research's museum objects, as plain numbers so the
+// UI can draw silhouettes without the 3D bundle. Lengths in metres; the section is the bar's half-height
+// (along the blade) and half-depth (front to back) at the centre; `round` rounds its corners (1 = round bar).
 
-export interface GuardParams {
-  width:    number; // total guard length
-  tipScale: number; // cross-section scale at tip — <1 taper, >1 flare
-  tipY:     number; // path Y offset at tip (positive = toward blade)
-  tipZ:     number; // path Z offset at tip (positive = toward viewer)
-  segments: number;
-  sectionScale?: number;
+export type GuardDef = {
+  width: number;          // tip to tip
+  tipScale: number;       // section at the tips relative to the centre
+  tipY: number;           // how far the tips bend toward the blade
+  linear?: boolean;       // bend in a straight line (forward slope) instead of a curve
+  recurve?: number;       // arms bend in opposite directions seen from above (front-back, at the tips)
+  secY: number; secZ: number; round: number;
+  terminal: GuardTerminal;
+  scales?: boolean;       // grows with the sword (false for guards whose length is already a two-hander's)
+};
+
+export const GUARD_DEFS: Record<GuardStyle, GuardDef> = {
+  // Petersen H/X: short, heavy, elliptical in section with gently domed faces (8–12 cm).
+  vikingBar: { width: 0.105, tipScale: 0.86, tipY: 0, secY: 0.0092, secZ: 0.0128, round: 0.95, terminal: 'plain' },
+  // Petersen L/Y: the lower guard curved toward the blade.
+  vikingCurved: { width: 0.112, tipScale: 0.74, tipY: 0.012, secY: 0.0085, secZ: 0.0112, round: 0.9, terminal: 'plain' },
+  // The knightly cross, 17–20 cm, a slim chamfered bar.
+  longBar: { width: 0.19, tipScale: 0.76, tipY: 0, secY: 0.0074, secZ: 0.0074, round: 0.34, terminal: 'plain' },
+  // Flat, flaring to the ends: the bow-tie cross.
+  bowtie: { width: 0.18, tipScale: 0.8, tipY: 0, secY: 0.0082, secZ: 0.0046, round: 0.4, terminal: 'flared' },
+  // Slender quillons curving toward the blade (late 13th–14th c.).
+  curvedDown: { width: 0.2, tipScale: 0.56, tipY: 0.022, secY: 0.0066, secZ: 0.0066, round: 0.6, terminal: 'plain' },
+  // A round bar, straight, often ending in knobs (15th-c. English and Castillon crosses).
+  roundCross: { width: 0.23, tipScale: 0.8, tipY: 0, secY: 0.0064, secZ: 0.0064, round: 1, terminal: 'knob' },
+  // Horizontally S-recurved: the arms bend opposite ways seen from above (c. 1400–30).
+  recurved: { width: 0.22, tipScale: 0.66, tipY: 0.004, recurve: 0.022, secY: 0.0068, secZ: 0.0068, round: 0.7, terminal: 'plain' },
+  // Broad and flat, widening toward the ends.
+  flatBroad: { width: 0.22, tipScale: 1.6, tipY: 0, secY: 0.0095, secZ: 0.0042, round: 0.36, terminal: 'plain' },
+  // Short, strongly arched toward the blade (13th-c. falchions, Hungarian estocs).
+  arched: { width: 0.155, tipScale: 0.7, tipY: 0.03, secY: 0.0076, secZ: 0.0072, round: 0.6, terminal: 'plain' },
+  // The great two-hander's long quillons (Cleveland 1919.70: 53.7 cm).
+  longQuillons: { width: 0.44, tipScale: 0.62, tipY: 0.012, secY: 0.0098, secZ: 0.0098, round: 0.5, terminal: 'knob', scales: false },
+  // Scottish: quillons sloping forward toward the point, ending in quatrefoils.
+  scottish: { width: 0.36, tipScale: 0.7, tipY: 0.05, linear: true, secY: 0.0088, secZ: 0.0088, round: 0.6, terminal: 'quatrefoil', scales: false },
+};
+
+// Guards grow with the sword (a two-hander's round cross is longer than a longsword's).
+const SIZE: Record<ArchetypeKey, { width: number; section: number }> = {
+  vikingSword: { width: 1, section: 1 }, armingSword: { width: 1, section: 1 }, longsword: { width: 1.05, section: 1 },
+  bastardSword: { width: 1.08, section: 1 }, falchion: { width: 1, section: 1 }, estoc: { width: 1.2, section: 0.9 },
+  greatsword: { width: 1.35, section: 1.2 },
+};
+
+/** The guard's numbers on this sword type. */
+export function guardDef(style: GuardStyle, archetype: ArchetypeKey): GuardDef {
+  const d = GUARD_DEFS[style], s = SIZE[archetype], w = d.scales === false ? 1 : s.width;
+  return { ...d, width: d.width * w, tipY: d.tipY * w, recurve: (d.recurve ?? 0) * w, secY: d.secY * s.section, secZ: d.secZ * s.section };
 }
 
-const GUARD_PARAMS: Record<GuardStyle, GuardParams> = {
-  // Chamfered bar, arms taper toward the ends.
-  straight: { width: 0.220, tipScale: 0.60, tipY: 0,      tipZ: 0,      segments: 20 },
-  // Same proportions; arms follow a parabolic curve upward toward the blade.
-  curved:   { width: 0.220, tipScale: 0.62, tipY:  0.022, tipZ: 0,      segments: 24 },
-  // Arms taper aggressively so the scroll terminals read as the visual endpoint.
-  ornate:   { width: 0.220, tipScale: 0.20, tipY: 0,      tipZ: 0,      segments: 20 },
-  // Wider, flared tips, double-axis sweep (upward + forward) for dramatic flair.
-  fantasy:  { width: 0.260, tipScale: 1.25, tipY:  0.030, tipZ: 0.012,  segments: 28 },
+/** The guards each type offers; the first is its default. */
+export const GUARDS_BY_TYPE: Record<ArchetypeKey, GuardStyle[]> = {
+  vikingSword: ['vikingBar', 'vikingCurved', 'longBar'],
+  armingSword: ['longBar', 'bowtie', 'curvedDown', 'vikingBar'],
+  longsword: ['roundCross', 'longBar', 'curvedDown', 'recurved', 'flatBroad'],
+  bastardSword: ['roundCross', 'longBar', 'flatBroad', 'curvedDown', 'recurved'],
+  falchion: ['arched', 'longBar', 'curvedDown', 'roundCross'],
+  estoc: ['longBar', 'arched', 'roundCross', 'flatBroad', 'curvedDown'],
+  greatsword: ['longQuillons', 'roundCross', 'flatBroad', 'scottish'],
 };
-
-const VIKING_GUARD_PARAMS: GuardParams = {
-  width: 0.165,
-  tipScale: 0.82,
-  tipY: 0,
-  tipZ: 0,
-  segments: 18,
-  sectionScale: 1.28,
-};
-
-const ARMING_GUARD_PARAMS: GuardParams = {
-  width: 0.205,
-  tipScale: 0.68,
-  tipY: 0.010,
-  tipZ: 0,
-  segments: 22,
-  sectionScale: 0.92,
-};
-
-const LONGSWORD_GUARD_PARAMS: GuardParams = {
-  width: 0.238,
-  tipScale: 0.56,
-  tipY: 0.012,
-  tipZ: 0,
-  segments: 24,
-  sectionScale: 0.96,
-};
-
-const BASTARD_GUARD_PARAMS: GuardParams = {
-  width: 0.232,
-  tipScale: 0.48,
-  tipY: 0.029,
-  tipZ: 0,
-  segments: 26,
-  sectionScale: 0.90,
-};
-
-const FALCHION_GUARD_PARAMS: GuardParams = {
-  width: 0.206,
-  tipScale: 0.52,
-  tipY: 0.026,
-  tipZ: 0,
-  segments: 24,
-  sectionScale: 0.88,
-};
-
-const ESTOC_GUARD_PARAMS: GuardParams = {
-  width: 0.228,
-  tipScale: 0.42,
-  tipY: 0.006,
-  tipZ: 0,
-  segments: 24,
-  sectionScale: 0.58,
-};
-
-const GREATSWORD_GUARD_PARAMS: GuardParams = {
-  width: 0.285,
-  tipScale: 0.50,
-  tipY: 0.034,
-  tipZ: 0,
-  segments: 30,
-  sectionScale: 1.04,
-};
-
-export function getGuardParams(style: GuardStyle, archetype: ArchetypeKey): GuardParams {
-  if (archetype === 'armingSword' && style === 'straight') {
-    return ARMING_GUARD_PARAMS;
-  }
-  if (archetype === 'longsword' && style === 'straight') {
-    return LONGSWORD_GUARD_PARAMS;
-  }
-  if (archetype === 'bastardSword' && style === 'curved') {
-    return BASTARD_GUARD_PARAMS;
-  }
-  if (archetype === 'falchion' && style === 'curved') {
-    return FALCHION_GUARD_PARAMS;
-  }
-  if (archetype === 'estoc' && style === 'straight') {
-    return ESTOC_GUARD_PARAMS;
-  }
-  if (archetype === 'greatsword' && style === 'curved') {
-    return GREATSWORD_GUARD_PARAMS;
-  }
-  if (archetype === 'vikingSword' && style === 'straight') {
-    return VIKING_GUARD_PARAMS;
-  }
-  return GUARD_PARAMS[style];
-}
