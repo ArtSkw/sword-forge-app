@@ -21,14 +21,21 @@ const SWORD_INTRO_DURATION = 1.2;
 const STUDIO_HDRI = `${import.meta.env.BASE_URL}hdri/studio_small_03_1k.hdr`;
 const SWORD_ROTATION: [number, number, number] = [0.08, 0, -0.80];
 
-// Edit mode: how close the camera comes to each hilt part (Blade and Finish are fitted, see below).
+// Edit mode: how close the camera comes to each hilt part (Blade and Finish are fitted, see below),
+// and the radius each close-up must keep in view, so narrow screens back off instead of cropping.
 const FOCUS_DISTANCE: Record<'guard' | 'grip' | 'pommel', number> = { guard: 0.85, grip: 0.8, pommel: 0.6 };
-// Finish frames the whole sword large; Blade frames the blade itself (the hilt may leave the shot).
-const FIT_FILL_FINISH = 1.0, FIT_FILL_BLADE = 1.08;
+const FOCUS_RADIUS: Record<'guard' | 'grip' | 'pommel', number> = { guard: 0.15, grip: 0.12, pommel: 0.09 };
+// Finish frames the whole sword; Blade frames the blade. Both fit the free area, never past its edges.
+const FIT_FILL_FINISH = 1.0, FIT_FILL_BLADE = 1.0;
+// Overview: the whole sword must fit at any turn of the orbit, between the title and the sword types.
+const OVERVIEW_PANELS = { top: 110, bottom: 140, right: 0 }, OVERVIEW_FILL = 0.92;
+const REFIT_MS = 450;
 const FINISH_DROP = 36;          // px: Finish sits this much below the free area's centre
 const BLADE_NUDGE = { x: 44, y: 12 };   // px: Blade sits this much right of and above the centre
 // Screen space taken by the edit panels: inspector on the right, variant row + nav at the bottom.
 const PANEL_RIGHT = 320, PANEL_BOTTOM = 220, MARGIN_TOP = 56;
+const EDIT_PANELS = { top: MARGIN_TOP, bottom: PANEL_BOTTOM, right: PANEL_RIGHT };
+type Panels = typeof EDIT_PANELS;
 const PART_SHIFT_Y = 0.07;       // hilt parts: a little above centre (they're small; centred in the free space looked low)
 const FOV = 35;
 const READING_SHIFT = -0.17;   // sword moves right while the historical account is open
@@ -61,14 +68,29 @@ const WORLD_UP = new THREE.Vector3(0, 1, 0);
 
 // Distance at which the whole sword fits the free area of the screen, seen from `viewDir`
 // (unit vector from the target to the camera): the sword's axis is projected onto the screen axes.
-function fitDistance(axis: THREE.Vector3, viewDir: THREE.Vector3, w: number, h: number, fill: number) {
+function fitDistance(axis: THREE.Vector3, viewDir: THREE.Vector3, w: number, h: number, fill: number, panels: Panels = EDIT_PANELS) {
   const tan = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
   const right = new THREE.Vector3().crossVectors(WORLD_UP, viewDir).normalize();
   const up = new THREE.Vector3().crossVectors(viewDir, right);
   const pad = 0.06;   // guard width and pommel
   const ex = Math.abs(axis.dot(right)) + pad, ey = Math.abs(axis.dot(up)) + pad;
-  const freeH = Math.max(0.3, (h - PANEL_BOTTOM - MARGIN_TOP) / h), freeW = Math.max(0.3, (w - PANEL_RIGHT) / w);
+  const freeH = Math.max(0.3, (h - panels.bottom - panels.top) / h), freeW = Math.max(0.3, (w - panels.right) / w);
   return Math.max(ey / (2 * tan * freeH * fill), ex / (2 * tan * (w / h) * freeW * fill));
+}
+
+// Overview: the largest fit over a full turn of the orbit at the camera's current elevation.
+function overviewFit(axis: THREE.Vector3, phi: number, w: number, h: number) {
+  const sph = new THREE.Spherical(1, phi, 0), v = new THREE.Vector3();
+  let d = 0;
+  for (let k = 0; k < 16; k++) { sph.theta = (k / 16) * Math.PI * 2; d = Math.max(d, fitDistance(axis, v.setFromSpherical(sph), w, h, OVERVIEW_FILL, OVERVIEW_PANELS)); }
+  return d;
+}
+
+// Hilt close-ups: no closer than keeps the part's radius inside the free area.
+function partFit(radius: number, w: number, h: number) {
+  const tan = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
+  const freeH = Math.max(0.3, (h - PANEL_BOTTOM - MARGIN_TOP) / h), freeW = Math.max(0.3, (w - PANEL_RIGHT) / w);
+  return radius / (tan * Math.min(freeH, freeW * (w / h)));
 }
 
 function SceneContents() {
@@ -87,8 +109,10 @@ function SceneContents() {
   // Camera move state: from/to target, distance and view shift, interpolated in useFrame.
   const move = useRef({ t0: 0, ms: 0, fromTarget: new THREE.Vector3(), toTarget: new THREE.Vector3(), fromDist: OVERVIEW_DISTANCE, toDist: OVERVIEW_DISTANCE, fromShift: 0, toShift: 0, shift: 0, fromShiftY: 0, toShiftY: 0, shiftY: 0, fromSph: new THREE.Spherical(), toSph: new THREE.Spherical(), turn: false, active: false });
 
-  // Station framing depends on the screen size only while a station is open (overview keeps its zoom on resize).
-  const frameKey = station ? `${size.width}x${size.height}` : '';
+  // Framing follows the screen size and the sword's length: a longer blade or a smaller screen re-fits.
+  const sizeKey = `${size.width}x${size.height}`;
+  const fitLayout = getSwordLayout(config);
+  const geoKey = `${fitLayout.total.toFixed(3)}|${fitLayout.bladeLen.toFixed(3)}`;
   const dir = useRef(new THREE.Vector3());
   const motionReduced = useRef(reducedMotion());
   useEffect(() => {
@@ -97,11 +121,12 @@ function SceneContents() {
   }, []);
   const autoRotateOn = useRef(false);
   useEffect(() => { autoRotateOn.current = autoRotate && station === null && !reading && !motionReduced.current; });
-  const lastFramed = useRef<{ station: StationId | null; reading: boolean; reframe: number } | null>(null);
+  const lastFramed = useRef<{ station: StationId | null; reading: boolean; reframe: number; geo: string } | null>(null);
   // Edit mode can be turned by hand; a double-click glides back to the part's shot.
   const [reframe, setReframe] = useState(0);
-  // Re-frame triggers in edit mode: double-click, or the Reset view button.
-  const again = reframe + (station ? viewResetTick : 0);
+  // Re-frame triggers: double-click (edit mode) or Reset view. In the overview the reset effect below runs
+  // first (it is declared first), then the framing effect makes sure the reset view still fits.
+  const again = reframe + viewResetTick;
   const gl = useThree((s) => s.gl);
   useEffect(() => {
     const el = gl.domElement, onDouble = () => { if (useConfigStore.getState().station) setReframe((n) => n + 1); };
@@ -130,52 +155,57 @@ function SceneContents() {
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
   // Glide to the chosen part (or back to the whole sword) whenever the station or reading changes.
+  // Inside the same view, a change of size or of the sword's length re-fits it: target and distance
+  // settle, the direction the user is looking from is kept. The overview only ever backs off to fit.
   useEffect(() => {
     const controls = orbitRef.current, group = swordGroupRef.current;
     if (!controls || !group) return;
     group.updateWorldMatrix(true, false);
-    const m = move.current;
+    const m = move.current, w = size.width, h = size.height;
+    const last = lastFramed.current;
+    const refit = last?.station === station && last?.reading === reading && last?.reframe === again;
+    const resizeOnly = refit && last?.geo === geoKey;
+    lastFramed.current = { station, reading, reframe: again, geo: geoKey };
     m.fromTarget.copy(controls.target);
     m.fromDist = camera.position.distanceTo(controls.target);
     m.fromShift = m.shift; m.fromShiftY = m.shiftY;
     // Turn to face the blade's flat by azimuth (shorter way round) and elevation, never through the pole.
-    // Leaving edit mode keeps the current direction.
-    m.turn = station !== null;
+    // Leaving edit mode, or re-fitting, keeps the current direction.
+    m.turn = station !== null && !refit;
     m.fromSph.setFromVector3(dir.current.subVectors(camera.position, controls.target));
     const faceDir = new THREE.Vector3().copy(FLAT_NORMAL).transformDirection(group.matrixWorld);
+    const viewDir = m.turn ? faceDir : dir.current.clone().normalize();
     m.toSph.setFromVector3(faceDir);
     m.toSph.theta = m.fromSph.theta + Math.atan2(Math.sin(m.toSph.theta - m.fromSph.theta), Math.cos(m.toSph.theta - m.fromSph.theta));
+    const layout = getSwordLayout(config);
+    const axisOf = (len: number) => new THREE.Vector3(0, 1, 0).transformDirection(group.matrixWorld).multiplyScalar(len);
     if (station) {
-      const layout = getSwordLayout(config);
-      m.toShift = (PANEL_RIGHT / 2) / size.width;
+      m.toShift = (PANEL_RIGHT / 2) / w;
       if (station === 'blade' || station === 'finish') {
         const blade = station === 'blade', len = blade ? layout.bladeLen : layout.total;
         m.toTarget.set(0, blade ? layout.bladeY : 0, 0).applyMatrix4(group.matrixWorld);
-        const axis = new THREE.Vector3(0, 1, 0).transformDirection(group.matrixWorld).multiplyScalar(len);
-        m.toDist = fitDistance(axis, faceDir, size.width, size.height, blade ? FIT_FILL_BLADE : FIT_FILL_FINISH);
+        m.toDist = fitDistance(axisOf(len), viewDir, w, h, blade ? FIT_FILL_BLADE : FIT_FILL_FINISH);
         // Centred in the free area; Finish sits a little lower than that.
-        m.toShiftY = ((PANEL_BOTTOM - MARGIN_TOP) / 2 + (blade ? BLADE_NUDGE.y : -FINISH_DROP)) / size.height;
-        if (blade) m.toShift -= BLADE_NUDGE.x / size.width;
+        m.toShiftY = ((PANEL_BOTTOM - MARGIN_TOP) / 2 + (blade ? BLADE_NUDGE.y : -FINISH_DROP)) / h;
+        if (blade) m.toShift -= BLADE_NUDGE.x / w;
       } else {
+        const part = station as keyof typeof FOCUS_DISTANCE;
         m.toTarget.set(0, anchorY(station, layout), 0).applyMatrix4(group.matrixWorld);
-        m.toDist = FOCUS_DISTANCE[station as keyof typeof FOCUS_DISTANCE];
+        m.toDist = Math.max(FOCUS_DISTANCE[part], partFit(FOCUS_RADIUS[part], w, h));
         m.toShiftY = PART_SHIFT_Y;
       }
     } else {
       m.toTarget.set(0, 0, 0);
-      m.toDist = OVERVIEW_DISTANCE;
+      const fit = overviewFit(axisOf(layout.total), m.fromSph.phi, w, h);
+      m.toDist = refit ? Math.max(m.fromDist, fit) : Math.max(OVERVIEW_DISTANCE, fit);
       m.toShift = reading ? READING_SHIFT : 0; m.toShiftY = 0;
     }
     controls.minDistance = Math.min(1.5, m.toDist * 0.8);
     controls.maxDistance = Math.max(6, m.toDist * 1.1);
-    // A resize inside the same station re-frames at once instead of restarting the glide.
-    const last = lastFramed.current;
-    const resizeOnly = last?.station === station && last?.reading === reading && last?.reframe === again;
-    lastFramed.current = { station, reading, reframe: again };
-    m.t0 = performance.now(); m.ms = motionReduced.current || resizeOnly ? 1 : station ? FOCUS_MS : OVERVIEW_MS; m.active = true;
-    // The config is read when the station changes; geometry edits inside a station must not re-frame.
+    m.t0 = performance.now(); m.ms = motionReduced.current || resizeOnly ? 1 : refit ? REFIT_MS : station ? FOCUS_MS : OVERVIEW_MS; m.active = true;
+    // The config is read through geoKey: only a change of the sword's length re-fits, not every part swap.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [station, reading, camera, frameKey, again]);
+  }, [station, reading, camera, sizeKey, again, geoKey]);
 
   const handleStart = useCallback(() => {
     interaction.dragging = true; interaction.touchUntil = 0;
