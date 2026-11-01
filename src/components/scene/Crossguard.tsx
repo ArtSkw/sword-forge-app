@@ -1,8 +1,8 @@
-import type { ArchetypeKey, GuardStyle, HardwareTone } from '../../store/configStore';
+import type { ArchetypeKey, GuardStyle, GuardTerminal, HardwareTone } from '../../store/configStore';
 import { surface } from './surface';
 import * as THREE from 'three';
 import { useEffect, useMemo } from 'react';
-import { getGuardTerminalRecipe } from '../../presets/archetypeDetails';
+import { turnedGeometry } from './turned';
 import { getGuardParams } from '../../presets/guardShapes';
 
 // Central slot height used by Sword.tsx for assembly positioning.
@@ -30,20 +30,28 @@ const END_RINGS = [0.45, 0.75, 0.93];
 // Engraving runs along the arms: u in tiles along the guard, v across the face (0–1 from edge to edge).
 const ENGRAVE_TILE = 0.028;   // m per repeat: matches the scroll band's 1.5 : 1 proportion on an 18 mm face
 
-// Onion/scroll finial profile for the ornate terminal (LatheGeometry, Y = axis).
-const SCROLL_PROFILE = [
-  new THREE.Vector2(0.000,  0),
-  new THREE.Vector2(0.004,  0.003),
-  new THREE.Vector2(0.009,  0.008),
-  new THREE.Vector2(0.010,  0.013), // max width
-  new THREE.Vector2(0.008,  0.018),
-  new THREE.Vector2(0.010,  0.023), // scroll bump
-  new THREE.Vector2(0.006,  0.027),
-  new THREE.Vector2(0,      0.026),
+// Turned (baluster) finial for an arm tip of 6 mm half-section, as [radius, along the arm]: a neck, a bead,
+// a swelling bulb and a small button. Scaled to the arm's real tip and turned around the arm (axis X).
+const FINIAL_PROFILE: [number, number][] = [
+  [0, 0], [0.0058, 0], [0.0048, 0.002], [0.0072, 0.0042], [0.0072, 0.0056], [0.0046, 0.0074],
+  [0.0068, 0.0108], [0.0092, 0.0148], [0.0086, 0.0186], [0.0052, 0.0216], [0.0036, 0.0232], [0.0042, 0.0246], [0, 0.0262],
 ];
 
-function buildGuardGeometry(style: GuardStyle, archetype: ArchetypeKey): THREE.BufferGeometry {
+const FLARE = 1.5, HOOK = 0.017;
+const ease2 = (a: number, b: number, x: number) => { const k = Math.max(0, Math.min(1, (x - a) / (b - a))); return k * k; };
+/** Where the arm ends and how thick it is there (for placing terminals). */
+function armEnd(style: GuardStyle, archetype: ArchetypeKey, terminal: GuardTerminal) {
+  const { width, tipScale, tipY, tipZ, sectionScale = 1 } = getGuardParams(style, archetype);
+  const flare = terminal === 'flared' ? 1 + FLARE : 1;
+  return { x: width / 2, y: tipY + (terminal === 'hooked' ? HOOK : 0), z: tipZ, sy: SECTION_HALF_SPAN * sectionScale * tipScale * flare, sz: SECTION_HALF_REACH * sectionScale * tipScale * (terminal === 'flared' ? 0.7 : 1) };
+}
+
+function buildGuardGeometry(style: GuardStyle, archetype: ArchetypeKey, terminal: GuardTerminal): THREE.BufferGeometry {
   const { width, tipScale, tipY, tipZ, segments, sectionScale = 1 } = getGuardParams(style, archetype);
+  const flared = terminal === 'flared', hooked = terminal === 'hooked';
+  // Spatulate ends broaden in the blade's direction and thin front to back; hooked ends turn toward the blade.
+  const flareAt = (u: number) => (flared ? ease2(0.62, 1, u) : 0);
+  const hookAt = (u: number) => (hooked ? HOOK * ease2(0.84, 1, u) : 0);
   const steps = segments * 3;
   const engraveUv: number[] = [];
   const ringAt = (x: number, py: number, pz: number, sy: number, sz: number) =>
@@ -51,15 +59,16 @@ function buildGuardGeometry(style: GuardStyle, archetype: ArchetypeKey): THREE.B
 
   const rings: THREE.Vector3[][] = [];
   const tip = (side: -1 | 1) => {
-    const sy = SECTION_HALF_SPAN * sectionScale * tipScale, sz = SECTION_HALF_REACH * sectionScale * tipScale, len = Math.min(sy, sz) * 0.9;
+    const sy = SECTION_HALF_SPAN * sectionScale * tipScale * (1 + FLARE * flareAt(1)), sz = SECTION_HALF_REACH * sectionScale * tipScale * (1 - 0.3 * flareAt(1)), len = Math.min(sy, sz) * 0.9;
+    const ty = tipY + hookAt(1);
     // Built in the order the rings are laid (left end: outermost first), so the engraving coordinates line up.
-    return (side < 0 ? [...END_RINGS].reverse() : END_RINGS).map((k) => ringAt(side * (width / 2 + k * len), tipY, tipZ, sy * Math.sqrt(1 - k * k), sz * Math.sqrt(1 - k * k)));
+    return (side < 0 ? [...END_RINGS].reverse() : END_RINGS).map((k) => ringAt(side * (width / 2 + k * len), ty, tipZ, sy * Math.sqrt(1 - k * k), sz * Math.sqrt(1 - k * k)));
   };
   rings.push(...tip(-1));
   for (let i = 0; i <= steps; i++) {
     const t = i / steps, x = (t - 0.5) * width, u = Math.abs(2 * t - 1), u2 = u * u;
-    const sc = 1.0 - u * (1.0 - tipScale);
-    rings.push(ringAt(x, tipY * u2, tipZ * u2, SECTION_HALF_SPAN * sectionScale * sc, SECTION_HALF_REACH * sectionScale * sc));
+    const sc = 1.0 - u * (1.0 - tipScale), fl = flareAt(u);
+    rings.push(ringAt(x, tipY * u2 + hookAt(u), tipZ * u2, SECTION_HALF_SPAN * sectionScale * sc * (1 + FLARE * fl), SECTION_HALF_REACH * sectionScale * sc * (1 - 0.3 * fl)));
   }
   rings.push(...tip(1));
 
@@ -105,6 +114,9 @@ function buildGuardGeometry(style: GuardStyle, archetype: ArchetypeKey): THREE.B
 type CrossguardProps = {
   tone: HardwareTone;
   engraved?: boolean;
+  terminal: GuardTerminal;
+  ecusson: boolean;
+  rings: 0 | 1 | 2;
   archetype: ArchetypeKey;
   style: GuardStyle;
   color: string;
@@ -114,67 +126,73 @@ type CrossguardProps = {
   position: [number, number, number];
 };
 
-export function Crossguard({ tone, engraved, archetype, style, color, emissive, emissiveIntensity, roughness, position }: CrossguardProps) {
+// A quatrefoil plate: four overlapping lobes, extruded with a bevel (the plane of the blade's flat).
+function quatrefoil(r: number, depth: number): THREE.BufferGeometry {
+  const shape = new THREE.Shape(), steps = 96;
+  for (let i = 0; i <= steps; i++) {
+    const a = (i / steps) * Math.PI * 2, rr = r * (0.72 + 0.28 * Math.abs(Math.cos(2 * a)) ** 0.6);
+    const p = [Math.cos(a) * rr, Math.sin(a) * rr] as const;
+    if (i === 0) shape.moveTo(p[0], p[1]); else shape.lineTo(p[0], p[1]);
+  }
+  const bevel = Math.min(0.0012, depth * 0.3);
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: depth - 2 * bevel, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel * 0.8, bevelSegments: 3 });
+  geo.translate(0, 0, -(depth - 2 * bevel) / 2);
+  geo.computeVertexNormals();
+  return geo;
+}
+
+// Écusson: a leaf-shaped plate rising from the cross over the blade, one on each face.
+function ecusson(): THREE.BufferGeometry {
+  const shape = new THREE.Shape();
+  shape.moveTo(-0.012, 0);
+  shape.bezierCurveTo(-0.012, 0.012, -0.006, 0.022, 0, 0.03);
+  shape.bezierCurveTo(0.006, 0.022, 0.012, 0.012, 0.012, 0);
+  shape.lineTo(-0.012, 0);
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.0008, bevelEnabled: true, bevelThickness: 0.0004, bevelSize: 0.0006, bevelSegments: 3, curveSegments: 24 });
+  geo.computeVertexNormals();
+  return geo;
+}
+
+export function Crossguard({ tone, engraved, archetype, style, terminal, ecusson: withEcusson, rings, color, emissive, emissiveIntensity, roughness, position }: CrossguardProps) {
   // Brass and bronze age to a brown-green patina, iron and steel to rust.
   const metal = tone === 'brass' || tone === 'bronze' ? 'copper' : 'iron';
   const fit = surface(metal);
   // An engraved guard carries a running scroll along the faces of its arms.
   const bar = engraved ? surface(metal, { kind: 'guard' }) : fit;
-  const params = getGuardParams(style, archetype);
-  const geo    = useMemo(() => buildGuardGeometry(style, archetype), [style, archetype]);
-  // Geometry passed via prop is not owned by R3F, so release the old one ourselves.
-  useEffect(() => () => geo.dispose(), [geo]);
-  const halfW  = params.width / 2;
-  const terminalY = params.tipY;
-  const terminalZ = params.tipZ;
-  const terminal = getGuardTerminalRecipe(archetype, style);
+  const geo = useMemo(() => buildGuardGeometry(style, archetype, terminal), [style, archetype, terminal]);
+  const end = armEnd(style, archetype, terminal);
+  const tipR = Math.max(end.sy, end.sz);
+  const parts = useMemo(() => ({
+    knob: terminal === 'knob' ? new THREE.SphereGeometry(Math.max(0.0068, tipR * 1.45), 64, 40) : null,
+    finial: terminal === 'finial' ? turnedGeometry(FINIAL_PROFILE.map(([r, y]) => [r * (tipR / 0.006), y * (tipR / 0.006)] as [number, number]), { axis: 'x', segments: 64 }) : null,
+    foil: terminal === 'quatrefoil' ? quatrefoil(tipR * 2.1, end.sz * 1.6) : null,
+    ecusson: withEcusson ? ecusson() : null,
+    ring: rings ? new THREE.TorusGeometry(0.022, 0.0023, 20, 96) : null,
+  }), [terminal, tipR, end.sz, withEcusson, rings]);
+  useEffect(() => () => { geo.dispose(); Object.values(parts).forEach((g) => g?.dispose()); }, [geo, parts]);
 
+  const mat = <meshStandardMaterial key={fit.key} {...fit.props} color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />;
+  const ends = [-1, 1] as const;
+  // Side rings lean out in front of the cross toward the blade, their lower edge on the guard block.
+  const tilt = 0.7, ringC = (side: 1 | -1) => [0, 0.022 * Math.cos(tilt), side * (0.0075 + 0.022 * Math.sin(tilt))] as [number, number, number];
   return (
     <group position={position}>
       <mesh geometry={geo}>
         <meshStandardMaterial key={bar.key} {...bar.props} color={color} metalness={1.0} roughness={roughness} emissive={emissive} emissiveIntensity={emissiveIntensity} />
       </mesh>
-
-      {style === 'ornate' && (
-        <>
-          <mesh position={[-halfW, 0, 0]} rotation={[0, 0,  Math.PI / 2]}>
-            <latheGeometry args={[SCROLL_PROFILE, 64]} />
-            <meshStandardMaterial key={fit.key} {...fit.props} color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
-          </mesh>
-          <mesh position={[ halfW, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
-            <latheGeometry args={[SCROLL_PROFILE, 64]} />
-            <meshStandardMaterial key={fit.key} {...fit.props} color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
-          </mesh>
-        </>
-      )}
-      {terminal.kind !== 'none' && style !== 'ornate' && (
-        <>
-          <mesh
-            position={[-halfW, terminalY, terminalZ]}
-            scale={[terminal.scaleX ?? 0.72, terminal.scaleY ?? 1, 1]}
-            rotation={terminal.kind === 'disc' ? [0, 0, Math.PI / 2] : [0, 0, 0]}
-          >
-            {terminal.kind === 'disc' ? (
-              <cylinderGeometry args={[terminal.radius ?? 0.01, terminal.radius ?? 0.01, terminal.depth ?? 0.004, 64]} />
-            ) : (
-              <sphereGeometry args={[terminal.radius ?? 0.01, 48, 32]} />
-            )}
-            <meshStandardMaterial key={fit.key} {...fit.props} color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
-          </mesh>
-          <mesh
-            position={[halfW, terminalY, terminalZ]}
-            scale={[terminal.scaleX ?? 0.72, terminal.scaleY ?? 1, 1]}
-            rotation={terminal.kind === 'disc' ? [0, 0, Math.PI / 2] : [0, 0, 0]}
-          >
-            {terminal.kind === 'disc' ? (
-              <cylinderGeometry args={[terminal.radius ?? 0.01, terminal.radius ?? 0.01, terminal.depth ?? 0.004, 64]} />
-            ) : (
-              <sphereGeometry args={[terminal.radius ?? 0.01, 48, 32]} />
-            )}
-            <meshStandardMaterial key={fit.key} {...fit.props} color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
-          </mesh>
-        </>
-      )}
+      {ends.map((side) => (
+        <group key={side} position={[side * end.x, end.y, end.z]}>
+          {parts.knob && <mesh geometry={parts.knob} position={[side * Math.max(0.0068, tipR * 1.45) * 0.75, 0, 0]} scale={[1, 1, end.sz / end.sy > 0.9 ? 1 : 0.85]}>{mat}</mesh>}
+          {parts.finial && <mesh geometry={parts.finial} rotation={[0, side < 0 ? Math.PI : 0, 0]}>{mat}</mesh>}
+          {parts.foil && <mesh geometry={parts.foil} position={[side * tipR * 1.7, 0, 0]}>{mat}</mesh>}
+        </group>
+      ))}
+      {parts.ecusson && [1, -1].map((side) => (
+        <mesh key={side} geometry={parts.ecusson!} position={[0, GUARD_HEIGHT * 0.3, side * 0.0066]} rotation={[0, side < 0 ? Math.PI : 0, 0]}>{mat}</mesh>
+      ))}
+      {parts.ring && ([1, -1] as const).slice(0, rings).map((side) => (
+        <mesh key={side} geometry={parts.ring!} position={ringC(side)} rotation={[side * tilt, 0, 0]}>{mat}</mesh>
+      ))}
     </group>
   );
 }

@@ -1,5 +1,6 @@
 import type { SwordConfig } from '../store/configStore';
 import { SWORD_TYPES } from '../presets/swordTypes';
+import { hiltSpec } from './hilt';
 import { BLADE_PROFILES, FORMS } from '../presets/catalogue';
 import { GRIPS, GUARDS, POMMELS, STEELS, type BladeProfile, type Form } from '../presets/forge';
 
@@ -34,7 +35,7 @@ export function applyForm(config: SwordConfig, form: Form): SwordConfig {
     ...config,
     form: form.id,
     blade: profile ? { ...config.blade, ...profileBlade(profile) } : config.blade,
-    guard: { ...config.guard, style: form.guard },
+    guard: { ...config.guard, style: form.guard, terminal: form.terminal, ecusson: form.ecusson, rings: form.rings },
     pommel: { ...config.pommel, style: form.pommel },
     finish: {
       ...config.finish,
@@ -52,11 +53,18 @@ export function matchesForm(config: SwordConfig, form: Form): boolean {
   const b = config.blade;
   return (b.profile ?? profilesOf(config)[0]?.id) === form.blade && b.section === undefined && b.ricasso === undefined && !b.flame
     && config.guard.style === form.guard
+    && sameHilt(config, form)
     && config.pommel.style === form.pommel
     && config.finish.gripMaterial === form.grip
     && config.finish.gripColor.toLowerCase() === (form.gripColor ?? preset.defaults.finish.gripColor).toLowerCase()
     && config.finish.steelFinish === form.steel
     && config.finish.hardwareTone === form.fittings;
+}
+
+// The guard's ends, écusson and rings match the Form's (an unset value is the guard style's own).
+function sameHilt(config: SwordConfig, form: Form) {
+  const a = hiltSpec(config), b = hiltSpec({ archetype: config.archetype, guard: { style: form.guard, terminal: form.terminal, ecusson: form.ecusson, rings: form.rings } });
+  return a.terminal === b.terminal && a.ecusson === b.ecusson && a.rings === b.rings;
 }
 
 export const overlaps = (a: [number, number] | undefined, b: [number, number]) => !!a && a[0] <= b[1] && a[1] >= b[0];

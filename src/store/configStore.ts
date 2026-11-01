@@ -17,6 +17,8 @@ export type BladeLength = 'short' | 'medium' | 'long' | 'extraLong';
 export type BladeWidth = 'narrow' | 'standard' | 'wide';
 export type FullerStyle = 'none' | 'single' | 'double' | 'decorative';
 export type GuardStyle = 'straight' | 'curved' | 'ornate' | 'fantasy';
+// Guard ends: plain domed, a ball knob, a turned (baluster) finial, flared, hooked toward the blade, a quatrefoil plate.
+export type GuardTerminal = 'plain' | 'knob' | 'finial' | 'flared' | 'hooked' | 'quatrefoil';
 export type GripLength = 'short' | 'long';
 export type PommelStyle =
   | 'wheel'
@@ -44,7 +46,8 @@ export interface SwordConfig {
   form?: string;
   // section / ricasso / flame: the user's choices on top of the profile (omitted = the profile's own).
   blade: { length: BladeLength; width: BladeWidth; fuller: FullerStyle; profile?: string; shape?: BladeShape; section?: Section; ricasso?: 'none' | RicassoCover; flame?: boolean };
-  guard: { style: GuardStyle; engraved?: boolean };
+  // terminal / ecusson / rings: omitted = the guard style's own (see lib/hilt.ts).
+  guard: { style: GuardStyle; engraved?: boolean; terminal?: GuardTerminal; ecusson?: boolean; rings?: 1 | 2 };
   grip: { length: GripLength };
   pommel: { style: PommelStyle; engraved?: boolean };
   finish: {

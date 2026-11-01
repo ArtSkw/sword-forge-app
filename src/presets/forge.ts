@@ -1,5 +1,5 @@
 import type {
-  ArchetypeKey, BladeLength, BladeWidth, FullerStyle, GripMaterial, GuardStyle,
+  ArchetypeKey, BladeLength, BladeWidth, FullerStyle, GripMaterial, GuardStyle, GuardTerminal,
   HardwareTone, PommelStyle, SteelFinish, SwordCondition,
 } from '../store/configStore';
 import type { Section } from './bladeSections';
@@ -60,6 +60,21 @@ export const RICASSO_CHOICES: { id: 'none' | RicassoCover; name: string; note: s
   { id: 'bare', name: 'Bare', note: 'An unsharpened stretch below the guard, for a second hand on the blade.' },
   { id: 'leather', name: 'Leather', note: 'The ricasso wrapped in tooled leather over wood: a second grip on the blade.' },
 ];
+// Guard ends, side rings and the écusson (research: long-bastard-great, viking-arming).
+export const TERMINALS: { id: GuardTerminal; name: string; note: string }[] = [
+  { id: 'plain', name: 'Plain', note: 'The arms end in plain rounded tips.' },
+  { id: 'knob', name: 'Knobs', note: 'Round knobs at the ends, as on the English and Castillon crosses of the fifteenth century.' },
+  { id: 'finial', name: 'Finials', note: 'Turned finials at the ends, a fashion of the later fifteenth and sixteenth centuries.' },
+  { id: 'flared', name: 'Flared', note: 'The arms broaden into flat, spatulate ends.' },
+  { id: 'hooked', name: 'Hooked', note: 'The tips turn sharply toward the blade, as on an early fifteenth-century French cross.' },
+  { id: 'quatrefoil', name: 'Quatrefoil', note: 'Each arm ends in a flat four-lobed plate.' },
+];
+export const ECUSSON_NOTE = 'A small leaf-shaped plate at the centre of the cross, lying over the blade on both faces.';
+export const RING_CHOICES: { id: 0 | 1 | 2; name: string; note: string }[] = [
+  { id: 0, name: 'None', note: '' },
+  { id: 1, name: 'One', note: 'A side ring in front of the cross guards the fingers laid over it.' },
+  { id: 2, name: 'Two', note: 'A ring on each face of the cross, as on the great two-handers of the sixteenth century.' },
+];
 export const EDGE_CHOICES: { id: 'straight' | 'flame'; name: string; note: string }[] = [
   { id: 'straight', name: 'Straight', note: '' },
   { id: 'flame', name: 'Flame', note: 'A flamboyant edge that waves down the blade; the light snakes along it.' },
@@ -82,6 +97,9 @@ export type Form = {
   gripColor?: string;          // hex; omitted = the type's natural colour
   steel: SteelFinish;
   fittings: HardwareTone;
+  terminal?: GuardTerminal;    // only where the object differs from the guard style's own
+  ecusson?: boolean;
+  rings?: 1 | 2;
 };
 
 

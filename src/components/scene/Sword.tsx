@@ -4,6 +4,7 @@ import { getSwordLayout } from './swordLayout';
 import { getSwordMaterialRecipes } from '../../presets/materialRecipes';
 import { Blade } from './Blade';
 import { bladeSpec } from '../../lib/bladeSpec';
+import { hiltSpec } from '../../lib/hilt';
 import { setSurfaceAge } from './surface';
 import { Crossguard } from './Crossguard';
 import { Grip } from './Grip';
@@ -13,6 +14,7 @@ import { Pommel } from './Pommel';
 export function Sword() {
   const config = useConfigStore((s) => s.config);
   const spec = bladeSpec(config);
+  const hilt = hiltSpec(config);
   // Every surface shader reads the sword's age from one shared uniform (set before the frame renders).
   useLayoutEffect(() => { setSurfaceAge(config.finish.age); }, [config.finish.age]);
 
@@ -33,6 +35,7 @@ export function Sword() {
         <Blade spec={spec} color={materials.blade.color} steelFinish={steelFinish} age={age} runes={runes} />
       </group>
       <Crossguard
+        {...hilt}
         engraved={config.guard.engraved}
         tone={config.finish.hardwareTone}
         archetype={config.archetype}

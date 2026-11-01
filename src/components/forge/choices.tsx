@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
 import { useConfigStore } from '../../store/configStore';
 import { SWORD_TYPES } from '../../presets/swordTypes';
-import { ageLabel, DYES, EDGE_CHOICES, FITTINGS, GRIPS, GUARDS, POMMELS, RICASSO_CHOICES, SECTIONS, SECTION_CHOICES, STEELS, type StationId } from '../../presets/forge';
+import { ageLabel, DYES, ECUSSON_NOTE, RING_CHOICES, TERMINALS, EDGE_CHOICES, FITTINGS, GRIPS, GUARDS, POMMELS, RICASSO_CHOICES, SECTIONS, SECTION_CHOICES, STEELS, type StationId } from '../../presets/forge';
 import { currentForm, currentProfile, overlaps, periodNote, profileBlade, profilesOf, type PeriodNote } from '../../lib/forms';
 import { bladeSpec, profileSpec } from '../../lib/bladeSpec';
 import { POMMEL_FORM } from '../../presets/pommelProfiles';
+import { HILT_OPTIONS, defaultTerminal, hiltSpec } from '../../lib/hilt';
 import { BladeSilhouette, GripSwatch, GuardSilhouette, PommelSilhouette, SteelSwatch } from './Silhouettes';
 
 // The choices offered at each station, as one model shared by the chooser, the inspector and the keyboard.
@@ -57,6 +58,20 @@ export function useStationChoices(station: StationId | null): StationChoices | n
   const engraving = (part: 'guard' | 'pommel', on: boolean) =>
     rows.push({ label: 'Engraving', kind: 'chips', items: [false, true].map((v) => ({ id: v ? 'engraved' : 'plain', name: v ? 'Engraved' : 'Plain', selected: on === v, apply: () => update(part, { engraved: v || undefined }) })) });
   if (station === 'guard') {
+    const opts = HILT_OPTIONS[arch], h = hiltSpec(config), base = defaultTerminal(arch, config.guard.style);
+    if (opts.terminals) {
+      rows.push({ label: 'Ends', kind: 'chips', items: TERMINALS.map((t) => ({ id: t.id, name: t.name, selected: h.terminal === t.id,
+        apply: () => update('guard', { terminal: t.id === base ? undefined : t.id }) })) });
+      if (h.terminal !== base) extraNote = TERMINALS.find((t) => t.id === h.terminal)?.note ?? '';
+    }
+    if (opts.ecusson) {
+      rows.push({ label: 'Écusson', kind: 'chips', items: [false, true].map((v) => ({ id: String(v), name: v ? 'Leaf' : 'None', selected: h.ecusson === v, apply: () => update('guard', { ecusson: v || undefined }) })) });
+      if (h.ecusson) extraNote = `${extraNote} ${ECUSSON_NOTE}`.trim();
+    }
+    if (opts.rings) {
+      rows.push({ label: 'Side rings', kind: 'chips', items: RING_CHOICES.map((r) => ({ id: String(r.id), name: r.name, selected: h.rings === r.id, apply: () => update('guard', { rings: r.id || undefined }) })) });
+      if (h.rings) extraNote = `${extraNote} ${RING_CHOICES[h.rings].note}`.trim();
+    }
     engraving('guard', !!config.guard.engraved);
     cards = GUARDS.map((g) => ({ ...g, period: ofForm(g, form?.guard), off: off(g, form?.guard), selected: config.guard.style === g.id, art: <GuardSilhouette archetype={arch} style={g.id} />, apply: () => update('guard', { style: g.id }) }));
   }
