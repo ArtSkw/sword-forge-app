@@ -150,6 +150,19 @@
 .forge .pips { display: flex; justify-content: center; gap: 6px; margin-top: 5px; }
 .forge .pips i { width: 5px; height: 5px; transform: rotate(45deg); background: var(--gold-dim); opacity: .5; }
 .forge .pips i.on { background: var(--gold-hi); opacity: 1; }
+/* Age slider: a gold line with four stops; the thumb settles onto a stop when released near it */
+.forge .age { padding: 4px 22px 2px; }   /* inset, so the end names can centre on their stops */
+.forge .age-track { position: relative; height: 44px; margin: -8px 0; cursor: pointer; touch-action: none; outline: none; }
+.forge .age-track:focus-visible .age-thumb { box-shadow: 0 0 0 2px #120d09, 0 0 0 3.5px var(--gold-hi); }
+.forge .age-line, .forge .age-fill { position: absolute; left: 0; right: 0; top: 21px; height: 2px; border-radius: 1px; background: var(--gold-line); }
+.forge .age-fill { background: linear-gradient(90deg, var(--gold-dim), var(--gold)); transform-origin: left; }
+.forge .age-stop { position: absolute; top: 18px; width: 8px; height: 8px; margin-left: -4px; transform: rotate(45deg); background: #120d09; border: 1px solid var(--gold-dim); transition: background 160ms, border-color 160ms; }
+.forge .age-stop[data-on="true"] { background: var(--gold); border-color: var(--gold-hi); }
+.forge .age-thumb { position: absolute; top: 14px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--gold-hi), var(--gold) 55%, var(--gold-dim)); box-shadow: 0 0 0 2px #120d09, 0 2px 8px rgba(0, 0, 0, .6), 0 0 14px rgba(233, 212, 154, .3); transition: transform 160ms var(--ease-out); }
+.forge .age-thumb[data-drag="true"] { transform: scale(1.18); }
+.forge .age-names { position: relative; height: 22px; }
+.forge .age-names button { position: absolute; top: 1px; transform: translateX(-50%); font: var(--type-meta); font-style: italic; color: var(--gold-dim); white-space: nowrap; transition: color 160ms; }
+.forge .age-names button:hover, .forge .age-names button[data-on="true"] { color: var(--gold-hi); }
 .forge .dot { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--gold-line); transition: transform 160ms var(--ease-out), box-shadow 160ms; }
 .forge .dot:hover { transform: translateY(-2px); }
 .forge .dot:active { transform: scale(.94); }

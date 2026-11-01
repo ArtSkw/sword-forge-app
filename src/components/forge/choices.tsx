@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { useConfigStore } from '../../store/configStore';
 import { SWORD_TYPES } from '../../presets/swordTypes';
-import { CONDITIONS, DYES, EDGE_CHOICES, FITTINGS, GRIPS, GUARDS, POMMELS, RICASSO_CHOICES, SECTIONS, SECTION_CHOICES, STEELS, type StationId } from '../../presets/forge';
+import { ageLabel, DYES, EDGE_CHOICES, FITTINGS, GRIPS, GUARDS, POMMELS, RICASSO_CHOICES, SECTIONS, SECTION_CHOICES, STEELS, type StationId } from '../../presets/forge';
 import { currentForm, currentProfile, overlaps, periodNote, profileBlade, profilesOf, type PeriodNote } from '../../lib/forms';
 import { bladeSpec, profileSpec } from '../../lib/bladeSpec';
 import { BladeSilhouette, GripSwatch, GuardSilhouette, PommelSilhouette, SteelSwatch } from './Silhouettes';
@@ -10,7 +10,7 @@ import { BladeSilhouette, GripSwatch, GuardSilhouette, PommelSilhouette, SteelSw
 
 // `off` explains why a part sits outside the Form's age (shown as a badge on its card).
 export type Choice = { id: string; name: string; era?: string; period: boolean; off: PeriodNote | null; selected: boolean; note: string; art: ReactNode; apply: () => void };
-export type OptionRow = { label: string; kind: 'dots' | 'chips' | 'list'; items: { id: string; name: string; swatch?: string; selected: boolean; apply: () => void }[] };
+export type OptionRow = { label: string; kind: 'dots' | 'chips' | 'list' | 'age'; value?: number; set?: (v: number) => void; items: { id: string; name: string; swatch?: string; selected: boolean; apply: () => void }[] };
 export type StationChoices = { cards: Choice[]; rows: OptionRow[]; note: string };
 
 export function useStationChoices(station: StationId | null): StationChoices | null {
@@ -66,9 +66,9 @@ export function useStationChoices(station: StationId | null): StationChoices | n
   if (station === 'finish') {
     cards = STEELS.map((s) => ({ ...s, period: ofForm(s, form?.steel), off: off(s, form?.steel), selected: config.finish.steelFinish === s.id, art: <SteelSwatch finish={s.id} />, apply: () => update('finish', { steelFinish: s.id }) }));
     rows.push({ label: 'Fittings', kind: 'dots', items: FITTINGS.map((f) => ({ id: f.id, name: f.name, swatch: f.swatch, selected: config.finish.hardwareTone === f.id, apply: () => update('finish', { hardwareTone: f.id }) })) });
-    rows.push({ label: 'Condition', kind: 'chips', items: CONDITIONS.map((c) => ({ id: c.id, name: c.name, selected: config.finish.condition === c.id, apply: () => update('finish', { condition: c.id }) })) });
+    rows.push({ label: 'Age', kind: 'age', value: config.finish.age, set: (v: number) => update('finish', { age: v }), items: [] });
   }
   const sel = cards.find((c) => c.selected);
-  const note = station === 'finish' ? `${sel?.note ?? ''} ${CONDITIONS.find((c) => c.id === config.finish.condition)?.note ?? ''}`.trim() : `${sel?.note ?? ''} ${extraNote}`.trim();
+  const note = station === 'finish' ? `${sel?.note ?? ''} ${ageLabel(config.finish.age).stop.note}`.trim() : `${sel?.note ?? ''} ${extraNote}`.trim();
   return { cards, rows, note };
 }

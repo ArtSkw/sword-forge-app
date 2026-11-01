@@ -1,3 +1,4 @@
+import { surface } from './surface';
 import * as THREE from 'three';
 import { useMemo } from 'react';
 import type { ArchetypeKey, GripLength, GripMaterial } from '../../store/configStore';
@@ -32,6 +33,8 @@ export function Grip({ archetype, length, material, color, metalness, normalScal
   const radiusBot = recipe.coreRadiusBottom ?? GRIP_RADIUS_BOT;
   const wrapRadius = (radiusTop + radiusBot) / 2 + BAND_OFFSET;
   const normalMap = GRIP_NORMAL_MAPS[material];
+  // Leather gets a real grain on top of the wrap pattern (core and raised bands alike).
+  const grain = material === 'leather' ? surface('leather') : null;
   const normalScaleVec = useMemo(() => new THREE.Vector2(normalScale[0], normalScale[1]), [normalScale]);
 
   const bands = useMemo(() => {
@@ -44,13 +47,13 @@ export function Grip({ archetype, length, material, color, metalness, normalScal
       {/* Grip core — slightly recessed so the wrap bands sit proud */}
       <mesh>
         <cylinderGeometry args={[radiusTop, radiusBot, gripLen, GRIP_SEGMENTS]} />
-        <meshStandardMaterial color={color} metalness={metalness} roughness={roughness} normalMap={normalMap} normalScale={normalScaleVec} />
+        <meshStandardMaterial key={grain?.key} {...grain?.props} color={color} metalness={metalness} roughness={roughness} normalMap={normalMap} normalScale={normalScaleVec} />
       </mesh>
 
       {bands.map((y, i) => (
         <mesh key={i} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
           <torusGeometry args={[wrapRadius, recipe.bandTube ?? 0.00075, 6, 28]} />
-          <meshStandardMaterial color={color} metalness={metalness} roughness={Math.max(0.22, roughness - 0.05)} normalMap={normalMap} normalScale={normalScaleVec} />
+          <meshStandardMaterial key={grain?.key} {...grain?.props} color={color} metalness={metalness} roughness={Math.max(0.22, roughness - 0.05)} normalMap={normalMap} normalScale={normalScaleVec} />
         </mesh>
       ))}
     </group>

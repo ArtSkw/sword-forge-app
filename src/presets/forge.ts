@@ -8,11 +8,12 @@ import type { Section } from './bladeSections';
 
 export type StationId = 'blade' | 'guard' | 'grip' | 'pommel' | 'finish';
 
+// Edit mode steps up the sword, left to right: pommel → grip → guard → blade, then the whole sword's finish.
 export const STATIONS: { id: StationId; name: string }[] = [
-  { id: 'blade', name: 'Blade' },
-  { id: 'guard', name: 'Guard' },
-  { id: 'grip', name: 'Grip' },
   { id: 'pommel', name: 'Pommel' },
+  { id: 'grip', name: 'Grip' },
+  { id: 'guard', name: 'Guard' },
+  { id: 'blade', name: 'Blade' },
   { id: 'finish', name: 'Finish' },
 ];
 
@@ -115,7 +116,7 @@ export const STEELS: Variant<SteelFinish>[] = [
   { id: 'satin', name: 'Satin', years: [700, 1600], note: 'A plain hand polish, the everyday finish.' },
   { id: 'polished', name: 'Polished', years: [700, 1600], note: 'Mirror-bright: a lord’s sword.' },
   { id: 'patternWelded', name: 'Pattern-welded', years: [500, 1100], note: 'Twisted rods forge-welded into a serpent-skin pattern.' },
-  { id: 'darkened', name: 'Darkened', years: [700, 1600], note: 'Darkened by heat, which slows rust.' },
+  { id: 'blued', name: 'Blued', era: '15th–16th c.', years: [1400, 1600], note: 'Heated until the steel turns a deep blue-black, which also slows rust.' },
 ];
 export const FITTINGS: { id: HardwareTone; name: string; swatch: string }[] = [
   { id: 'darkIron', name: 'Dark iron', swatch: 'radial-gradient(circle at 35% 30%, #8a857e, #3c3b38 60%, #1d1c1a)' },
@@ -123,12 +124,21 @@ export const FITTINGS: { id: HardwareTone; name: string; swatch: string }[] = [
   { id: 'bronze', name: 'Bronze', swatch: 'radial-gradient(circle at 35% 30%, #e7b47a, #9b6a35 55%, #4a2f16)' },
   { id: 'brass', name: 'Brass', swatch: 'radial-gradient(circle at 35% 30%, #f6dfa4, #b8925a 55%, #5e4524)' },
 ];
-export const CONDITIONS: Variant<SwordCondition>[] = [
-  { id: 'pristine', name: 'Pristine', note: 'Fresh from the grinder.' },
-  { id: 'used', name: 'Used', note: 'Carried and cared for.' },
-  { id: 'battleWorn', name: 'Worn', note: 'Nicks and scratches from hard use.' },
-  { id: 'ancient', name: 'Ancient', note: 'Dark with age, as if dug from a barrow.' },
+// The sword's age is continuous; these are the named stops on the way (a slider in the Finish station).
+export const AGE_STOPS: { id: SwordCondition; name: string; at: number; note: string }[] = [
+  { id: 'pristine', name: 'From the forge', at: 0, note: 'Fresh from the grinder: crisp grind lines and a bright edge bevel.' },
+  { id: 'used', name: 'Carried', at: 1 / 3, note: 'Carried and cared for: a freshly honed edge, fine scratches, leather darkened by the hand.' },
+  { id: 'battleWorn', name: 'Heirloom', at: 2 / 3, note: 'Polished by generations: softened edges, small nicks, dark patina in the fuller.' },
+  { id: 'ancient', name: 'Excavated', at: 1, note: 'Dug from the ground: pitted, rusted in patches, the grip rotted to its core.' },
 ];
+/** The named stop nearest to an age, or the two it lies between. */
+export function ageLabel(raw: number): { stop: (typeof AGE_STOPS)[number]; between?: [string, string] } {
+  const age = Math.max(0, Math.min(1, raw));
+  const stop = AGE_STOPS.reduce((a, b) => (Math.abs(b.at - age) < Math.abs(a.at - age) ? b : a));
+  if (Math.abs(stop.at - age) < 0.04) return { stop };
+  const i = AGE_STOPS.findIndex((s) => s.at > age);
+  return { stop, between: [AGE_STOPS[i - 1].name, AGE_STOPS[i].name] };
+}
 // Historical dyes for leather and cord; "natural" keeps the archetype's own colour.
 export const DYES: { id: string; name: string; color: string | null }[] = [
   { id: 'natural', name: 'Natural', color: null },

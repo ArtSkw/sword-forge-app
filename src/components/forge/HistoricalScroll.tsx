@@ -3,7 +3,7 @@ import { HugeiconsIcon } from '@hugeicons/react';
 import { Cancel01Icon } from '@hugeicons/core-free-icons';
 import { useConfigStore } from '../../store/configStore';
 import { SWORD_TYPES } from '../../presets/swordTypes';
-import { ACCOUNT, CONDITIONS, DYES, FITTINGS, GRIPS, GUARDS, POMMELS, STEELS } from '../../presets/forge';
+import { ACCOUNT, ageLabel, DYES, FITTINGS, GRIPS, GUARDS, POMMELS, STEELS } from '../../presets/forge';
 import { currentForm, currentProfile } from '../../lib/forms';
 import { swordPhysics } from '../../lib/physics';
 import { playPaper } from '../../lib/audio';
@@ -99,7 +99,7 @@ export function HistoricalScroll() {
           <dt>Guard</dt><dd>{name(GUARDS, config.guard.style)}. {note(GUARDS, config.guard.style)}</dd>
           <dt>Grip</dt><dd>{name(GRIPS, config.finish.gripMaterial)}{dye ? `, dyed ${dye.name.toLowerCase()}` : ''}. {note(GRIPS, config.finish.gripMaterial)}</dd>
           <dt>Pommel</dt><dd>{name(POMMELS, config.pommel.style)}. {note(POMMELS, config.pommel.style)}</dd>
-          <dt>Steel</dt><dd>{name(STEELS, config.finish.steelFinish)}, {name(FITTINGS, config.finish.hardwareTone).toLowerCase()} fittings, {name(CONDITIONS, config.finish.condition).toLowerCase()}. {note(STEELS, config.finish.steelFinish)}</dd>
+          <dt>Steel</dt><dd>{name(STEELS, config.finish.steelFinish)}, {name(FITTINGS, config.finish.hardwareTone).toLowerCase()} fittings, {ageLabel(config.finish.age).stop.name.toLowerCase()}. {note(STEELS, config.finish.steelFinish)}</dd>
         </dl>
         <div className="foot">Weight and balance are estimates, reckoned from this sword’s model.</div>
       </div>

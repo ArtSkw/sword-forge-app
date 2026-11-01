@@ -26,7 +26,7 @@ export const profileBlade = (p: BladeProfile): Partial<SwordConfig['blade']> => 
   section: undefined, ricasso: undefined, flame: undefined,
 });
 
-/** The config a Form produces on this sword type (condition is kept: it is the sword's history, not its form). */
+/** The config a Form produces on this sword type (age is kept: it is the sword's history, not its form). */
 export function applyForm(config: SwordConfig, form: Form): SwordConfig {
   const preset = SWORD_TYPES[config.archetype];
   const profile = profilesOf(config).find((p) => p.id === form.blade);

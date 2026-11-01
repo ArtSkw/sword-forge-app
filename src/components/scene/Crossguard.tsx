@@ -1,6 +1,7 @@
+import type { ArchetypeKey, GuardStyle, HardwareTone } from '../../store/configStore';
+import { surface } from './surface';
 import * as THREE from 'three';
 import { useEffect, useMemo } from 'react';
-import type { ArchetypeKey, GuardStyle } from '../../store/configStore';
 import { getGuardTerminalRecipe } from '../../presets/archetypeDetails';
 import { getGuardParams } from '../../presets/guardShapes';
 
@@ -111,6 +112,7 @@ function buildGuardGeometry(style: GuardStyle, archetype: ArchetypeKey): THREE.B
 }
 
 type CrossguardProps = {
+  tone: HardwareTone;
   archetype: ArchetypeKey;
   style: GuardStyle;
   color: string;
@@ -120,7 +122,9 @@ type CrossguardProps = {
   position: [number, number, number];
 };
 
-export function Crossguard({ archetype, style, color, emissive, emissiveIntensity, roughness, position }: CrossguardProps) {
+export function Crossguard({ tone, archetype, style, color, emissive, emissiveIntensity, roughness, position }: CrossguardProps) {
+  // Brass and bronze age to a brown-green patina, iron and steel to rust.
+  const fit = surface(tone === 'brass' || tone === 'bronze' ? 'copper' : 'iron');
   const params = getGuardParams(style, archetype);
   const geo    = useMemo(() => buildGuardGeometry(style, archetype), [style, archetype]);
   // Geometry passed via prop is not owned by R3F, so release the old one ourselves.
@@ -133,18 +137,18 @@ export function Crossguard({ archetype, style, color, emissive, emissiveIntensit
   return (
     <group position={position}>
       <mesh geometry={geo}>
-        <meshStandardMaterial color={color} metalness={1.0} roughness={roughness} emissive={emissive} emissiveIntensity={emissiveIntensity} />
+        <meshStandardMaterial key={fit.key} {...fit.props} color={color} metalness={1.0} roughness={roughness} emissive={emissive} emissiveIntensity={emissiveIntensity} />
       </mesh>
 
       {style === 'ornate' && (
         <>
           <mesh position={[-halfW, 0, 0]} rotation={[0, 0,  Math.PI / 2]}>
             <latheGeometry args={[SCROLL_PROFILE, 20]} />
-            <meshStandardMaterial color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
+            <meshStandardMaterial key={fit.key} {...fit.props} color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
           </mesh>
           <mesh position={[ halfW, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
             <latheGeometry args={[SCROLL_PROFILE, 20]} />
-            <meshStandardMaterial color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
+            <meshStandardMaterial key={fit.key} {...fit.props} color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
           </mesh>
         </>
       )}
@@ -160,7 +164,7 @@ export function Crossguard({ archetype, style, color, emissive, emissiveIntensit
             ) : (
               <sphereGeometry args={[terminal.radius ?? 0.01, 24, 12]} />
             )}
-            <meshStandardMaterial color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
+            <meshStandardMaterial key={fit.key} {...fit.props} color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
           </mesh>
           <mesh
             position={[halfW, terminalY, terminalZ]}
@@ -172,7 +176,7 @@ export function Crossguard({ archetype, style, color, emissive, emissiveIntensit
             ) : (
               <sphereGeometry args={[terminal.radius ?? 0.01, 24, 12]} />
             )}
-            <meshStandardMaterial color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
+            <meshStandardMaterial key={fit.key} {...fit.props} color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
           </mesh>
         </>
       )}

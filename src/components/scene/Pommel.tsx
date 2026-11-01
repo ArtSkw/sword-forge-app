@@ -1,6 +1,7 @@
+import type { ArchetypeKey, GemstoneType, HardwareTone, PommelStyle } from '../../store/configStore';
+import { surface } from './surface';
 import * as THREE from 'three';
 import { useEffect, useMemo } from 'react';
-import type { ArchetypeKey, PommelStyle, GemstoneType } from '../../store/configStore';
 import { getPommelDetailRecipe } from '../../presets/archetypeDetails';
 import { POMMEL_PROFILES, POMMEL_HALF_HEIGHTS, POMMEL_GEM_BOTTOM_Y } from '../../presets/pommelProfiles';
 
@@ -32,6 +33,7 @@ const GEM_COLORS: Record<Exclude<GemstoneType, 'none'>, string> = {
 };
 
 type PommelProps = {
+  tone: HardwareTone;
   archetype: ArchetypeKey;
   style: PommelStyle;
   color: string;
@@ -42,7 +44,9 @@ type PommelProps = {
   position: [number, number, number];
 };
 
-export function Pommel({ archetype, style, color, emissive, emissiveIntensity, roughness, gemstone, position }: PommelProps) {
+export function Pommel({ tone, archetype, style, color, emissive, emissiveIntensity, roughness, gemstone, position }: PommelProps) {
+  // Brass and bronze age to a brown-green patina, iron and steel to rust.
+  const fit = surface(tone === 'brass' || tone === 'bronze' ? 'copper' : 'iron');
   const points   = useMemo(() => POMMEL_PROFILES[style].map(([r, y]) => new THREE.Vector2(r, y)), [style]);
   const bottomY  = POMMEL_GEM_BOTTOM_Y[style];
   const gemColor = gemstone !== 'none' ? GEM_COLORS[gemstone] : null;
@@ -64,7 +68,7 @@ export function Pommel({ archetype, style, color, emissive, emissiveIntensity, r
     <group position={position}>
       {(() => {
         const metalDetailMaterial = (
-          <meshStandardMaterial
+          <meshStandardMaterial key={fit.key} {...fit.props}
             color={color}
             metalness={1}
             roughness={Math.max(0.3, roughness - 0.08)}
@@ -77,7 +81,7 @@ export function Pommel({ archetype, style, color, emissive, emissiveIntensity, r
           <>
             <mesh>
               <latheGeometry args={[points, LATHE_SEGMENTS]} />
-              <meshStandardMaterial
+              <meshStandardMaterial key={fit.key} {...fit.props}
                 color={color} metalness={1.0} roughness={roughness}
                 emissive={emissive} emissiveIntensity={emissiveIntensity}
                 polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1}
@@ -113,7 +117,7 @@ export function Pommel({ archetype, style, color, emissive, emissiveIntensity, r
                 {pommelDetail.equatorRing && (
                   <mesh position={[0, -0.0002, 0]} rotation={[Math.PI / 2, 0, 0]}>
                     <torusGeometry args={[pommelDetail.equatorRing.radius, pommelDetail.equatorRing.tube, 6, 48]} />
-                    <meshStandardMaterial color={color} metalness={1} roughness={Math.max(0.34, roughness - 0.05)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
+                    <meshStandardMaterial key={fit.key} {...fit.props} color={color} metalness={1} roughness={Math.max(0.34, roughness - 0.05)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
                   </mesh>
                 )}
                 {pommelDetail.flutes && Array.from({ length: pommelDetail.flutes.count }, (_, i) => {
@@ -124,7 +128,7 @@ export function Pommel({ archetype, style, color, emissive, emissiveIntensity, r
                   return (
                     <mesh key={i} position={[x, pommelDetail.flutes!.offsetY ?? 0, z]}>
                       <cylinderGeometry args={[pommelDetail.flutes!.tube, pommelDetail.flutes!.tube, pommelDetail.flutes!.height, 6]} />
-                      <meshStandardMaterial color={color} metalness={1} roughness={Math.max(0.32, roughness - 0.10)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
+                      <meshStandardMaterial key={fit.key} {...fit.props} color={color} metalness={1} roughness={Math.max(0.32, roughness - 0.10)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
                     </mesh>
                   );
                 })}

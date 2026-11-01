@@ -73,7 +73,7 @@ const STEEL_TONES: Record<SteelFinish, [string, string, string]> = {
   satin: ['#5d666b', '#b8c0c2', '#4b5357'],
   polished: ['#3e4549', '#f2f6f8', '#353b3f'],
   patternWelded: ['#566064', '#bfc7c8', '#475054'],
-  darkened: ['#24272a', '#6a6660', '#1d1f21'],
+  blued: ['#141b2a', '#4a5a7a', '#10151f'],
 };
 export function SteelSwatch({ finish }: { finish: SteelFinish }) {
   const [a, b, c] = STEEL_TONES[finish], id = `s-${finish}`;

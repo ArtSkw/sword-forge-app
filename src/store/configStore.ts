@@ -26,8 +26,9 @@ export type PommelStyle =
   | 'fishtail'
   | 'ornate'
   | 'fantasy';
+// The four named stages of a sword's life, used for tables and labels; the sword itself carries a continuous age.
 export type SwordCondition = 'pristine' | 'used' | 'battleWorn' | 'ancient';
-export type SteelFinish = 'polished' | 'satin' | 'darkened' | 'patternWelded';
+export type SteelFinish = 'polished' | 'satin' | 'blued' | 'patternWelded';
 export type HardwareTone = 'steel' | 'brass' | 'bronze' | 'darkIron';
 export type GripMaterial = 'leather' | 'wood' | 'cord' | 'wire';
 export type GemstoneType = 'none' | 'ruby' | 'sapphire' | 'emerald' | 'amber';
@@ -43,7 +44,7 @@ export interface SwordConfig {
   grip: { length: GripLength };
   pommel: { style: PommelStyle };
   finish: {
-    condition: SwordCondition;
+    age: number;              // 0 = from the forge … 1 = excavated (see AGE_STOPS)
     steelFinish: SteelFinish;
     hardwareTone: HardwareTone;
     gripMaterial: GripMaterial;

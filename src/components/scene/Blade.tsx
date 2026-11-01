@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import { useEffect, useMemo } from 'react';
-import type { SteelFinish, SwordCondition } from '../../store/configStore';
+import type { SteelFinish } from '../../store/configStore';
 import { getBladePhysicalRecipe } from '../../presets/materialRecipes';
 import { sectionCreases, sectionPerimeter, takesFuller } from '../../presets/bladeSections';
 import type { ProfilePoint } from '../../presets/bladeProfiles';
 import { RICASSO, flameOffset, halfWidths, type BladeSpec } from '../../lib/bladeSpec';
 import { GRIP_NORMAL_MAPS } from './gripTextures';
+import { chain, surface } from './surface';
 
 // The blade is built ring by ring along its length from a cross-section perimeter (presets/bladeSections.ts)
 // and the outline in lib/bladeSpec.ts. Ridges and edges keep hard normals, so each facet catches its own
@@ -48,10 +49,10 @@ const BLUNT = 0.6;           // ricasso: the edges are flattened to this share o
 
 const EDGE_NICK_POSITIONS = [0.23, 0.36, 0.51, 0.67, 0.82];
 const SPINE_NICK_POSITIONS = [0.31, 0.58, 0.76];
-const EDGE_NICK_DEPTH: Record<SwordCondition, number> = { pristine: 0, used: 0, battleWorn: 0.026, ancient: 0.042 };
+// Nicks appear once the sword has been carried and deepen with age (share of the half-width).
+const nickDepth = (age: number) => (age <= 1 / 3 ? 0 : age <= 2 / 3 ? (age - 1 / 3) * 3 * 0.026 : 0.026 + (age - 2 / 3) * 3 * 0.016);
 
-function conditionEdgeWear(t: number, side: 'edge' | 'spine', condition: SwordCondition): number {
-  const depth = EDGE_NICK_DEPTH[condition];
+function edgeWear(t: number, side: 'edge' | 'spine', depth: number): number {
   if (depth <= 0 || t < 0.13 || t > 0.94) return 0;
   const positions = side === 'edge' ? EDGE_NICK_POSITIONS : SPINE_NICK_POSITIONS;
   const sideDepth = side === 'edge' ? depth : depth * 0.55;
@@ -84,7 +85,7 @@ function refine(per: ProfilePoint[], hard: Set<number>): { pts: ProfilePoint[]; 
   return { pts, crease };
 }
 
-function buildBladeGeometry(s: BladeSpec, condition: SwordCondition): THREE.BufferGeometry {
+function buildBladeGeometry(s: BladeSpec, nicks: number): THREE.BufferGeometry {
   const segments = s.flame ? 360 : 240;
   const hard = sectionCreases(s.section, takesFuller(s.section) ? s.fuller : 'none');
   const plainR = refine(sectionPerimeter(s.section, 'none', s.archetype), hard), fullerR = refine(sectionPerimeter(s.section, s.fuller, s.archetype), hard);
@@ -92,17 +93,23 @@ function buildBladeGeometry(s: BladeSpec, condition: SwordCondition): THREE.Buff
   const N = plain.length;
 
   const rings: THREE.Vector3[][] = [];
+  // For the age shader: how near each point is to a cutting edge, and how deep it sits in a fuller.
+  const edgeness = plain.map(([px]) => (s.singleEdged && px > 0 ? 0 : Math.min(1, Math.max(0, (Math.abs(px) - 0.8) / 0.17))));
+  const recesses: number[][] = [];
   for (let i = 0; i <= segments; i++) {
     const t = i / segments, y = (t - 0.5) * s.length;
     const { spine, edge, ricasso } = halfWidths(s, t);
     // No nicks on the ricasso: it is unsharpened, and it is where the second hand goes.
     const unworn = 1 - ricasso;
-    const spineW = spine * (1 - conditionEdgeWear(t, 'spine', condition) * unworn), edgeW = edge * (1 - conditionEdgeWear(t, 'edge', condition) * unworn);
+    const spineW = spine * (1 - edgeWear(t, 'spine', nicks) * unworn), edgeW = edge * (1 - edgeWear(t, 'edge', nicks) * unworn);
     const thick = s.halfThick * (1 - t * (1 - TIP_THICK_T)), off = flameOffset(s, t);
     const ft = fullerBlend(t, s);
+    const recess: number[] = [];
+    recesses.push(recess);
     rings.push(plain.map(([px, pz], j) => {
       const nx = ft > 0 ? px + (fullered[j][0] - px) * ft : px;
       let nz = ft > 0 ? pz + (fullered[j][1] - pz) * ft : pz;
+      recess.push(Math.min(1, Math.max(0, ((Math.abs(pz) - Math.abs(nz)) / Math.max(Math.abs(pz), 0.05)) * 1.5)));
       if (ricasso > 0 && nz !== 0) nz += ricasso * Math.sign(nz) * Math.max(0, BLUNT - Math.abs(nz));
       return new THREE.Vector3(nx * (nx >= 0 ? spineW : edgeW) + off * nx * nx * nx * nx, y, nz * thick);
     }));
@@ -113,7 +120,7 @@ function buildBladeGeometry(s: BladeSpec, condition: SwordCondition): THREE.Buff
   let M = 0;
   for (let j = 0; j < N; j++) { slotA[j] = M; slotB[j] = crease[j] ? M + 1 : M; M += crease[j] ? 2 : 1; }
 
-  const positions: number[] = [], normals: number[] = [], uvs: number[] = [], index: number[] = [];
+  const positions: number[] = [], normals: number[] = [], uvs: number[] = [], index: number[] = [], edgeAttr: number[] = [], recessAttr: number[] = [];
   const around = new THREE.Vector3(), along = new THREE.Vector3(), n = new THREE.Vector3(), out = new THREE.Vector3();
   // The perimeter winds consistently, so the cross product already points outward; only a degenerate
   // case (the collapsed point ring) falls back to the direction from the ring's centre.
@@ -131,7 +138,7 @@ function buildBladeGeometry(s: BladeSpec, condition: SwordCondition): THREE.Buff
     for (let j = 0; j < N; j++) {
       const v = ring[j], prev = ring[(j - 1 + N) % N], next = ring[(j + 1) % N];
       along.subVectors(rings[Math.min(segments, i + 1)][j], rings[Math.max(0, i - 1)][j]);
-      const push = (nrm: THREE.Vector3) => { positions.push(v.x, v.y, v.z); normals.push(nrm.x, nrm.y, nrm.z); uvs.push(j / N, i / segments); };
+      const push = (nrm: THREE.Vector3) => { positions.push(v.x, v.y, v.z); normals.push(nrm.x, nrm.y, nrm.z); uvs.push(j / N, i / segments); edgeAttr.push(edgeness[j]); recessAttr.push(recesses[i][j]); };
       if (crease[j]) {
         push(facing(around.subVectors(v, prev), v, cx, cz));
         push(facing(around.subVectors(next, v), v, cx, cz));
@@ -148,9 +155,9 @@ function buildBladeGeometry(s: BladeSpec, condition: SwordCondition): THREE.Buff
   }
   // Caps at the base (inside the guard) and the point.
   const base = positions.length / 3;
-  positions.push(0, -s.length / 2, 0); normals.push(0, -1, 0); uvs.push(0.5, 0);
+  positions.push(0, -s.length / 2, 0); normals.push(0, -1, 0); uvs.push(0.5, 0); edgeAttr.push(0); recessAttr.push(0);
   const tip = base + 1;
-  positions.push(0, s.length / 2, 0); normals.push(0, 1, 0); uvs.push(0.5, 1);
+  positions.push(0, s.length / 2, 0); normals.push(0, 1, 0); uvs.push(0.5, 1); edgeAttr.push(1); recessAttr.push(0);
   for (let j = 0; j < N; j++) {
     index.push(base, slotA[(j + 1) % N], slotA[j]);
     index.push(tip, segments * M + slotA[j], segments * M + slotA[(j + 1) % N]);
@@ -159,6 +166,8 @@ function buildBladeGeometry(s: BladeSpec, condition: SwordCondition): THREE.Buff
   geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
   geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geo.setAttribute('surfEdge', new THREE.Float32BufferAttribute(edgeAttr, 1));
+  geo.setAttribute('surfRecess', new THREE.Float32BufferAttribute(recessAttr, 1));
   geo.setIndex(index);
   geo.computeBoundingSphere();
   return geo;
@@ -181,6 +190,10 @@ function buildHookGeometry(kind: 'lugs' | 'crescent', depth: number): THREE.Buff
   const bevel = Math.min(0.0016, depth * 0.3);
   const geo = new THREE.ExtrudeGeometry(sh, { depth: depth - bevel * 2, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel * 0.8, bevelSegments: 2, curveSegments: 18 });
   geo.translate(0, 0, -(depth - bevel * 2) / 2);
+  // The blade's age shader reads these; hooks are neither an edge nor a fuller.
+  const n = geo.getAttribute('position').count;
+  geo.setAttribute('surfEdge', new THREE.Float32BufferAttribute(new Float32Array(n), 1));
+  geo.setAttribute('surfRecess', new THREE.Float32BufferAttribute(new Float32Array(n), 1));
   return geo;
 }
 
@@ -208,10 +221,11 @@ function makePatternWeldedMap(): THREE.CanvasTexture {
     const v = y / H;
     for (let x = 0; x < W; x++) {
       const u = x / W;
-      const waveA = Math.sin((u * 9.0 + Math.sin(v * Math.PI * 11) * 0.22) * Math.PI * 2);
+      const waveA = Math.sin((u * 5.0 + Math.sin(v * Math.PI * 9) * 0.3) * Math.PI * 2);
       const waveB = Math.sin((u * 17.0 - Math.cos(v * Math.PI * 7) * 0.13) * Math.PI * 2);
       const lengthBreakup = Math.sin(v * Math.PI * 31 + waveA * 0.8) * 0.18;
-      const value = 187 + Math.round((waveA * 0.55 + waveB * 0.22 + lengthBreakup) * 16);
+      // Etched contrast: the twisted layers read as dark and bright bands, as on the excavated originals.
+      const value = 158 + Math.round((waveA * 0.55 + waveB * 0.22 + lengthBreakup) * 46);
       const i = (y * W + x) * 4;
       img.data[i] = value;
       img.data[i + 1] = value + 2;
@@ -277,12 +291,12 @@ function makeBladeRoughnessMap(): THREE.CanvasTexture {
 const PATTERN_WELDED_MAP = makePatternWeldedMap();
 const BLADE_ROUGHNESS_MAP = makeBladeRoughnessMap();
 
-type BladeProps = { spec: BladeSpec; color: string; steelFinish: SteelFinish; condition: SwordCondition; runes: boolean };
+type BladeProps = { spec: BladeSpec; color: string; steelFinish: SteelFinish; age: number; runes: boolean };
 
 // Grind lines worked out in the shader from the blade's own coordinates (metres), not from a texture, so
 // they stay crisp at any zoom. Lines run along the blade; where they would be finer than a pixel they fade,
 // so the steel never shimmers. A slow variation in roughness breaks up the polish like hand finishing.
-const GRIND: Record<SteelFinish, number> = { polished: 0.035, satin: 0.16, darkened: 0.1, patternWelded: 0.07 };
+const GRIND: Record<SteelFinish, number> = { polished: 0.015, satin: 0.32, blued: 0.07, patternWelded: 0.06 };
 const GRIND_VERTEX = /* glsl */ `varying vec3 vGrindPos;
 varying vec3 vGrindAcross;`;
 const GRIND_FRAGMENT = /* glsl */ `varying vec3 vGrindPos;
@@ -317,34 +331,44 @@ function grindShader(strength: { value: number }) {
 // One compiled variant per finish (the material remounts when the finish changes).
 const GRIND_SHADERS = Object.fromEntries((Object.keys(GRIND) as SteelFinish[]).map((f) => [f, grindShader({ value: GRIND[f] })])) as Record<SteelFinish, ReturnType<typeof grindShader>>;
 
-function Steel({ color, steelFinish, condition }: Omit<BladeProps, 'spec' | 'runes'>) {
-  const phys = getBladePhysicalRecipe(condition, steelFinish);
+function Steel({ color, steelFinish, age }: Omit<BladeProps, 'spec' | 'runes'>) {
+  const phys = getBladePhysicalRecipe(age, steelFinish);
+  const wear = surface('blade');
+  // Bluing is a thin oxide film: a faint oily sheen of temper colours, which wears off with age.
+  const blued = steelFinish === 'blued';
 
   return (
     <meshPhysicalMaterial
-      key={steelFinish}
-      onBeforeCompile={GRIND_SHADERS[steelFinish]}
-      customProgramCacheKey={() => `blade-grind-${steelFinish}`}
+      key={`${steelFinish}-${wear.key}`}
+      onBeforeCompile={chain(GRIND_SHADERS[steelFinish], wear.props.onBeforeCompile)}
+      customProgramCacheKey={() => `blade-grind-${steelFinish}-${wear.key}`}
       color={color}
       map={steelFinish === 'patternWelded' ? PATTERN_WELDED_MAP : null}
       metalness={1.0}
-      roughness={phys.roughness}
-      roughnessMap={BLADE_ROUGHNESS_MAP}
+      roughness={steelFinish === 'patternWelded' ? Math.min(0.9, phys.roughness + 0.32) : phys.roughness}
+      // Etched pattern welding: the layers differ in gloss as much as in tone, so the pattern drives roughness too.
+      roughnessMap={steelFinish === 'patternWelded' ? PATTERN_WELDED_MAP : BLADE_ROUGHNESS_MAP}
       clearcoat={phys.clearcoat}
       clearcoatRoughness={phys.clearcoatRoughness}
       anisotropy={phys.anisotropy}
       anisotropyRotation={Math.PI / 2}
+      iridescence={blued ? 0.001 + 0.12 * (1 - Math.min(1, age * 1.4)) : 0}
+      iridescenceIOR={1.5}
+      iridescenceThicknessRange={[300, 360]}
     />
   );
 }
 
 const LEATHER = { color: '#3a2416', band: '#24160d', pad: 0.0024, normal: new THREE.Vector2(0.6, 0.6) };
 
-export function Blade({ spec, color, steelFinish, condition, runes }: BladeProps) {
+export function Blade({ spec, color, steelFinish, age, runes }: BladeProps) {
   // The spec is rebuilt on every config change; rebuild the geometry only when it really differs.
   const key = JSON.stringify(spec);
+  // Nicks are geometry: rebuilt only when their depth changes by a step, so scrubbing the age stays smooth
+  // (and a sword younger than Carried never rebuilds at all).
+  const nicks = Math.round(nickDepth(age) * 500) / 500;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const geo = useMemo(() => buildBladeGeometry(spec, condition), [key, condition]);
+  const geo = useMemo(() => buildBladeGeometry(spec, nicks), [key, nicks]);
   useEffect(() => () => geo.dispose(), [geo]);
 
   const ric = spec.ricasso, hooks = ric?.hooks, cover = ric?.cover;
@@ -358,7 +382,8 @@ export function Blade({ spec, color, steelFinish, condition, runes }: BladeProps
   }, [cover, ricassoLen, rHalfW, spec.halfThick]);
   useEffect(() => () => { wrap?.body.dispose(); wrap?.band.dispose(); }, [wrap]);
 
-  const steel = <Steel color={color} steelFinish={steelFinish} condition={condition} />;
+  const steel = <Steel color={color} steelFinish={steelFinish} age={age} />;
+  const grain = surface('leather');
   const baseY = -spec.length / 2, hookY = baseY + ricassoLen;
   return (
     <group>
@@ -371,7 +396,7 @@ export function Blade({ spec, color, steelFinish, condition, runes }: BladeProps
       )}
       {wrap && (
         <>
-          <mesh geometry={wrap.body} position={[0, baseY + 0.003, 0]}><meshStandardMaterial color={LEATHER.color} roughness={0.7} metalness={0} normalMap={GRIP_NORMAL_MAPS.leather} normalScale={LEATHER.normal} /></mesh>
+          <mesh geometry={wrap.body} position={[0, baseY + 0.003, 0]}><meshStandardMaterial key={grain.key} {...grain.props} color={LEATHER.color} roughness={0.7} metalness={0} normalMap={GRIP_NORMAL_MAPS.leather} normalScale={LEATHER.normal} /></mesh>
           <mesh geometry={wrap.band} position={[0, baseY + 0.002, 0]}><meshStandardMaterial color={LEATHER.band} roughness={0.6} metalness={0} /></mesh>
           <mesh geometry={wrap.band} position={[0, baseY + 0.003 + wrap.len - 0.006, 0]}><meshStandardMaterial color={LEATHER.band} roughness={0.6} metalness={0} /></mesh>
         </>

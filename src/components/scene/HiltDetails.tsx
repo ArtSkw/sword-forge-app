@@ -1,7 +1,9 @@
-import type { ArchetypeKey } from '../../store/configStore';
+import type { ArchetypeKey, HardwareTone } from '../../store/configStore';
+import { surface } from './surface';
 import { HILT_DETAIL_RECIPES } from '../../presets/archetypeDetails';
 
 type HiltDetailsProps = {
+  tone: HardwareTone;
   archetype: ArchetypeKey;
   color: string;
   emissive: string;
@@ -12,7 +14,9 @@ type HiltDetailsProps = {
   gripBottomY: number;
 };
 
-export function HiltDetails({ archetype, color, emissive, emissiveIntensity, roughness, guardY, gripTopY, gripBottomY }: HiltDetailsProps) {
+export function HiltDetails({ tone, archetype, color, emissive, emissiveIntensity, roughness, guardY, gripTopY, gripBottomY }: HiltDetailsProps) {
+  // Brass and bronze age to a brown-green patina, iron and steel to rust.
+  const fit = surface(tone === 'brass' || tone === 'bronze' ? 'copper' : 'iron');
   const recipe = HILT_DETAIL_RECIPES[archetype];
   const metalRoughness = Math.max(0.32, roughness - 0.06);
   const anchorY = {
@@ -21,7 +25,7 @@ export function HiltDetails({ archetype, color, emissive, emissiveIntensity, rou
     bottomSpacer: gripBottomY + recipe.spacerHeight * 0.5,
   };
   const material = (
-    <meshStandardMaterial
+    <meshStandardMaterial key={fit.key} {...fit.props}
       color={color}
       metalness={1}
       roughness={metalRoughness}

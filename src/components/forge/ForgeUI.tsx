@@ -4,14 +4,16 @@ import { ArrowLeft01Icon, ArrowRight01Icon, Camera01Icon, InformationCircleIcon,
 import './forge.css';
 import { useConfigStore, type ArchetypeKey } from '../../store/configStore';
 import { SWORD_TYPES, SWORD_TYPE_ORDER } from '../../presets/swordTypes';
-import { ARCHETYPE_ERA, STATIONS, type StationId } from '../../presets/forge';
+import { ARCHETYPE_ERA, STATIONS, ageLabel, type StationId } from '../../presets/forge';
 import { currentForm, formsOf, matchesForm } from '../../lib/forms';
 import { anchors, interaction, onAnchors } from '../../lib/anchors';
 import { audioState, playBellows, playCling, playHiss, playOneShot, playTick, type ClingParams } from '../../lib/audio';
 import { takeScreenshot } from '../../lib/screenshot';
 import { useStationChoices, type Choice, type StationChoices } from './choices';
 import { HistoricalScroll } from './HistoricalScroll';
+import { AgeSlider } from './AgeSlider';
 
+const ageName = (age: number) => { const l = ageLabel(age); return l.between ? `${l.between[0]} → ${l.between[1]}` : l.stop.name; };
 const BASE = import.meta.env.BASE_URL;
 const ANVIL = `${BASE}sounds/anvil.wav`, CLING = `${BASE}sounds/sword-cling.mp3`;
 // Subtle per-sword colouring of the same cling: pitch within ±3%, gentle filtering.
@@ -203,12 +205,13 @@ function Inspector({ station, choices }: { station: StationId; choices: StationC
       <p className="insp-note">{choices.note}</p>
       {choices.rows.map((row) => (
         <section key={row.label} className="insp-group">
-          <div className="insp-row"><span>{row.label}</span><b>{row.items.find((x) => x.selected)?.name}</b></div>
-          <div className={row.kind === 'dots' ? 'insp-swatches' : row.kind === 'list' ? 'insp-seg insp-list' : 'insp-seg'}>
+          <div className="insp-row"><span>{row.label}</span><b>{row.kind === 'age' ? ageName(row.value ?? 0) : row.items.find((x) => x.selected)?.name}</b></div>
+          {row.kind === 'age' && row.set && <AgeSlider value={row.value ?? 0} onChange={row.set} />}
+          {row.kind !== 'age' && <div className={row.kind === 'dots' ? 'insp-swatches' : row.kind === 'list' ? 'insp-seg insp-list' : 'insp-seg'}>
             {row.items.map((it) => row.kind === 'dots'
               ? <button key={it.id} className="dot" aria-label={it.name} aria-pressed={it.selected} data-tip={it.name} style={{ background: it.swatch }} onClick={() => { if (!it.selected) { it.apply(); playTick(); } }} />
               : <button key={it.id} className="seg" aria-pressed={it.selected} onClick={() => { if (!it.selected) { it.apply(); forgeSound(); } }}>{it.name}</button>)}
-          </div>
+          </div>}
         </section>
       ))}
     </aside>
@@ -349,7 +352,7 @@ export function ForgeUI() {
   useLayoutEffect(() => { live.current = { station, reading, choices, step, open, setReading }; });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || (e.target as HTMLElement)?.closest('input, textarea')) return;
+      if (e.metaKey || e.ctrlKey || e.altKey || (e.target as HTMLElement)?.closest('input, textarea, [role="slider"]')) return;
       const L = live.current;
       if (e.key === 'Escape') { if (L.reading) L.setReading(false); else L.open(null); return; }
       if (e.repeat) return;
