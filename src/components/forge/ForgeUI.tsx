@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
-import { ArrowLeft01Icon, ArrowReloadHorizontalIcon, ArrowRight01Icon, Camera01Icon, InformationCircleIcon, UndoIcon, ScrollTextIcon, VolumeHighIcon, VolumeMute02Icon } from '@hugeicons/core-free-icons';
+import { ArrowLeft01Icon, ArrowReloadHorizontalIcon, ArrowRight01Icon, Camera01Icon, InformationCircleIcon, ScrollTextIcon, VolumeHighIcon, VolumeMute02Icon } from '@hugeicons/core-free-icons';
 import './forge.css';
 import { typeConfig, useConfigStore, type ArchetypeKey } from '../../store/configStore';
 import { SWORD_TYPES, SWORD_TYPE_ORDER } from '../../presets/swordTypes';
@@ -35,7 +35,7 @@ const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matche
 
 const icon = (svg: IconSvgElement) => <HugeiconsIcon icon={svg} size={16} strokeWidth={1.5} />;
 const ICONS = {
-  scroll: icon(ScrollTextIcon), reset: icon(ArrowReloadHorizontalIcon), undo: icon(UndoIcon), sound: icon(VolumeHighIcon), muted: icon(VolumeMute02Icon),
+  scroll: icon(ScrollTextIcon), reset: icon(ArrowReloadHorizontalIcon), sound: icon(VolumeHighIcon), muted: icon(VolumeMute02Icon),
   shot: icon(Camera01Icon), prev: icon(ArrowLeft01Icon), next: icon(ArrowRight01Icon),
   info: <HugeiconsIcon icon={InformationCircleIcon} size={18} strokeWidth={1.5} />,
 };
@@ -287,25 +287,14 @@ function FormSwitcher() {
   );
 }
 
-// ── Back to default: the type as it opens. For a few seconds after, the same button undoes it.
-// Disabled while the sword is already as it opens, so it never pretends to do something.
-const UNDO_MS = 8000;
+// ── Back to default: the type as it first opens, and the camera back to its first view.
+// Disabled (with a tooltip saying why) until something has been changed.
 function ResetButton() {
   const config = useConfigStore((s) => s.config);
-  const beforeReset = useConfigStore((s) => s.beforeReset);
-  const resetSword = useConfigStore((s) => s.resetSword), undoReset = useConfigStore((s) => s.undoReset);
+  const resetSword = useConfigStore((s) => s.resetSword);
   const atDefault = useMemo(() => JSON.stringify(config) === JSON.stringify(typeConfig(config.archetype)), [config]);
-  // The undo offer lapses after a while; any other change drops it at once (in the store).
-  useEffect(() => {
-    if (!beforeReset) return;
-    const t = setTimeout(() => useConfigStore.setState({ beforeReset: null }), UNDO_MS);
-    return () => clearTimeout(t);
-  }, [beforeReset]);
-  if (beforeReset) return (
-    <button className="btn icon" aria-label="Undo reset" data-tip="Undo" data-tip-body="Bring back the sword as it was" onClick={() => { undoReset(); forgeSound(); }}>{ICONS.undo}</button>
-  );
   return (
-    <button className="btn icon" aria-label="Back to default" aria-disabled={atDefault} data-tip="Back to default" data-tip-body={atDefault ? 'This sword is as it first opens' : 'Return this sword type to how it first opens'}
+    <button className="btn icon" aria-label="Back to default" aria-disabled={atDefault} data-tip="Back to default" data-tip-body={atDefault ? 'Nothing to reset: this sword is as it first opens' : 'Undo every change to this sword and return to the first view'}
       onClick={() => { if (!atDefault) { resetSword(); forgeSound(); } }}>{ICONS.reset}</button>
   );
 }

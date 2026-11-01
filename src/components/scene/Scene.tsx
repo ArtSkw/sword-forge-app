@@ -177,7 +177,6 @@ function SceneContents() {
     m.turn = station !== null && !refit;
     m.fromSph.setFromVector3(dir.current.subVectors(camera.position, controls.target));
     const faceDir = new THREE.Vector3().copy(FLAT_NORMAL).transformDirection(group.matrixWorld);
-    const viewDir = m.turn ? faceDir : dir.current.clone().normalize();
     m.toSph.setFromVector3(faceDir);
     m.toSph.theta = m.fromSph.theta + Math.atan2(Math.sin(m.toSph.theta - m.fromSph.theta), Math.cos(m.toSph.theta - m.fromSph.theta));
     const layout = getSwordLayout(config);
@@ -187,7 +186,9 @@ function SceneContents() {
       if (station === 'blade' || station === 'finish') {
         const blade = station === 'blade', len = blade ? layout.bladeLen : layout.total;
         m.toTarget.set(0, blade ? layout.bladeY : 0, 0).applyMatrix4(group.matrixWorld);
-        m.toDist = fitDistance(axisOf(len), viewDir, w, h, blade ? FIT_FILL_BLADE : FIT_FILL_FINISH);
+        // Always fitted as seen in the part's own shot (the blade's flat), even when the user has turned the
+        // sword: fitting the turned view would zoom right in whenever the blade points at the camera.
+        m.toDist = fitDistance(axisOf(len), faceDir, w, h, blade ? FIT_FILL_BLADE : FIT_FILL_FINISH);
         // Centred in the free area; Finish sits a little lower than that.
         m.toShiftY = ((PANEL_BOTTOM - MARGIN_TOP) / 2 + (blade ? BLADE_NUDGE.y : -FINISH_DROP)) / h;
         if (blade) m.toShift -= BLADE_NUDGE.x / w;
@@ -203,8 +204,10 @@ function SceneContents() {
       m.toDist = refit ? Math.max(m.fromDist, fit) : Math.max(OVERVIEW_DISTANCE, fit);
       m.toShift = reading ? READING_SHIFT : 0; m.toShiftY = 0;
     }
-    controls.minDistance = Math.min(1.5, m.toDist * 0.8);
-    controls.maxDistance = Math.max(6, m.toDist * 1.1);
+    // Zoom is free in every view, within a sensible range around the shot (close enough to inspect, far
+    // enough to see the whole sword). A refit keeps a user's zoom only when the length did not change.
+    controls.minDistance = station ? Math.max(0.18, m.toDist * 0.35) : Math.min(1.5, m.toDist * 0.8);
+    controls.maxDistance = station ? Math.max(m.toDist * 2.2, 1.6) : Math.max(6, m.toDist * 1.1);
     m.t0 = performance.now(); m.ms = motionReduced.current || resizeOnly ? 1 : refit ? REFIT_MS : station ? FOCUS_MS : OVERVIEW_MS; m.active = true;
     // The config is read through geoKey: only a change of the sword's length re-fits, not every part swap.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -288,7 +291,7 @@ function SceneContents() {
         enableDamping
         dampingFactor={0.12}
         enablePan={false}
-        enableZoom={station === null}
+        enableZoom
         rotateSpeed={station ? 0.7 : 1}
         minPolarAngle={MIN_POLAR}
         maxPolarAngle={MAX_POLAR}

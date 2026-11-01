@@ -77,10 +77,8 @@ interface ConfigStore {
   update: <K extends keyof SwordConfig>(key: K, value: Partial<SwordConfig[K]>) => void;
   viewResetTick: number;
   bumpResetTick: () => void;
-  // Back to default: the type as it opens (its first Form), with the sword before it kept for an undo.
+  // Back to default: the type as it opens (its first Form), and the camera back to its first view.
   resetSword: () => void;
-  undoReset: () => void;
-  beforeReset: SwordConfig | null;
   // Forge UI state: the part being worked on (edit mode) and the historical account.
   station: StationId | null;
   setStation: (id: StationId | null) => void;
@@ -99,21 +97,18 @@ const DEFAULT_CONFIG = typeConfig('armingSword');
 
 export const useConfigStore = create<ConfigStore>((set) => ({
   config: DEFAULT_CONFIG,
-  setArchetype: (key) => set({ config: typeConfig(key), station: null, beforeReset: null }),
+  setArchetype: (key) => set({ config: typeConfig(key), station: null }),
   setForm: (id) => set((state) => {
     const form = formsOf(state.config).find((f) => f.id === id);
-    return form ? { config: applyForm(state.config, form), beforeReset: null } : {};
+    return form ? { config: applyForm(state.config, form) } : {};
   }),
   update: (key, value) =>
     set((state) => ({
       config: { ...state.config, [key]: { ...(state.config[key] as object), ...value } },
-      beforeReset: null,
     })),
   viewResetTick: 0,
   bumpResetTick: () => set((s) => ({ viewResetTick: s.viewResetTick + 1 })),
-  beforeReset: null,
-  resetSword: () => set((s) => ({ beforeReset: s.config, config: typeConfig(s.config.archetype), viewResetTick: s.viewResetTick + 1 })),
-  undoReset: () => set((s) => (s.beforeReset ? { config: s.beforeReset, beforeReset: null } : {})),
+  resetSword: () => set((s) => ({ config: typeConfig(s.config.archetype), viewResetTick: s.viewResetTick + 1 })),
   station: null,
   setStation: (id) => set({ station: id, reading: false }),
   reading: false,
