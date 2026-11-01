@@ -125,10 +125,3 @@ body::after {
   will-change: transform;
 }
 
-[class*='leva-c'] {
-  letter-spacing: 0.025em;
-}
-
-.cc-type-selector::-webkit-scrollbar {
-  display: none;
-}
