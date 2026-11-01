@@ -183,6 +183,13 @@ export const FORMS: Record<ArchetypeKey, Form[]> = {
       blade: 'xv', guard: 'ornate', pommel: 'fishtail', grip: 'wood', gripColor: '#1f1b18', steel: 'polished', fittings: 'brass' },
   ],
   bastardSword: [
+    // The writhen pommel is the bastard sword's instant tell (research), so this Form leads.
+    { id: 'swiss', name: 'Swiss writhen', era: c('1500'), years: [1490, 1520],
+      anchor: 'After Cleveland Museum of Art 1921.1253',
+      anchorUrl: 'https://clevelandart.org/art/1921.1253',
+      note: 'A spirally fluted pommel and a straight cross with small knobs, both of blackened steel.',
+      story: 'A South German hand-and-a-half sword of about 1500, 117.5 cm long, with a blade of 90.2 cm and a grip of 21 cm. The pommel is spirally fluted and the straight cross ends in small turned knobs, both of blackened steel. The broad blade has a single central fuller running about two-thirds of its length.',
+      blade: 'fullered', guard: 'straight', pommel: 'writhen', grip: 'leather', steel: 'satin', fittings: 'darkIron', terminal: 'knob' },
     { id: 'blued', name: 'Blued hilt', era: c('1550'), years: [1540, 1560],
       anchor: 'After Cleveland Museum of Art 1916.1506',
       anchorUrl: 'https://clevelandart.org/art/1916.1506',
@@ -294,8 +301,8 @@ export const FORMS: Record<ArchetypeKey, Form[]> = {
  * - Agincourt · Met 2006.564 · horizontally S-recurved cross; spherical pommel.
  *
  * Bastard sword
- * - Swiss / South German · Cleveland 1921.1253, V&A M.603-1927 · writhen (spiral-fluted) pommel;
- *   knobbed cross; two-stage or shouldered grip; serpentine guard loops (V&A).
+ * - Swiss / South German (now a Form, Cleveland 1921.1253) · still needs: two-stage or shouldered grip;
+ *   serpentine guard loops (V&A M.603-1927).
  * - Saxon ring-hilt · Cleveland 1974.58 · finger rings and shell; cone pommel; shagreen grip.
  * - Munich cage · Wallace A480–A485 · knuckle guard and cage; onion or cone pommel; fish-skin grip;
  *   blued steel.

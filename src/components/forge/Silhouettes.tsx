@@ -67,6 +67,18 @@ export function PommelSilhouette({ style }: { style: PommelStyle }) {
       </svg>
     );
   }
+  if (form === 'writhen') {
+    const right = prof.map(([r, y]) => [cx + r * sc, cy - y * sc] as [number, number]);
+    const left = [...prof].reverse().map(([r, y]) => [cx - r * sc, cy - y * sc] as [number, number]);
+    const top = Math.min(...right.map((q) => q[1]));
+    return (
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d={`M32 4 V${top - 1}`} {...STROKE} strokeWidth={3.2} opacity={0.45} />
+        <polygon points={pts([...right, ...left])} {...STROKE} fill="currentColor" fillOpacity={0.14} />
+        {[-8, -3, 2, 7].map((dx) => <path key={dx} d={`M${cx + dx - 4} ${cy - 11} Q ${cx + dx + 2} ${cy}, ${cx + dx + 5} ${cy + 12}`} {...STROKE} strokeWidth={0.8} opacity={0.55} />)}
+      </svg>
+    );
+  }
   // A wheel or disc faces you: draw its face, rim and (for the wheel) the boss.
   if (form === 'z') {
     const r = Math.max(...prof.map(([x]) => x)) * sc * 0.82, boss = style === 'wheel' ? 0.012 * sc * 0.82 : style === 'ornate' ? 0.0155 * sc * 0.82 : 0, c = cy - 4;

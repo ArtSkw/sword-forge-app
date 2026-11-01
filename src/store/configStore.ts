@@ -31,7 +31,9 @@ export type PommelStyle =
   // Viking hilts: a pommel crown riveted to its own upper guard (Petersen types H, S and K)
   | 'pyramid'
   | 'lobed3'
-  | 'lobed5';
+  | 'lobed5'
+  // c. 1500 South German / Swiss: a pear-shaped pommel with spiral flutes
+  | 'writhen';
 // The four named stages of a sword's life, used for tables and labels; the sword itself carries a continuous age.
 export type SwordCondition = 'pristine' | 'used' | 'battleWorn' | 'ancient';
 export type SteelFinish = 'polished' | 'satin' | 'patternWelded';

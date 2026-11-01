@@ -125,6 +125,7 @@ export const POMMELS: Variant<PommelStyle>[] = [
   { id: 'fantasy', name: 'Fantastic', era: 'Fantasy', note: 'An angular pommel with a sharp point and a flared crown.' },
   { id: 'pyramid', name: 'Pyramid cap', era: 'c. 775–950', years: [775, 950], note: 'A small three-sided cap riveted to a wide, domed upper guard: the commonest Norwegian hilt.' },
   { id: 'lobed5', name: 'Five-lobe', era: '9th–10th c.', years: [800, 1000], note: 'Five even lobes in a row over a short, square-ish upper guard: the Frankish hilt.' },
+  { id: 'writhen', name: 'Writhen', era: 'c. 1490–1530', years: [1490, 1530], note: 'A pear-shaped pommel cut with spiral flutes: the mark of a South German or Swiss sword of about 1500.' },
   { id: 'lobed3', name: 'Three-lobe', era: 'late 9th–10th c.', years: [870, 1000], note: 'A great rounded central lobe between two smaller ones, over its own upper guard.' },
 ];
 export const GRIPS: Variant<GripMaterial>[] = [

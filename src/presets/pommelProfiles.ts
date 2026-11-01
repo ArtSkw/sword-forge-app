@@ -17,6 +17,7 @@ export const POMMEL_HALF_HEIGHTS: Record<PommelStyle, number> = {
   pyramid:      0.0245,  // upper guard + crown (see VIKING_POMMELS)
   lobed3:       0.0275,
   lobed5:       0.0205,
+  writhen:      0.026,
 };
 
 // Y coordinate of the bottom surface at center (r=0) for each pommel profile.
@@ -32,6 +33,7 @@ export const POMMEL_GEM_BOTTOM_Y: Record<PommelStyle, number> = {
   pyramid:      -0.0245,
   lobed3:       -0.0275,
   lobed5:       -0.0205,
+  writhen:      -0.026,
 };
 
 export type ProfilePoint2 = readonly [number, number];
@@ -40,7 +42,7 @@ export type ProfilePoint2 = readonly [number, number];
 // 'z': turned around the axis through the blade's flat, so a wheel or disc faces you as on the originals,
 // and the profile's second value is depth, not height. `flatten` squeezes a 'y' solid front to back
 // (a brazil nut and a fishtail are flat, not round).
-export const POMMEL_FORM: Record<PommelStyle, { axis: 'y' | 'z' | 'solid' | 'plate' | 'viking'; flatten?: number }> = {
+export const POMMEL_FORM: Record<PommelStyle, { axis: 'y' | 'z' | 'solid' | 'plate' | 'viking' | 'writhen'; flatten?: number }> = {
   wheel: { axis: 'z' },
   disc: { axis: 'z' },
   ornate: { axis: 'z' },
@@ -51,7 +53,11 @@ export const POMMEL_FORM: Record<PommelStyle, { axis: 'y' | 'z' | 'solid' | 'pla
   pyramid: { axis: 'viking' },     // upper guard + crown (VIKING_POMMELS)
   lobed3: { axis: 'viking' },
   lobed5: { axis: 'viking' },
+  writhen: { axis: 'writhen' },   // turned profile (POMMEL_PROFILES.writhen) cut with spiral flutes
 };
+
+// Writhen: how many flutes, how far they twist over the pommel's height (turns), how deep they cut.
+export const WRITHEN = { flutes: 10, turns: 0.42, depth: 0.16 };
 
 // Viking hilts (Petersen): an upper guard (a rounded bar, grip side) with the pommel's crown riveted
 // beneath it. Measures from the research: type H upper guard 8.5 cm, guard + cap 4.9 cm tall (FHA KM
@@ -115,6 +121,23 @@ function v(r: number, y: number): ProfilePoint2 {
 
 // Turned and face-on pommels only (the shaped, plate and Viking ones are defined above).
 export const POMMEL_PROFILES: Partial<Record<PommelStyle, ProfilePoint2[]>> = {
+
+  // Writhen fig / pear (Cleveland 1921.1253, Wallace A479): a short neck under the grip, a pear body
+  // swelling toward the end, and a small button. The spiral flutes are cut into this profile.
+  writhen: [
+    v(0,      0.026),
+    v(0.0105, 0.026),
+    v(0.0098, 0.021),  // neck
+    v(0.0118, 0.016),
+    v(0.0165, 0.008),
+    v(0.0198, -0.002), // widest
+    v(0.0192, -0.011),
+    v(0.0158, -0.018),
+    v(0.0092, -0.0225),
+    v(0.0052, -0.0232), // button
+    v(0.0056, -0.0252),
+    v(0,      -0.026),
+  ],
 
   // Wheel (Oakeshott H–K), in [radius, depth]: a raised central boss, a sunken ring around it and
   // chamfered rims, the same on both faces.

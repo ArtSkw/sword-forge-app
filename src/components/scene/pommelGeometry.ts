@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import type { PommelStyle } from '../../store/configStore';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
-import { BRAZIL_NUT, FISHTAIL_OUTLINE, POMMEL_FORM, POMMEL_HALF_HEIGHTS, POMMEL_PROFILES, VIKING_POMMELS } from '../../presets/pommelProfiles';
+import { BRAZIL_NUT, FISHTAIL_OUTLINE, POMMEL_FORM, POMMEL_HALF_HEIGHTS, POMMEL_PROFILES, VIKING_POMMELS, WRITHEN } from '../../presets/pommelProfiles';
+import { roundCorners } from './turned';
 import { paramSolid, turnedGeometry } from './turned';
 
 // One solid per pommel style, centred on the pommel's slot (grip side up, +Y), each made the way the
@@ -68,17 +69,47 @@ function viking(style: 'pyramid' | 'lobed3' | 'lobed5'): THREE.BufferGeometry {
   return merged;
 }
 
+// Writhen: the turned profile cut with spiral flutes. Each ring is built around the axis; the flutes
+// (a smooth cosine groove) twist with height and fade out at the neck and the button.
+function writhen(): THREE.BufferGeometry {
+  const prof = roundCorners(POMMEL_PROFILES.writhen!, 0.0006), segs = 160, rows = prof.length;
+  const top = prof[0][1], bottom = prof[rows - 1][1];
+  const fine: [number, number][] = [];
+  for (let i = 0; i < rows - 1; i++) for (let k = 0; k < 6; k++) { const t = k / 6; fine.push([prof[i][0] + (prof[i + 1][0] - prof[i][0]) * t, prof[i][1] + (prof[i + 1][1] - prof[i][1]) * t]); }
+  fine.push([prof[rows - 1][0], prof[rows - 1][1]]);
+  const positions: number[] = [], index: number[] = [];
+  fine.forEach(([r, y]) => {
+    const h = (top - y) / (top - bottom), fade = Math.sin(Math.PI * Math.min(1, Math.max(0, (h - 0.12) / 0.78)));
+    for (let j = 0; j <= segs; j++) {
+      const a = (j / segs) * Math.PI * 2;
+      const groove = 0.5 - 0.5 * Math.cos(WRITHEN.flutes * (a + h * WRITHEN.turns * Math.PI * 2));
+      const rr = r * (1 - WRITHEN.depth * fade * groove ** 1.6);
+      positions.push(Math.cos(a) * rr, y, Math.sin(a) * rr);
+    }
+  });
+  for (let i = 0; i < fine.length - 1; i++) for (let j = 0; j < segs; j++) {
+    const a = i * (segs + 1) + j, b = a + 1, c = a + segs + 1, d = c + 1;
+    index.push(a, c, b, b, c, d);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setIndex(index);
+  geo.computeVertexNormals();
+  return geo;
+}
+
 export function pommelGeometry(style: PommelStyle): THREE.BufferGeometry {
   const form = POMMEL_FORM[style];
   if (form.axis === 'solid') return brazilNut();
   if (form.axis === 'plate') return fishtail();
   if (form.axis === 'viking') return viking(style as 'pyramid' | 'lobed3' | 'lobed5');
-  return turnedGeometry(POMMEL_PROFILES[style] ?? [], { axis: form.axis, flatten: form.flatten });
+  if (form.axis === 'writhen') return writhen();
+  return turnedGeometry(POMMEL_PROFILES[style] ?? [], { axis: form.axis as 'y' | 'z', flatten: form.flatten });
 }
 
 // The tang's end, peened over at the pommel's far end: a small domed button (turned pommels end in
 // their own cap and do not need one).
-export const hasPeen = (style: PommelStyle) => POMMEL_FORM[style].axis !== 'y' && POMMEL_FORM[style].axis !== 'viking';
+export const hasPeen = (style: PommelStyle) => !['y', 'viking', 'writhen'].includes(POMMEL_FORM[style].axis);
 export const peenGeometry = () => turnedGeometry([[0, 0], [0.0036, 0], [0.0042, -0.0012], [0.0034, -0.0027], [0, -0.0034]], { segments: 48, bevel: 0.0004 });
 // The fishtail's tang ends in the hollow between its lobes.
 export const peenY = (style: PommelStyle) => (style === 'fishtail' ? -0.0135 : -POMMEL_HALF_HEIGHTS[style] + 0.0006);
