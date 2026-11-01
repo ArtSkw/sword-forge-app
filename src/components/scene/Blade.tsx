@@ -296,7 +296,7 @@ type BladeProps = { spec: BladeSpec; color: string; steelFinish: SteelFinish; ag
 // Grind lines worked out in the shader from the blade's own coordinates (metres), not from a texture, so
 // they stay crisp at any zoom. Lines run along the blade; where they would be finer than a pixel they fade,
 // so the steel never shimmers. A slow variation in roughness breaks up the polish like hand finishing.
-const GRIND: Record<SteelFinish, number> = { polished: 0.015, satin: 0.32, blued: 0.07, patternWelded: 0.06 };
+const GRIND: Record<SteelFinish, number> = { polished: 0.015, satin: 0.32, patternWelded: 0.06 };
 const GRIND_VERTEX = /* glsl */ `varying vec3 vGrindPos;
 varying vec3 vGrindAcross;`;
 const GRIND_FRAGMENT = /* glsl */ `varying vec3 vGrindPos;
@@ -334,8 +334,6 @@ const GRIND_SHADERS = Object.fromEntries((Object.keys(GRIND) as SteelFinish[]).m
 function Steel({ color, steelFinish, age }: Omit<BladeProps, 'spec' | 'runes'>) {
   const phys = getBladePhysicalRecipe(age, steelFinish);
   const wear = surface('blade');
-  // Bluing is a thin oxide film: a faint oily sheen of temper colours, which wears off with age.
-  const blued = steelFinish === 'blued';
 
   return (
     <meshPhysicalMaterial
@@ -352,9 +350,6 @@ function Steel({ color, steelFinish, age }: Omit<BladeProps, 'spec' | 'runes'>) 
       clearcoatRoughness={phys.clearcoatRoughness}
       anisotropy={phys.anisotropy}
       anisotropyRotation={Math.PI / 2}
-      iridescence={blued ? 0.001 + 0.12 * (1 - Math.min(1, age * 1.4)) : 0}
-      iridescenceIOR={1.5}
-      iridescenceThicknessRange={[300, 360]}
     />
   );
 }

@@ -33,6 +33,7 @@ export function Sword() {
         <Blade spec={spec} color={materials.blade.color} steelFinish={steelFinish} age={age} runes={runes} />
       </group>
       <Crossguard
+        engraved={config.guard.engraved}
         tone={config.finish.hardwareTone}
         archetype={config.archetype}
         style={config.guard.style}
@@ -64,8 +65,8 @@ export function Sword() {
         position={[0, gripY, 0]}
       />
       <Pommel
+        engraved={config.pommel.engraved}
         tone={config.finish.hardwareTone}
-        archetype={config.archetype}
         style={config.pommel.style}
         color={materials.hardware.color}
         emissive={materials.hardware.emissive}

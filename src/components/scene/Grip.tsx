@@ -1,18 +1,20 @@
 import { surface } from './surface';
 import * as THREE from 'three';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import { turnedGeometry } from './turned';
 import type { ArchetypeKey, GripLength, GripMaterial } from '../../store/configStore';
 import { getGripDetailRecipe } from '../../presets/archetypeDetails';
 import { GRIP_LENGTHS } from './dimensions';
 import { GRIP_NORMAL_MAPS } from './gripTextures';
 
-// Core cylinder dimensions
+// Grip: one turned solid, oval in section (wider across the blade than through it), with a gentle swell
+// and, for leather and cord, the low ridges of the cord risers under the wrap built into the profile.
 const GRIP_RADIUS_TOP = 0.011;
 const GRIP_RADIUS_BOT = 0.014;
-const GRIP_SEGMENTS   = 12;
-
-// Bands sit this far proud of the core surface (1.6mm wrap thickness).
-const BAND_OFFSET = 0.0016;
+export const GRIP_FLATTEN = 0.86;
+const SWELL = 0.04;
+const RISER = { height: 0.0007, width: 0.0016 };
+const STEPS = 120;
 
 type GripProps = {
   archetype: ArchetypeKey;
@@ -31,31 +33,29 @@ export function Grip({ archetype, length, material, color, metalness, normalScal
   const recipe = getGripDetailRecipe(archetype);
   const radiusTop = recipe.coreRadiusTop ?? GRIP_RADIUS_TOP;
   const radiusBot = recipe.coreRadiusBottom ?? GRIP_RADIUS_BOT;
-  const wrapRadius = (radiusTop + radiusBot) / 2 + BAND_OFFSET;
   const normalMap = GRIP_NORMAL_MAPS[material];
-  // Leather gets a real grain on top of the wrap pattern (core and raised bands alike).
+  // Leather gets a real grain on top of the wrap pattern.
   const grain = material === 'leather' ? surface('leather') : null;
   const normalScaleVec = useMemo(() => new THREE.Vector2(normalScale[0], normalScale[1]), [normalScale]);
-
-  const bands = useMemo(() => {
-    const count = recipe.bandCount?.[length] ?? (length === 'short' ? 9 : 14);
-    return Array.from({ length: count }, (_, i) => -halfH + ((i + 0.5) / count) * gripLen);
-  }, [gripLen, halfH, length, recipe.bandCount]);
+  const risers = material === 'leather' || material === 'cord';
+  const count = recipe.bandCount?.[length] ?? (length === 'short' ? 9 : 14);
+  const geo = useMemo(() => {
+    const profile: [number, number][] = [];
+    for (let i = 0; i <= STEPS; i++) {
+      const t = i / STEPS, y = -halfH + t * gripLen;
+      let r = (radiusBot + (radiusTop - radiusBot) * t) * (1 + SWELL * Math.sin(Math.PI * t));
+      if (risers) for (let k = 0; k < count; k++) { const yb = -halfH + ((k + 0.5) / count) * gripLen; r += RISER.height * Math.exp(-(((y - yb) / RISER.width) ** 2)); }
+      profile.push([r, y]);
+    }
+    return turnedGeometry(profile, { flatten: GRIP_FLATTEN, segments: 64, bevel: 0 });
+  }, [halfH, gripLen, radiusBot, radiusTop, risers, count]);
+  useEffect(() => () => geo.dispose(), [geo]);
 
   return (
     <group position={position}>
-      {/* Grip core — slightly recessed so the wrap bands sit proud */}
-      <mesh>
-        <cylinderGeometry args={[radiusTop, radiusBot, gripLen, GRIP_SEGMENTS]} />
+      <mesh geometry={geo}>
         <meshStandardMaterial key={grain?.key} {...grain?.props} color={color} metalness={metalness} roughness={roughness} normalMap={normalMap} normalScale={normalScaleVec} />
       </mesh>
-
-      {bands.map((y, i) => (
-        <mesh key={i} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[wrapRadius, recipe.bandTube ?? 0.00075, 6, 28]} />
-          <meshStandardMaterial key={grain?.key} {...grain?.props} color={color} metalness={metalness} roughness={Math.max(0.22, roughness - 0.05)} normalMap={normalMap} normalScale={normalScaleVec} />
-        </mesh>
-      ))}
     </group>
   );
 }

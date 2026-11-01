@@ -21,6 +21,21 @@ const TARNISH = new THREE.TextureLoader().load(`${BASE}textures/tarnish${LOW_TIE
 TARNISH.wrapS = TARNISH.wrapT = THREE.RepeatWrapping;
 TARNISH.colorSpace = THREE.NoColorSpace;
 TARNISH.anisotropy = 16;
+// Engravings (height maps: light grey = the metal's surface, dark = the cut). Loaded on first use.
+type Engrave = { kind: 'guard' } | { kind: 'face'; radius: number };
+const ENGRAVINGS: Partial<Record<'scroll' | 'medallion', { map: THREE.Texture; ready: { value: number } }>> = {};
+function engraving(name: 'scroll' | 'medallion') {
+  if (!ENGRAVINGS[name]) {
+    const ready = { value: 0 };
+    const map = new THREE.TextureLoader().load(`${BASE}textures/engrave-${name}${LOW_TIER ? '-512' : ''}.webp`, () => { ready.value = 1; });
+    map.wrapS = name === 'scroll' ? THREE.RepeatWrapping : THREE.ClampToEdgeWrapping;
+    map.wrapT = THREE.ClampToEdgeWrapping;
+    map.colorSpace = THREE.NoColorSpace;
+    map.anisotropy = 16;
+    ENGRAVINGS[name] = { map, ready };
+  }
+  return ENGRAVINGS[name]!;
+}
 
 // The sword's age (0 = from the forge, 1 = excavated), shared by every surface material and set by Sword
 // before each render, so scrubbing the age never rebuilds a material. Each layer fades in over its own span of age.
@@ -30,6 +45,7 @@ export const setSurfaceAge = (age: number) => { AGE.value = age; };
 type Recipe = {
   mapping: 'blade' | 'triplanar';
   kind: 'blade' | 'iron' | 'copper' | 'leather';
+  engrave?: Engrave;
 };
 
 const GLSL_VERTEX = /* glsl */ `varying vec3 vSurfPos;
@@ -37,7 +53,9 @@ varying vec3 vSurfNormal;
 varying float vSurfEdge;     // blade only: 1 at the cutting edge's bevel, 0 on the flats
 varying float vSurfRecess;   // blade only: depth into a fuller or groove (0–1)
 attribute float surfEdge;
-attribute float surfRecess;`;
+attribute float surfRecess;
+attribute vec2 engraveUv;
+varying vec2 vEngraveUv;`;
 const GLSL_FRAGMENT = /* glsl */ `varying vec3 vSurfPos;
 varying vec3 vSurfNormal;
 varying float vSurfEdge;
@@ -46,6 +64,9 @@ uniform sampler2D uSurfMap;
 uniform sampler2D uSurfTarnish;
 uniform float uSurfReady;
 uniform float uSurfAge;
+varying vec2 vEngraveUv;
+uniform sampler2D uEngrave;
+uniform float uEngraveReady;
 float surfTarnish(float tile) {
 #ifdef SURF_BLADE
   return texture2D(uSurfTarnish, vSurfPos.yx / tile).r;
@@ -96,6 +117,22 @@ function compile(recipe: Recipe) {
   const defines: Record<string, string> = { SURF_TEX: TEX_SIZE.toFixed(1) };
   if (recipe.mapping === 'blade') defines.SURF_BLADE = '';
   const metalPart = k !== 'leather';
+  const eg = recipe.engrave;
+  if (eg) defines[eg.kind === 'face' ? 'SURF_ENGRAVE_FACE' : 'SURF_ENGRAVE_GUARD'] = '';
+  if (eg?.kind === 'face') defines.SURF_ENGRAVE_R = eg.radius.toFixed(5);
+  // Engraving: cuts on the faces that look at you; old dirt and patina gather in them with age.
+  const engraveColor = eg ? `
+    float eMask = smoothstep(0.55, 0.85, abs(normalize(vSurfNormal).z));
+    #ifdef SURF_ENGRAVE_FACE
+      vec2 euv = vSurfPos.xy / (2.0 * SURF_ENGRAVE_R) + 0.5;
+      eMask *= 1.0 - step(SURF_ENGRAVE_R, length(vSurfPos.xy));
+    #else
+      vec2 euv = vEngraveUv;
+    #endif
+    float eFade = 1.0 - smoothstep(0.6, 1.6, length(fwidth(euv)) * SURF_TEX);
+    float sCut = clamp((0.78 - texture2D(uEngrave, euv).r) / 0.55, 0.0, 1.0) * eMask * uEngraveReady;
+    // Cuts read dark: they are shadowed and catch less reflection (never rougher, which would turn them milky).
+    diffuseColor.rgb *= 1.0 - sCut * (0.62 + 0.3 * aPatina);` : '';
   // Stages of age, each easing in over its own span: scratches (Carried), a honed edge (Carried–Heirloom),
   // patina in recesses and softened polish (Heirloom), pits, rust and rot (Excavated).
   const color = `
@@ -128,25 +165,29 @@ function compile(recipe: Recipe) {
     ${k === 'leather' ? `
     // Leather darkens with handling, then rots to a dull, cracked black-brown.
     diffuseColor.rgb *= mix(1.0, 0.78, aPatina) * mix(1.0, 0.45, aRust);` : ''}
-    diffuseColor.rgb *= 1.0 - sWear * 0.08;`;
+    diffuseColor.rgb *= 1.0 - sWear * 0.08;
+    ${engraveColor}`;
   const rough = `
     roughnessFactor = clamp(roughnessFactor + (sDetail - 0.5) * ${f(d.rough)} + sWear * 0.05 + ${k === 'leather' ? '0.0' : '0.1'} * sTarnish, 0.04, 1.0);
     ${k === 'blade' ? 'roughnessFactor = clamp(roughnessFactor - 0.14 * aHoned * vSurfEdge + 0.22 * aPatina * vSurfRecess, 0.04, 1.0);' : ''}
-    ${k === 'leather' ? 'roughnessFactor = mix(roughnessFactor - 0.25 * aWear * (1.0 - aRust), 0.97, aRust);' : 'roughnessFactor = mix(roughnessFactor, 0.9, sRust);'}`;
+    ${k === 'leather' ? 'roughnessFactor = mix(roughnessFactor - 0.25 * aWear * (1.0 - aRust), 0.97, aRust);' : 'roughnessFactor = mix(roughnessFactor, 0.9, sRust);'}
+`;
   const metal = metalPart ? 'metalnessFactor = mix(metalnessFactor, 0.05, sRust);' : '';
   const relief = `
     ${d.ch ? `normal = surfBump(normal, sDetail, ${f(d.bump)} * ${k === 'leather' ? '(1.0 + 1.5 * aPatina + 1.5 * aRust)' : '1.0'} * surfFade(${f(d.tile)}));` : ''}
     normal = surfBump(normal, sWear, 0.0009 * surfFade(${f(d.wearTile)}));
-    ${metalPart ? `normal = surfBump(normal, sPit * aRust, 0.0025 * (0.35 + sRust) * surfFade(${f(d.rustTile)}));` : ''}`;
+    ${metalPart ? `normal = surfBump(normal, sPit * aRust, 0.0025 * (0.35 + sRust) * surfFade(${f(d.rustTile)}));` : ''}
+    ${eg ? 'normal = surfBump(normal, 1.0 - sCut, 0.0007 * eFade);' : ''}`;
   return (shader: THREE.WebGLProgramParametersWithUniforms) => {
     shader.uniforms.uSurfMap = { value: MAP };
     shader.uniforms.uSurfTarnish = { value: TARNISH };
     shader.uniforms.uSurfReady = READY;
     shader.uniforms.uSurfAge = AGE;
+    if (eg) { const e = engraving(eg.kind === 'face' ? 'medallion' : 'scroll'); shader.uniforms.uEngrave = { value: e.map }; shader.uniforms.uEngraveReady = e.ready; }
     shader.defines = { ...shader.defines, ...defines };
     shader.vertexShader = shader.vertexShader
       .replace('#include <common>', `#include <common>\n${GLSL_VERTEX}`)
-      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvSurfPos = position;\nvSurfNormal = normal;\nvSurfEdge = surfEdge;\nvSurfRecess = surfRecess;');
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvSurfPos = position;\nvSurfNormal = normal;\nvSurfEdge = surfEdge;\nvSurfRecess = surfRecess;\nvEngraveUv = engraveUv;');
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', `#include <common>\n${GLSL_FRAGMENT}`)
       .replace('#include <color_fragment>', `#include <color_fragment>\n${color}`)
@@ -163,9 +204,9 @@ const shaderFor = (key: string, recipe: Recipe) => {
 };
 
 /** Props for a material that should carry surface detail (the age comes from the shared AGE uniform). */
-export function surface(kind: Recipe['kind']) {
-  const key = `surf-${kind}`;
-  const onBeforeCompile = shaderFor(key, { mapping: kind === 'blade' ? 'blade' : 'triplanar', kind });
+export function surface(kind: Recipe['kind'], engrave?: Engrave) {
+  const key = `surf-${kind}${engrave ? `-eng-${engrave.kind}${engrave.kind === 'face' ? engrave.radius : ''}` : ''}`;
+  const onBeforeCompile = shaderFor(key, { mapping: kind === 'blade' ? 'blade' : 'triplanar', kind, engrave });
   return { key, props: { onBeforeCompile, customProgramCacheKey: () => key } };
 }
 

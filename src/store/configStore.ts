@@ -28,7 +28,7 @@ export type PommelStyle =
   | 'fantasy';
 // The four named stages of a sword's life, used for tables and labels; the sword itself carries a continuous age.
 export type SwordCondition = 'pristine' | 'used' | 'battleWorn' | 'ancient';
-export type SteelFinish = 'polished' | 'satin' | 'blued' | 'patternWelded';
+export type SteelFinish = 'polished' | 'satin' | 'patternWelded';
 export type HardwareTone = 'steel' | 'brass' | 'bronze' | 'darkIron';
 export type GripMaterial = 'leather' | 'wood' | 'cord' | 'wire';
 export type GemstoneType = 'none' | 'ruby' | 'sapphire' | 'emerald' | 'amber';
@@ -40,9 +40,9 @@ export interface SwordConfig {
   form?: string;
   // section / ricasso / flame: the user's choices on top of the profile (omitted = the profile's own).
   blade: { length: BladeLength; width: BladeWidth; fuller: FullerStyle; profile?: string; shape?: BladeShape; section?: Section; ricasso?: 'none' | RicassoCover; flame?: boolean };
-  guard: { style: GuardStyle };
+  guard: { style: GuardStyle; engraved?: boolean };
   grip: { length: GripLength };
-  pommel: { style: PommelStyle };
+  pommel: { style: PommelStyle; engraved?: boolean };
   finish: {
     age: number;              // 0 = from the forge … 1 = excavated (see AGE_STOPS)
     steelFinish: SteelFinish;

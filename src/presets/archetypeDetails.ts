@@ -1,4 +1,4 @@
-import type { ArchetypeKey, GripLength, GuardStyle, PommelStyle } from '../store/configStore';
+import type { ArchetypeKey, GripLength, GuardStyle } from '../store/configStore';
 
 export type HiltDetailRecipe = {
   guardCollarRadiusTop: number;
@@ -10,12 +10,6 @@ export type HiltDetailRecipe = {
   bottomSpacerRadiusTop: number;
   bottomSpacerRadiusBottom: number;
   spacerHeight: number;
-  decorativeBands?: Array<{
-    anchor: 'guardCollar' | 'topSpacer' | 'bottomSpacer';
-    radius: number;
-    tube: number;
-    offsetY?: number;
-  }>;
 };
 
 export type GuardTerminalRecipe = {
@@ -24,26 +18,6 @@ export type GuardTerminalRecipe = {
   scaleX?: number;
   scaleY?: number;
   depth?: number;
-};
-
-export type PommelDetailRecipe = {
-  cap?: {
-    radiusTop: number;
-    radiusBottom: number;
-    height: number;
-    offsetY?: number;
-  };
-  equatorRing?: {
-    radius: number;
-    tube: number;
-  };
-  flutes?: {
-    count: number;
-    radius: number;
-    tube: number;
-    height: number;
-    offsetY?: number;
-  };
 };
 
 export type GripDetailRecipe = {
@@ -86,10 +60,6 @@ export const HILT_DETAIL_RECIPES: Record<ArchetypeKey, HiltDetailRecipe> = {
     bottomSpacerRadiusTop: 0.0145,
     bottomSpacerRadiusBottom: 0.016,
     spacerHeight: 0.006,
-    decorativeBands: [
-      { anchor: 'topSpacer', radius: 0.0157, tube: 0.00045 },
-      { anchor: 'bottomSpacer', radius: 0.0167, tube: 0.00045 },
-    ],
   },
   vikingSword: {
     guardCollarRadiusTop: 0.022,
@@ -134,12 +104,6 @@ export const HILT_DETAIL_RECIPES: Record<ArchetypeKey, HiltDetailRecipe> = {
     bottomSpacerRadiusTop: 0.018,
     bottomSpacerRadiusBottom: 0.020,
     spacerHeight: 0.008,
-    decorativeBands: [
-      { anchor: 'guardCollar', radius: 0.0255, tube: 0.00065, offsetY: -0.003 },
-      { anchor: 'guardCollar', radius: 0.0255, tube: 0.00065, offsetY: 0.003 },
-      { anchor: 'topSpacer', radius: 0.0195, tube: 0.00055 },
-      { anchor: 'bottomSpacer', radius: 0.0205, tube: 0.00055 },
-    ],
   },
 };
 
@@ -183,58 +147,7 @@ export function getGuardTerminalRecipe(archetype: ArchetypeKey, style: GuardStyl
   return GUARD_TERMINAL_RECIPES[archetype][style] ?? DEFAULT_TERMINALS[style] ?? { kind: 'none' };
 }
 
-export const POMMEL_DETAIL_RECIPES: Record<ArchetypeKey, Partial<Record<PommelStyle, PommelDetailRecipe>>> = {
-  armingSword: {
-    wheel: {
-      cap: { radiusTop: 0.006, radiusBottom: 0.0085, height: 0.0022, offsetY: -0.0004 },
-    },
-  },
-  longsword: {
-    wheel: {
-      cap: { radiusTop: 0.0055, radiusBottom: 0.008, height: 0.002, offsetY: -0.0004 },
-    },
-    scentStopper: {
-      cap: { radiusTop: 0.005, radiusBottom: 0.0075, height: 0.0021, offsetY: -0.00045 },
-    },
-  },
-  bastardSword: {
-    scentStopper: {
-      cap: { radiusTop: 0.005, radiusBottom: 0.0075, height: 0.002, offsetY: -0.0005 },
-    },
-    fishtail: {
-      cap: { radiusTop: 0.0055, radiusBottom: 0.0085, height: 0.0022, offsetY: -0.0005 },
-      flutes: { count: 12, radius: 0.024, tube: 0.00045, height: 0.029, offsetY: -0.004 },
-    },
-  },
-  vikingSword: {
-    brazilNut: {
-      cap: { radiusTop: 0.0075, radiusBottom: 0.0105, height: 0.0025, offsetY: -0.0006 },
-      equatorRing: { radius: 0.0335, tube: 0.0007 },
-    },
-  },
-  falchion: {
-    disc: {
-      cap: { radiusTop: 0.0065, radiusBottom: 0.009, height: 0.002, offsetY: -0.0004 },
-      equatorRing: { radius: 0.0265, tube: 0.00055 },
-    },
-  },
-  estoc: {
-    wheel: {
-      cap: { radiusTop: 0.0045, radiusBottom: 0.0065, height: 0.0018, offsetY: -0.0003 },
-      equatorRing: { radius: 0.026, tube: 0.0005 },
-    },
-  },
-  greatsword: {
-    fishtail: {
-      cap: { radiusTop: 0.006, radiusBottom: 0.009, height: 0.0024, offsetY: -0.0005 },
-      flutes: { count: 10, radius: 0.024, tube: 0.00042, height: 0.026, offsetY: -0.003 },
-    },
-  },
-};
 
-export function getPommelDetailRecipe(archetype: ArchetypeKey, style: PommelStyle): PommelDetailRecipe | null {
-  return POMMEL_DETAIL_RECIPES[archetype][style] ?? null;
-}
 
 export const GRIP_DETAIL_RECIPES: Record<ArchetypeKey, GripDetailRecipe> = {
   armingSword: {

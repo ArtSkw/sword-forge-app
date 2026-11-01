@@ -116,7 +116,6 @@ export const STEELS: Variant<SteelFinish>[] = [
   { id: 'satin', name: 'Satin', years: [700, 1600], note: 'A plain hand polish, the everyday finish.' },
   { id: 'polished', name: 'Polished', years: [700, 1600], note: 'Mirror-bright: a lord’s sword.' },
   { id: 'patternWelded', name: 'Pattern-welded', years: [500, 1100], note: 'Twisted rods forge-welded into a serpent-skin pattern.' },
-  { id: 'blued', name: 'Blued', era: '15th–16th c.', years: [1400, 1600], note: 'Heated until the steel turns a deep blue-black, which also slows rust.' },
 ];
 export const FITTINGS: { id: HardwareTone; name: string; swatch: string }[] = [
   { id: 'darkIron', name: 'Dark iron', swatch: 'radial-gradient(circle at 35% 30%, #8a857e, #3c3b38 60%, #1d1c1a)' },

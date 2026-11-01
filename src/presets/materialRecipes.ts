@@ -41,12 +41,6 @@ const BLADE_COLORS: Record<SteelFinish, Record<SwordCondition, string>> = {
     battleWorn: '#8E8D88',
     ancient: '#777064',
   },
-  blued: {
-    pristine: '#162A5C',
-    used: '#1E2E55',
-    battleWorn: '#33373E',
-    ancient: '#3B352D',
-  },
   patternWelded: {
     pristine: '#BFC7C8',
     used: '#B4BBBC',
@@ -162,7 +156,6 @@ const STEEL_FINISH_PHYSICAL_MODIFIERS: Record<SteelFinish, BladePhysicalModifier
   // Mirror polish against a brushed grey: the two must read apart at a glance.
   polished: { roughness: -0.1, clearcoat: 0.08, clearcoatRoughness: -0.04, anisotropy: -0.3 },
   satin: { roughness: 0.14, clearcoat: -0.3, clearcoatRoughness: 0.08, anisotropy: 0.25 },
-  blued: { roughness: 0.06, clearcoat: -0.2, clearcoatRoughness: 0.06, anisotropy: -0.12 },
   patternWelded: { roughness: 0.02, clearcoat: -0.02, clearcoatRoughness: 0.03, anisotropy: 0.02 },
 };
 

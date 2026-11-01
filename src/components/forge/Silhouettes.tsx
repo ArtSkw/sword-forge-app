@@ -1,7 +1,7 @@
 import type { ArchetypeKey, GripMaterial, GuardStyle, PommelStyle, SteelFinish } from '../../store/configStore';
 import { getGuardParams } from '../../presets/guardShapes';
 import { getGuardTerminalRecipe } from '../../presets/archetypeDetails';
-import { POMMEL_PROFILES } from '../../presets/pommelProfiles';
+import { BRAZIL_NUT, FISHTAIL_OUTLINE, POMMEL_FORM, POMMEL_PROFILES } from '../../presets/pommelProfiles';
 import type { BladeProfile } from '../../presets/forge';
 import { RICASSO, halfWidths, profileSpec } from '../../lib/bladeSpec';
 import { takesFuller } from '../../presets/bladeSections';
@@ -36,6 +36,37 @@ export function GuardSilhouette({ archetype, style }: { archetype: ArchetypeKey;
 
 export function PommelSilhouette({ style }: { style: PommelStyle }) {
   const prof = POMMEL_PROFILES[style], sc = 680, cx = 32, cy = 38;
+  // Flat and shaped pommels: their front outline, from the same data as the 3D solid.
+  const form = POMMEL_FORM[style].axis;
+  if (form === 'solid' || form === 'plate') {
+    const k = 780, c = 34;
+    const outline: [number, number][] = form === 'plate'
+      ? FISHTAIL_OUTLINE.map(([x, y]) => [cx + x * k, c - y * k])
+      : Array.from({ length: 48 }, (_, i) => {
+          const a = (i / 48) * Math.PI * 2, dx = Math.cos(a), dy = Math.sin(a), p = BRAZIL_NUT.power;
+          const y = (dy > 0 ? BRAZIL_NUT.top : BRAZIL_NUT.bottom) * Math.sign(dy) * Math.abs(dy) ** p + (BRAZIL_NUT.bottom - BRAZIL_NUT.top) / 2;
+          return [cx + BRAZIL_NUT.halfWidth * Math.sign(dx) * Math.abs(dx) ** p * k, c - y * k];
+        });
+    const top = Math.min(...outline.map((q) => q[1]));
+    return (
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d={`M32 2 V${top - 1}`} {...STROKE} strokeWidth={3.2} opacity={0.45} />
+        <polygon points={pts(outline)} {...STROKE} fill="currentColor" fillOpacity={0.14} />
+      </svg>
+    );
+  }
+  // A wheel or disc faces you: draw its face, rim and (for the wheel) the boss.
+  if (form === 'z') {
+    const r = Math.max(...prof.map(([x]) => x)) * sc * 0.82, boss = style === 'wheel' ? 0.012 * sc * 0.82 : style === 'ornate' ? 0.0155 * sc * 0.82 : 0, c = cy - 4;
+    return (
+      <svg viewBox="0 0 64 64" aria-hidden="true">
+        <path d={`M32 2 V${c - r - 1}`} {...STROKE} strokeWidth={3.2} opacity={0.45} />
+        <circle cx={cx} cy={c} r={r} {...STROKE} fill="currentColor" fillOpacity={0.14} />
+        <circle cx={cx} cy={c} r={r * 0.8} {...STROKE} strokeWidth={0.8} opacity={0.6} />
+        {boss > 0 && <circle cx={cx} cy={c} r={boss} {...STROKE} fill="currentColor" fillOpacity={0.22} />}
+      </svg>
+    );
+  }
   const right = prof.map(([r, y]) => [cx + r * sc, cy - y * sc] as [number, number]);
   const left = [...prof].reverse().map(([r, y]) => [cx - r * sc, cy - y * sc] as [number, number]);
   const topY = Math.min(...right.map((q) => q[1]));
@@ -73,7 +104,6 @@ const STEEL_TONES: Record<SteelFinish, [string, string, string]> = {
   satin: ['#5d666b', '#b8c0c2', '#4b5357'],
   polished: ['#3e4549', '#f2f6f8', '#353b3f'],
   patternWelded: ['#566064', '#bfc7c8', '#475054'],
-  blued: ['#141b2a', '#4a5a7a', '#10151f'],
 };
 export function SteelSwatch({ finish }: { finish: SteelFinish }) {
   const [a, b, c] = STEEL_TONES[finish], id = `s-${finish}`;

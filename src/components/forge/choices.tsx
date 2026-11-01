@@ -4,6 +4,7 @@ import { SWORD_TYPES } from '../../presets/swordTypes';
 import { ageLabel, DYES, EDGE_CHOICES, FITTINGS, GRIPS, GUARDS, POMMELS, RICASSO_CHOICES, SECTIONS, SECTION_CHOICES, STEELS, type StationId } from '../../presets/forge';
 import { currentForm, currentProfile, overlaps, periodNote, profileBlade, profilesOf, type PeriodNote } from '../../lib/forms';
 import { bladeSpec, profileSpec } from '../../lib/bladeSpec';
+import { POMMEL_FORM } from '../../presets/pommelProfiles';
 import { BladeSilhouette, GripSwatch, GuardSilhouette, PommelSilhouette, SteelSwatch } from './Silhouettes';
 
 // The choices offered at each station, as one model shared by the chooser, the inspector and the keyboard.
@@ -52,10 +53,15 @@ export function useStationChoices(station: StationId | null): StationChoices | n
       extraNote = [extraNote, cover !== ownCover ? RICASSO_CHOICES.find((r) => r.id === cover)?.note : '', spec.flame ? EDGE_CHOICES[1].note : ''].filter(Boolean).join(' ');
     }
   }
+  // Engraving: a running scroll on the guard's faces, a medallion on the face of a wheel or disc pommel.
+  const engraving = (part: 'guard' | 'pommel', on: boolean) =>
+    rows.push({ label: 'Engraving', kind: 'chips', items: [false, true].map((v) => ({ id: v ? 'engraved' : 'plain', name: v ? 'Engraved' : 'Plain', selected: on === v, apply: () => update(part, { engraved: v || undefined }) })) });
   if (station === 'guard') {
+    engraving('guard', !!config.guard.engraved);
     cards = GUARDS.map((g) => ({ ...g, period: ofForm(g, form?.guard), off: off(g, form?.guard), selected: config.guard.style === g.id, art: <GuardSilhouette archetype={arch} style={g.id} />, apply: () => update('guard', { style: g.id }) }));
   }
   if (station === 'pommel') {
+    if (POMMEL_FORM[config.pommel.style].axis === 'z') engraving('pommel', !!config.pommel.engraved);
     cards = POMMELS.map((g) => ({ ...g, period: ofForm(g, form?.pommel), off: off(g, form?.pommel), selected: config.pommel.style === g.id, art: <PommelSilhouette style={g.id} />, apply: () => update('pommel', { style: g.id }) }));
   }
   if (station === 'grip') {
