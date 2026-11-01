@@ -7,6 +7,7 @@ import { bladeSpec } from '../../lib/bladeSpec';
 import { hiltSpec } from '../../lib/hilt';
 import { currentForm } from '../../lib/forms';
 import { DEFAULT_GRIP_SHAPE } from '../../presets/forge';
+import { POMMEL_SCALE } from '../../presets/pommelProfiles';
 import { setBladeMarkings, setSurfaceAge } from './surface';
 import { REGION_LEN, REGION_START, markingsTexture } from './markingsTexture';
 import { INSCRIPTIONS } from '../../presets/inscriptions';
@@ -55,6 +56,7 @@ export function Sword() {
         <Blade spec={spec} color={materials.blade.color} steelFinish={steelFinish} age={age} />
       </group>
       <Crossguard
+        cm={config.guard.cm}
         wire={config.archetype === 'vikingSword' ? config.guard.wire : undefined}
         {...hilt}
         engraved={config.guard.engraved}
@@ -93,7 +95,7 @@ export function Sword() {
       ) : (
       <Grip
         archetype={config.archetype}
-        length={config.grip.length}
+        length={gripLen}
         shape={config.grip.shape ?? DEFAULT_GRIP_SHAPE[config.archetype]}
         material={materials.grip.material}
         color={materials.grip.color}
@@ -105,6 +107,7 @@ export function Sword() {
 {!messer && (
       <Pommel
         engraved={config.pommel.engraved}
+        scale={POMMEL_SCALE[config.archetype] ?? 1}
         enamel={config.pommel.enamel}
         wire={config.archetype === 'vikingSword' ? config.guard.wire : undefined}
         tone={config.finish.hardwareTone}

@@ -28,6 +28,9 @@ export type BladeProfile = {
   width: BladeWidth;
   fuller: FullerStyle;
   shape?: BladeShape;
+  // Measured size (research): blade length and width at the hilt, in cm. They replace the length/width classes.
+  cm?: number;
+  widthCm?: number;
   section?: Section;            // omitted = the sword type's section
   swell?: number;               // single-edged blades: how much the edge widens toward the clip (× half-width)
   clip?: number;                // single-edged blades: where the back starts to drop to the point (0–1)
@@ -124,6 +127,8 @@ export type Form = {
   fittings: HardwareTone;
   terminal?: GuardTerminal;    // only where the object differs from the guard style's own
   gripLength?: GripLength;     // omitted = the type's own
+  gripCm?: number;             // the object's grip, where recorded (else the type's own)
+  guardCm?: number;            // the object's cross tip to tip, where recorded
   hilt?: 'messer';
   cap?: MesserCap;
   inscription?: string;        // presets/inscriptions.ts

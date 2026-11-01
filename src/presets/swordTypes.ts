@@ -24,6 +24,9 @@ export type SwordPreset = {
   // Optional fuller span along blade length. Defaults live in lib/bladeSpec.ts.
   fullerStart?: number;
   fullerEnd?: number;
+  // The grip's usual length on this type, in cm (research: Viking 9–10, arming ~10, longsword 20–28,
+  // bastard 21–30, two-hander 35–45, falchion ~10, estoc ~30).
+  gripCm: number;
   defaults: Omit<SwordConfig, 'archetype'>;
 };
 
@@ -52,6 +55,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     clipT: 1,
     fullerStart: 0.075,
     fullerEnd: 0.76,
+    gripCm: 10.5,
     defaults: {
       blade: { length: 'medium', width: 'standard', fuller: 'single' },
       guard: { style: 'longBar' },
@@ -72,6 +76,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     clipT: 1,
     fullerStart: 0.080,
     fullerEnd: 0.735,
+    gripCm: 23,
     defaults: {
       blade: { length: 'long', width: 'standard', fuller: 'single' },
       guard: { style: 'roundCross' },
@@ -92,6 +97,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     clipT: 1,
     fullerStart: 0.070,
     fullerEnd: 0.800,
+    gripCm: 24,
     defaults: {
       blade: { length: 'long', width: 'standard', fuller: 'single' },
       guard: { style: 'roundCross' },
@@ -110,6 +116,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     section: 'lenticular',
     swell: 0,
     clipT: 1,
+    gripCm: 9.5,
     defaults: {
       blade: { length: 'short', width: 'wide', fuller: 'single' },
       guard: { style: 'vikingBar' },
@@ -130,6 +137,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     clipT: 0.8,        // the back drops over the last fifth to the point
     fullerStart: 0.120,
     fullerEnd: 0.690,
+    gripCm: 10.5,
     defaults: {
       blade: { length: 'medium', width: 'standard', fuller: 'none' },
       guard: { style: 'arched' },
@@ -148,6 +156,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     section: 'triangular',
     swell: 0,
     clipT: 1,
+    gripCm: 28,
     defaults: {
       blade: { length: 'extraLong', width: 'narrow', fuller: 'none' },
       guard: { style: 'longBar' },
@@ -168,6 +177,7 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
     clipT: 1,
     fullerStart: 0.085,
     fullerEnd: 0.650,
+    gripCm: 40,
     defaults: {
       blade: { length: 'extraLong', width: 'standard', fuller: 'double' },
       guard: { style: 'longQuillons' },

@@ -1,5 +1,5 @@
 import type { SwordConfig } from '../store/configStore';
-import { GRIP_LENGTHS } from '../components/scene/dimensions';
+import { gripLengthM } from './hiltSize';
 import { sectionArea, takesFuller } from '../presets/bladeSections';
 import { bladeSpec, halfWidths } from './bladeSpec';
 
@@ -16,7 +16,7 @@ const STEEL = 7.85; // g/cm³
 
 export function swordPhysics(config: SwordConfig) {
   const spec = bladeSpec(config), L = spec.length * 100;
-  const grip = GRIP_LENGTHS[config.grip.length] * 100;
+  const grip = gripLengthM(config) * 100;
   // Calibrated on a lens section ~0.6 cm thick at the base. Other sections scale by their real area and
   // thickness; blades past ~90 cm are thicker at the forte (two-handers run 7–9 mm).
   const fill = 0.62 * sectionArea(spec.section, spec.archetype) * (spec.halfThick / 0.005);

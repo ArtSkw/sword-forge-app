@@ -48,8 +48,9 @@ const SIZE: Record<ArchetypeKey, { width: number; section: number }> = {
 };
 
 /** The guard's numbers on this sword type. */
-export function guardDef(style: GuardStyle, archetype: ArchetypeKey): GuardDef {
-  const d = GUARD_DEFS[style], s = SIZE[archetype], w = d.scales === false ? 1 : s.width;
+export function guardDef(style: GuardStyle, archetype: ArchetypeKey, cm?: number): GuardDef {
+  // A measured cross (cm, tip to tip) sets the length; the bend grows with it.
+  const d = GUARD_DEFS[style], s = SIZE[archetype], w = cm ? cm / 100 / d.width : d.scales === false ? 1 : s.width;
   return { ...d, width: d.width * w, tipY: d.tipY * w, recurve: (d.recurve ?? 0) * w, secY: d.secY * s.section, secZ: d.secZ * s.section };
 }
 

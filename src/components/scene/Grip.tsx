@@ -1,8 +1,7 @@
 import * as THREE from 'three';
 import { useEffect, useMemo } from 'react';
-import type { ArchetypeKey, GripLength, GripMaterial, GripShape } from '../../store/configStore';
+import type { ArchetypeKey, GripMaterial, GripShape } from '../../store/configStore';
 import { getGripDetailRecipe } from '../../presets/archetypeDetails';
-import { GRIP_LENGTHS } from './dimensions';
 import { surface } from './surface';
 import { woodTexture } from './gripTextures';
 
@@ -89,7 +88,7 @@ function gripGeometry(len: number, rBot: number, rTop: number, material: GripMat
 
 type GripProps = {
   archetype: ArchetypeKey;
-  length: GripLength;
+  length: number;          // m
   shape: GripShape;
   material: GripMaterial;
   color: string;           // the dyed leather or cord, or the wood's tint
@@ -99,7 +98,7 @@ type GripProps = {
 };
 
 export function Grip({ archetype, length, shape, material, color, roughness, metal, position }: GripProps) {
-  const len = GRIP_LENGTHS[length];
+  const len = length;
   const recipe = getGripDetailRecipe(archetype);
   const rTop = recipe.coreRadiusTop ?? GRIP_RADIUS_TOP, rBot = recipe.coreRadiusBottom ?? GRIP_RADIUS_BOT;
   const geo = useMemo(() => gripGeometry(len, rBot, rTop, material, shape), [len, rBot, rTop, material, shape]);

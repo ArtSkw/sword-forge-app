@@ -55,9 +55,11 @@ export interface SwordConfig {
   // inscription / mark: ids from presets/inscriptions.ts; inlay overrides the inscription's own metal.
   blade: { length: BladeLength; width: BladeWidth; fuller: FullerStyle; profile?: string; shape?: BladeShape; section?: Section; ricasso?: 'none' | RicassoCover; flame?: boolean; inscription?: string; inlay?: 'iron' | 'latten' | 'silver'; mark?: string };
   // terminal / ecusson / rings: omitted = the guard style's own (see lib/hilt.ts).
-  guard: { style: GuardStyle; engraved?: boolean; terminal?: GuardTerminal; ecusson?: boolean; rings?: 1 | 2; wire?: WireInlay };
+  // cm: the cross tip to tip (omitted = the guard style's own length on this type).
+  guard: { style: GuardStyle; engraved?: boolean; terminal?: GuardTerminal; ecusson?: boolean; rings?: 1 | 2; wire?: WireInlay; cm?: number };
   // shape omitted = the type's own (GRIP_SHAPES); hilt 'messer' = riveted scales, Nagel and cap (falchion).
-  grip: { length: GripLength; shape?: GripShape; hilt?: 'messer'; cap?: MesserCap };
+  // cm: the grip's length (omitted = the type's own, SwordPreset.gripCm).
+  grip: { length: GripLength; shape?: GripShape; hilt?: 'messer'; cap?: MesserCap; cm?: number };
   // enamel: the engraved medallion's recesses filled with coloured enamel (champlevé).
   pommel: { style: PommelStyle; engraved?: boolean; enamel?: 'azure' | 'gules' };
   finish: {

@@ -22,6 +22,9 @@ export const POMMEL_HALF_HEIGHTS: Record<PommelStyle, number> = {
 
 export type ProfilePoint2 = readonly [number, number];
 
+// Two-handers carry bigger pommels as counterweight to their long blades (the shapes stay the same).
+export const POMMEL_SCALE: Partial<Record<string, number>> = { greatsword: 1.35 };
+
 // How each profile becomes a solid. 'y': turned around the sword's axis (scent stopper, fishtail…);
 // 'z': turned around the axis through the blade's flat, so a wheel or disc faces you as on the originals,
 // and the profile's second value is depth, not height. `flatten` squeezes a 'y' solid front to back

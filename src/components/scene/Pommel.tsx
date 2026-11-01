@@ -15,6 +15,7 @@ type PommelProps = {
   enamel?: 'azure' | 'gules';
   wire?: 'chequer' | 'lozenge' | 'bands';   // a Viking pommel's upper guard is inlaid like the guard
   style: PommelStyle;
+  scale?: number;
   color: string;
   emissive: string;
   emissiveIntensity: number;
@@ -22,7 +23,7 @@ type PommelProps = {
   position: [number, number, number];
 };
 
-export function Pommel({ tone, engraved, enamel, wire, style, color, emissive, emissiveIntensity, roughness, position }: PommelProps) {
+export function Pommel({ tone, engraved, enamel, wire, style, scale = 1, color, emissive, emissiveIntensity, roughness, position }: PommelProps) {
   // Brass and bronze age to a brown-green patina, iron and steel to rust.
   const metal = tone === 'brass' || tone === 'bronze' ? 'copper' : 'iron';
   const fit = surface(metal);
@@ -39,7 +40,7 @@ export function Pommel({ tone, engraved, enamel, wire, style, color, emissive, e
   const metalProps = { color, metalness: 1, emissive, emissiveIntensity };
 
   return (
-    <group position={position}>
+    <group position={position} scale={scale}>
       <mesh geometry={geo}>
         <meshStandardMaterial key={body.key} {...body.props} {...metalProps} roughness={roughness} polygonOffset polygonOffsetFactor={1} polygonOffsetUnits={1} />
       </mesh>

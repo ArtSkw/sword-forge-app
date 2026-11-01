@@ -30,7 +30,9 @@ export type BladeSpec = {
 
 function build(archetype: ArchetypeKey, profile: BladeProfile | undefined, blade: Partial<SwordConfig['blade']> & Pick<SwordConfig['blade'], 'length' | 'width' | 'fuller'>): BladeSpec {
   const preset = SWORD_TYPES[archetype];
-  const length = BLADE_LENGTHS[blade.length], halfWidth = BLADE_HALF_WIDTHS[blade.width];
+  // A profile's measured size wins over the length/width classes (which remain for older saved configs).
+  const length = profile?.cm ? profile.cm / 100 : BLADE_LENGTHS[blade.length];
+  const halfWidth = profile?.widthCm ? profile.widthCm / 200 : BLADE_HALF_WIDTHS[blade.width];
   const section = blade.section ?? profile?.section ?? preset.section;
   const singleEdged = section === 'wedge';
   const cover = blade.ricasso === undefined ? profile?.ricasso?.cover : blade.ricasso === 'none' ? undefined : blade.ricasso;
