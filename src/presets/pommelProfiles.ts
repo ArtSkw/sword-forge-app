@@ -50,11 +50,13 @@ export const WRITHEN = { flutes: 10, turns: 0.42, depth: 0.16 };
 // 18402:1); type S pommel 78.8 × 39.9 × 36.5 mm (PAS KENT-328AD5); type K a short square-ish bar under
 // five even lobes (Wallace A456). The crown is a front outline, top edge at y = 0, extruded with a bevel.
 type Lobe = { x: number; y: number; r: number };
-const lobedOutline = (halfWidth: number, lobes: Lobe[]): ProfilePoint2[] => {
+// base: an optional rounded mass under the guard that the lobes grow out of (as on the type S solid).
+const lobedOutline = (halfWidth: number, lobes: Lobe[], base?: { halfWidth: number; depth: number }): ProfilePoint2[] => {
   const pts: ProfilePoint2[] = [[-halfWidth, 0], [halfWidth, 0]];
   for (let i = 0; i <= 120; i++) {
     const x = halfWidth - (i / 120) * 2 * halfWidth;
-    const y = Math.min(0, ...lobes.filter((l) => Math.abs(x - l.x) < l.r).map((l) => l.y - Math.sqrt(l.r * l.r - (x - l.x) ** 2)));
+    const under = base ? -base.depth * Math.sqrt(Math.max(0, 1 - Math.min(1, Math.abs(x / base.halfWidth) ** (1 / 0.7)) ** 2)) : 0;
+    const y = Math.min(under, ...lobes.filter((l) => Math.abs(x - l.x) < l.r).map((l) => l.y - Math.sqrt(l.r * l.r - (x - l.x) ** 2)));
     pts.push([x, y]);
   }
   return pts;
@@ -64,13 +66,15 @@ export const VIKING_POMMELS: Record<'pyramid' | 'lobed3' | 'lobed5', VikingPomme
   // Type H/I: a small three-sided cap on a wide, domed upper guard.
   pyramid: {
     upper: { halfWidth: 0.0425, halfHeight: 0.0078, halfDepth: 0.0135 },
-    crown: (() => { const pts: ProfilePoint2[] = [[-0.026, 0], [0.026, 0]]; for (let i = 0; i <= 16; i++) { const t = i / 16, u = 1 - t; pts.push([u * u * 0.026 + t * t * -0.026, u * u * -0.001 + 2 * u * t * -0.06 + t * t * -0.001]); } return pts.slice(0, -1); })(),
+    // Front outline of the solid built in pommelGeometry (base 50 mm, 31 mm to the point), for the card.
+    crown: [[-0.025, 0], [0.025, 0], [0.0016, -0.0296], [0, -0.031], [-0.0016, -0.0296]],
     depth: 0.004, bevel: 0.0068, bevelSize: 0.0042,
   },
   // Type S: a great sub-spherical central lobe between two smaller ones.
   lobed3: {
     upper: { halfWidth: 0.04, halfHeight: 0.0072, halfDepth: 0.0165 },
-    crown: lobedOutline(0.035, [{ x: 0, y: -0.019, r: 0.0195 }, { x: -0.025, y: -0.007, r: 0.0105 }, { x: 0.025, y: -0.007, r: 0.0105 }]),
+    // Front outline of the solid built in pommelGeometry: a broad base and three round lobes, for the card.
+    crown: lobedOutline(0.0335, [{ x: 0, y: -0.0172, r: 0.0182 }, { x: -0.0212, y: -0.0098, r: 0.0112 }, { x: 0.0212, y: -0.0098, r: 0.0112 }], { halfWidth: 0.0335, depth: 0.0125 }),
     depth: 0.014, bevel: 0.0085, bevelSize: 0.0035,
   },
   // Type K: five even lobes in a row over a short, square-ish bar.

@@ -134,6 +134,11 @@
 .forge .insp-list { grid-template-columns: 1fr; }
 .forge .insp-seg:not(.insp-list):has(> :nth-child(3):last-child) { grid-template-columns: repeat(3, 1fr); }
 .forge .seg { height: 32px; border-radius: 5px; border: 1px solid rgba(201, 169, 97, .26); background: rgba(14, 9, 5, .38); font: var(--type-label-sm); letter-spacing: var(--track-label); color: var(--gold); transition: border-color 160ms, color 160ms, background 160ms, transform 160ms var(--ease-out); }
+.forge .seg { position: relative; }
+/* The same period badge as on the cards, smaller, on the option's corner. */
+.forge .seg .badge { position: absolute; top: -7px; right: -7px; width: 16px; height: 16px; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #2a1f15, #120d09); box-shadow: 0 0 0 1.5px rgba(18, 13, 9, .9), 0 2px 5px rgba(0, 0, 0, .6); color: var(--gold); cursor: help; transition: transform 160ms var(--ease-out), color 160ms; }
+.forge .seg .badge svg { width: 16px; height: 16px; }
+.forge .seg .badge:hover { transform: scale(1.12); color: var(--gold-hi); }
 .forge .seg:hover { border-color: var(--gold); color: var(--gold-hi); }
 .forge .seg:active { transform: scale(.97); transition-duration: 70ms; }
 .forge .seg[aria-pressed="true"] { border-color: var(--gold-hi); color: var(--gold-hi); background: linear-gradient(180deg, rgba(201, 169, 97, .22), rgba(201, 169, 97, .06)); }

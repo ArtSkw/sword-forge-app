@@ -218,7 +218,8 @@ function Inspector({ station, choices }: { station: StationId; choices: StationC
           {row.kind !== 'age' && <div className={row.kind === 'dots' ? 'insp-swatches' : row.kind === 'list' ? 'insp-seg insp-list' : 'insp-seg'}>
             {row.items.map((it) => row.kind === 'dots'
               ? <button key={it.id} className="dot" aria-label={it.name} aria-pressed={it.selected} data-tip={it.name} style={{ background: it.swatch }} onClick={() => { if (!it.selected) { it.apply(); forgeSound(strikeFor(station, useConfigStore.getState().config.finish.gripMaterial)); } }} />
-              : <button key={it.id} className="seg" aria-pressed={it.selected} onClick={() => { if (!it.selected) { it.apply(); forgeSound(strikeFor(station)); } }}>{it.name}</button>)}
+              : <button key={it.id} className="seg" aria-pressed={it.selected} onClick={() => { if (!it.selected) { it.apply(); forgeSound(strikeFor(station)); } }}>{it.name}
+                  {it.off && <span className="badge" data-tip={it.off.title} data-tip-body={it.off.body} aria-hidden="true">{ICONS.info}</span>}</button>)}
           </div>}
         </section>
       ))}

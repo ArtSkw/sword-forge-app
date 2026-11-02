@@ -38,7 +38,7 @@ export function Sword() {
       {/* A single-edged blade turns its edge to face the same way as the curved guards and the swell. */}
       <group position={[0, bladeY, 0]} rotation={[0, spec.singleEdged ? Math.PI : 0, 0]}>
         <Beat scope={config.archetype} k={`${config.blade.profile}|${spec.section}|${spec.ricasso?.cover ?? ''}|${spec.flame}`}>
-          <Blade spec={spec} color={materials.blade.color} steelFinish={steelFinish} age={age} />
+          <Blade spec={spec} color={materials.blade.color} steelFinish={steelFinish} age={age} ecusson={hilt.ecusson} />
         </Beat>
       </group>
       <Beat scope={config.archetype} k={`${config.guard.style}|${hilt.terminal}|${hilt.rings}|${hilt.ecusson}`}>

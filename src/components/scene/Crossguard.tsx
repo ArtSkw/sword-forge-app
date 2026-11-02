@@ -34,7 +34,7 @@ const FINIAL_PROFILE: [number, number][] = [
   [0.0068, 0.0108], [0.0092, 0.0148], [0.0086, 0.0186], [0.0052, 0.0216], [0.0036, 0.0232], [0.0042, 0.0246], [0, 0.0262],
 ];
 
-const FLARE = 1.5, HOOK = 0.017;
+const FLARE = 1.5, HOOK = 0.019;
 const ease2 = (a: number, b: number, x: number) => { const k = Math.max(0, Math.min(1, (x - a) / (b - a))); return k * k; };
 // Where an arm is at u (0 centre, 1 tip) on side ±1: its bend toward the blade and its front-back offset.
 const bendAt = (d: GuardDef, u: number) => (d.linear ? d.tipY * u : d.tipY * u * u);
@@ -51,14 +51,20 @@ function buildGuardGeometry(d: GuardDef, terminal: GuardTerminal): THREE.BufferG
   const flared = terminal === 'flared', hooked = terminal === 'hooked';
   // Spatulate ends broaden in the blade's direction and thin front to back; hooked ends turn toward the blade.
   const flareAt = (u: number) => (flared ? ease2(0.62, 1, u) : 0);
-  const hookAt = (u: number) => (hooked ? HOOK * ease2(0.84, 1, u) : 0);
+  const hookAt = (u: number) => (hooked ? HOOK * ease2(0.66, 1, u) : 0);
+  // Hooked arms keep their thickness to the end (no thin, whippy tip) and finish in a small knob.
+  const tipK = hooked ? Math.max(tipScale, 0.86) : tipScale, knob = hooked ? 1.22 : 1;
+  // Sections stand upright (in y–z) while the arm bends toward the blade: where it runs steeply, an upright
+  // section of the arm's height cuts it on a slant and the arm looks thin. Grow the section by the slope.
+  const yAt = (u: number) => bendAt(d, u) + hookAt(u);
+  const slant = (u: number) => { const h = 0.004, dy = (yAt(Math.min(1, u + h)) - yAt(Math.max(0, u - h))) / (Math.min(1, u + h) - Math.max(0, u - h)); return Math.min(1.7, Math.sqrt(1 + (dy / (width / 2)) ** 2)); };
   const engraveUv: number[] = [];
   const ringAt = (x: number, py: number, pz: number, sy: number, sz: number) =>
     section(sy, sz, d.round).map(([y, z]) => { engraveUv.push(x / ENGRAVE_TILE, 0.5 + 0.5 * (y / sy)); return new THREE.Vector3(x, py + y, pz + z); });
 
   const rings: THREE.Vector3[][] = [];
   const tip = (side: -1 | 1) => {
-    const sy = d.secY * tipScale * (1 + FLARE * flareAt(1)), sz = d.secZ * tipScale * (1 - 0.3 * flareAt(1)), len = Math.min(sy, sz) * 0.9;
+    const sy = d.secY * tipK * knob * (1 + FLARE * flareAt(1)), sz = d.secZ * tipK * knob * (1 - 0.3 * flareAt(1)), len = Math.min(sy, sz) * 0.9;
     const ty = bendAt(d, 1) + hookAt(1), tz = recurveAt(d, 1, side);
     // Built in the order the rings are laid (left end: outermost first), so the engraving coordinates line up.
     return (side < 0 ? [...END_RINGS].reverse() : END_RINGS).map((k) => ringAt(side * (width / 2 + k * len), ty, tz, sy * Math.sqrt(1 - k * k), sz * Math.sqrt(1 - k * k)));
@@ -66,8 +72,8 @@ function buildGuardGeometry(d: GuardDef, terminal: GuardTerminal): THREE.BufferG
   rings.push(...tip(-1));
   for (let i = 0; i <= steps; i++) {
     const t = i / steps, x = (t - 0.5) * width, u = Math.abs(2 * t - 1), side = t < 0.5 ? -1 : 1;
-    const sc = 1.0 - u * (1.0 - tipScale), fl = flareAt(u);
-    rings.push(ringAt(x, bendAt(d, u) + hookAt(u), recurveAt(d, u, side), d.secY * sc * (1 + FLARE * fl), d.secZ * sc * (1 - 0.3 * fl)));
+    const sc = (1.0 - u * (1.0 - tipK)) * (1 + (knob - 1) * ease2(0.9, 1, u)), fl = flareAt(u);
+    rings.push(ringAt(x, yAt(u), recurveAt(d, u, side), d.secY * sc * slant(u) * (1 + FLARE * fl), d.secZ * sc * (1 - 0.3 * fl)));
   }
   rings.push(...tip(1));
   const positions: number[] = [], normals: number[] = [], index: number[] = [];

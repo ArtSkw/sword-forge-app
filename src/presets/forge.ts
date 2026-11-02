@@ -64,13 +64,14 @@ export const RICASSO_CHOICES: { id: 'none' | RicassoCover; name: string; note: s
   { id: 'leather', name: 'Leather', note: 'The ricasso wrapped in tooled leather over wood: a second grip on the blade.' },
 ];
 // Guard ends, side rings and the écusson (research: long-bastard-great, viking-arming).
-export const TERMINALS: { id: GuardTerminal; name: string; note: string }[] = [
+// years: when each kind of end was in use (research: guards and terminals), for the period badge.
+export const TERMINALS: { id: GuardTerminal; name: string; note: string; years?: [number, number] }[] = [
   { id: 'plain', name: 'Plain', note: 'The arms end in plain rounded tips.' },
-  { id: 'knob', name: 'Knobs', note: 'Round knobs at the ends, as on the English and Castillon crosses of the fifteenth century.' },
-  { id: 'finial', name: 'Finials', note: 'Turned finials at the ends, a fashion of the later fifteenth and sixteenth centuries.' },
-  { id: 'flared', name: 'Flared', note: 'The arms broaden into flat, spatulate ends.' },
-  { id: 'hooked', name: 'Hooked', note: 'The tips turn sharply toward the blade, as on an early fifteenth-century French cross.' },
-  { id: 'quatrefoil', name: 'Quatrefoil', note: 'Each arm ends in a flat four-lobed plate.' },
+  { id: 'knob', name: 'Knobs', note: 'Round knobs at the ends, as on the English and Castillon crosses of the fifteenth century.', years: [1380, 1550] },
+  { id: 'finial', name: 'Finials', note: 'Turned finials at the ends, a fashion of the later fifteenth and sixteenth centuries.', years: [1460, 1650] },
+  { id: 'flared', name: 'Flared', note: 'The arms broaden into flat, spatulate ends.', years: [1300, 1550] },
+  { id: 'hooked', name: 'Hooked', note: 'The tips turn sharply toward the blade, as on an early fifteenth-century French cross.', years: [1250, 1550] },
+  { id: 'quatrefoil', name: 'Quatrefoil', note: 'Each arm ends in a flat four-lobed plate.', years: [1450, 1550] },
 ];
 // Grip shapes and the shape each type has by default (research: long-bastard-great).
 export const GRIP_SHAPES: { id: GripShape; name: string; note: string }[] = [
@@ -98,10 +99,12 @@ export const WIRE_INLAYS: { id: 'none' | 'chequer' | 'lozenge' | 'bands'; name: 
 ];
 export const ENAMEL_NOTE = 'The medallion’s cuts filled with coloured enamel, fired hard and polished flush (champlevé).';
 export const ECUSSON_NOTE = 'A small leaf-shaped plate at the centre of the cross, lying over the blade on both faces.';
-export const RING_CHOICES: { id: 0 | 1 | 2; name: string; note: string }[] = [
+export const ECUSSON_YEARS: [number, number] = [1420, 1600];
+// Side rings appear on European hilts only from about 1480 (research: none on longswords before then).
+export const RING_CHOICES: { id: 0 | 1 | 2; name: string; note: string; years?: [number, number] }[] = [
   { id: 0, name: 'None', note: '' },
-  { id: 1, name: 'One', note: 'A side ring in front of the cross guards the fingers laid over it.' },
-  { id: 2, name: 'Two', note: 'A ring on each face of the cross, as on the great two-handers of the sixteenth century.' },
+  { id: 1, name: 'One', note: 'A side ring in front of the cross guards the fingers laid over it.', years: [1480, 1650] },
+  { id: 2, name: 'Two', note: 'A ring on each face of the cross, as on the great two-handers of the sixteenth century.', years: [1500, 1650] },
 ];
 export const EDGE_CHOICES: { id: 'straight' | 'flame'; name: string; note: string }[] = [
   { id: 'straight', name: 'Straight', note: '' },

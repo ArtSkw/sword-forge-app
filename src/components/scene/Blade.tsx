@@ -260,7 +260,7 @@ function makeBladeRoughnessMap(): THREE.CanvasTexture {
 const PATTERN_WELDED_MAP = makePatternWeldedMap();
 const BLADE_ROUGHNESS_MAP = makeBladeRoughnessMap();
 
-type BladeProps = { spec: BladeSpec; color: string; steelFinish: SteelFinish; age: number };
+type BladeProps = { spec: BladeSpec; color: string; steelFinish: SteelFinish; age: number; ecusson?: boolean };
 
 // Grind lines worked out in the shader from the blade's own coordinates (metres), not from a texture, so
 // they stay crisp at any zoom. Lines run along the blade; where they would be finer than a pixel they fade,
@@ -325,7 +325,10 @@ function Steel({ color, steelFinish, age }: Omit<BladeProps, 'spec'>) {
 
 const LEATHER = { color: '#3a2416', band: '#24160d', pad: 0.0024, normal: new THREE.Vector2(0.6, 0.6) };
 
-export function Blade({ spec, color, steelFinish, age }: BladeProps) {
+// An écusson covers the top of the ricasso, so a leather wrap starts below it (it measures 30 mm).
+const ECUSSON_CLEAR = 0.03;
+
+export function Blade({ spec, color, steelFinish, age, ecusson = false }: BladeProps) {
   // The spec is rebuilt on every config change; rebuild the geometry only when it really differs.
   const key = JSON.stringify(spec);
   // Nicks are geometry: rebuilt only when their depth changes by a step, so scrubbing the age stays smooth
@@ -341,9 +344,10 @@ export function Blade({ spec, color, steelFinish, age }: BladeProps) {
   const rHalfW = spec.halfWidth * RICASSO.width, ricassoLen = ric ? ric.t * spec.length : 0;
   const wrap = useMemo(() => {
     if (cover !== 'leather') return null;
-    const len = ricassoLen - 0.012, hw = rHalfW + LEATHER.pad, ht = spec.halfThick + LEATHER.pad;
-    return { body: roundedBox(hw, ht, len), band: roundedBox(hw + 0.0012, ht + 0.0012, 0.006), len };
-  }, [cover, ricassoLen, rHalfW, spec.halfThick]);
+    const start = ecusson ? ECUSSON_CLEAR : 0;
+    const len = ricassoLen - 0.012 - start, hw = rHalfW + LEATHER.pad, ht = spec.halfThick + LEATHER.pad;
+    return { body: roundedBox(hw, ht, len), band: roundedBox(hw + 0.0012, ht + 0.0012, 0.006), len, start };
+  }, [cover, ricassoLen, rHalfW, spec.halfThick, ecusson]);
   useEffect(() => () => { wrap?.body.dispose(); wrap?.band.dispose(); }, [wrap]);
 
   const steel = <Steel color={color} steelFinish={steelFinish} age={age} />;
@@ -360,9 +364,9 @@ export function Blade({ spec, color, steelFinish, age }: BladeProps) {
       )}
       {wrap && (
         <>
-          <mesh geometry={wrap.body} position={[0, baseY + 0.003, 0]}><meshStandardMaterial key={grain.key} {...grain.props} color={LEATHER.color} roughness={0.7} metalness={0} normalMap={GRIP_NORMAL_MAPS.leather} normalScale={LEATHER.normal} /></mesh>
-          <mesh geometry={wrap.band} position={[0, baseY + 0.002, 0]}><meshStandardMaterial color={LEATHER.band} roughness={0.6} metalness={0} /></mesh>
-          <mesh geometry={wrap.band} position={[0, baseY + 0.003 + wrap.len - 0.006, 0]}><meshStandardMaterial color={LEATHER.band} roughness={0.6} metalness={0} /></mesh>
+          <mesh geometry={wrap.body} position={[0, baseY + 0.003 + wrap.start, 0]}><meshStandardMaterial key={grain.key} {...grain.props} color={LEATHER.color} roughness={0.7} metalness={0} normalMap={GRIP_NORMAL_MAPS.leather} normalScale={LEATHER.normal} /></mesh>
+          <mesh geometry={wrap.band} position={[0, baseY + 0.002 + wrap.start, 0]}><meshStandardMaterial color={LEATHER.band} roughness={0.6} metalness={0} /></mesh>
+          <mesh geometry={wrap.band} position={[0, baseY + 0.003 + wrap.start + wrap.len - 0.006, 0]}><meshStandardMaterial color={LEATHER.band} roughness={0.6} metalness={0} /></mesh>
         </>
       )}
     </group>
