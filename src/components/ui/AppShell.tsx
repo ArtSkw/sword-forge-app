@@ -4,10 +4,12 @@ import { ViewportFrame } from './ViewportFrame';
 import { NoiseOverlay } from './NoiseOverlay';
 import { AtmosphereOverlay } from './AtmosphereOverlay';
 import { ForgeUI } from '../forge/ForgeUI';
-import { makeAudioLayer } from '../../lib/audio';
+import { makeAudioLayer, makePlaylist } from '../../lib/audio';
 import { LOW_TIER } from '../../lib/tier';
 
 const ENTRY_EXIT_MS = 520;
+// Music, in playing order (generated with ElevenLabs music, chosen by the author).
+const MUSIC = ['music', 'music-vigil'];
 
 // The app's name already says "Forge", so the call to action only says how to go in: tap on touch screens.
 const ENTER_LABEL = typeof window !== 'undefined' && matchMedia('(pointer: coarse)').matches ? 'Tap to enter' : 'Click to enter';
@@ -123,7 +125,8 @@ export function AppShell({ children }: AppShellProps) {
     if (entryExiting) return;
     if (!audioCleanupRef.current) {
       const stopAmbient = makeAudioLayer(`${import.meta.env.BASE_URL}sounds/ambient.mp3`, 0.3, 2000);
-      const stopMusic = makeAudioLayer(`${import.meta.env.BASE_URL}sounds/music.mp3`, 0.08, 4000);
+      // The tracks play one after another and loop, crossfading (see makePlaylist).
+      const stopMusic = makePlaylist(MUSIC.map((m) => `${import.meta.env.BASE_URL}sounds/${m}.mp3`), 0.08, 4000);
       audioCleanupRef.current = () => {
         stopAmbient();
         stopMusic();
