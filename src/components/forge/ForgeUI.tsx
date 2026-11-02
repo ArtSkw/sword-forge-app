@@ -7,7 +7,7 @@ import { SWORD_TYPES, SWORD_TYPE_ORDER } from '../../presets/swordTypes';
 import { ARCHETYPE_ERA, STATIONS, ageLabel, type StationId } from '../../presets/forge';
 import { currentForm, formsOf, matchesForm } from '../../lib/forms';
 import { anchors, interaction, onAnchors } from '../../lib/anchors';
-import { audioState, playCling, playStrike, type ClingParams, type StrikeVoice } from '../../lib/audio';
+import { audioState, playCling, playStrike, type StrikeVoice } from '../../lib/audio';
 import { takeScreenshot } from '../../lib/screenshot';
 import { useStationChoices, type Choice, type StationChoices } from './choices';
 import { HistoricalScroll } from './HistoricalScroll';
@@ -15,28 +15,9 @@ import { AgeSlider } from './AgeSlider';
 
 const ageName = (age: number) => { const l = ageLabel(age); return l.between ? `${l.between[0]} → ${l.between[1]}` : l.stop.name; };
 const BASE = import.meta.env.BASE_URL;
-const CLING = `${BASE}sounds/sword-cling.mp3`;
-// Subtle per-sword colouring of the same cling: pitch within ±3%, gentle filtering.
-const CLING_PARAMS: Record<ArchetypeKey, ClingParams> = {
-  armingSword: { playbackRate: 1.00, filterType: 'peaking', filterFreq: 4000, volume: 0.40 },
-  longsword: { playbackRate: 0.98, filterType: 'lowpass', filterFreq: 7000, volume: 0.41 },
-  bastardSword: { playbackRate: 0.99, filterType: 'lowpass', filterFreq: 6500, volume: 0.41 },
-  vikingSword: { playbackRate: 1.01, filterType: 'lowpass', filterFreq: 6000, volume: 0.41 },
-  falchion: { playbackRate: 1.00, filterType: 'lowpass', filterFreq: 6500, volume: 0.41 },
-  estoc: { playbackRate: 1.03, filterType: 'peaking', filterFreq: 5000, volume: 0.38 },
-  greatsword: { playbackRate: 0.98, filterType: 'lowpass', filterFreq: 5500, volume: 0.41 },
-};
-// Each type's own short blade sound (ElevenLabs, chosen by the author); a type without one yet keeps the cling.
-const TYPE_SOUND: Partial<Record<ArchetypeKey, string>> = {
-  armingSword: `${BASE}sounds/type-armingSword.mp3`, longsword: `${BASE}sounds/type-longsword.mp3`, bastardSword: `${BASE}sounds/type-bastardSword.mp3`,
-  vikingSword: `${BASE}sounds/type-vikingSword.mp3`, falchion: `${BASE}sounds/type-falchion.mp3`,
-  estoc: `${BASE}sounds/type-estoc.mp3`, greatsword: `${BASE}sounds/type-greatsword.mp3`,
-};
-const typeSound = (k: ArchetypeKey) => {
-  const own = TYPE_SOUND[k];
-  if (own) playCling(own, { playbackRate: 0.98 + Math.random() * 0.04, filterType: 'allpass', filterFreq: 1000, volume: 0.3 });
-  else playCling(CLING, CLING_PARAMS[k]);
-};
+// Each sword type's own short blade sound (ElevenLabs sound effects, chosen by the author).
+const typeSound = (k: ArchetypeKey) =>
+  playCling(`${BASE}sounds/type-${k}.mp3`, { playbackRate: 0.98 + Math.random() * 0.04, filterType: 'allpass', filterFreq: 1000, volume: 0.3 });
 const SHORT_NAMES: Record<ArchetypeKey, string> = { armingSword: 'Arming', longsword: 'Longsword', bastardSword: 'Bastard', vikingSword: 'Viking', falchion: 'Falchion', estoc: 'Estoc', greatsword: 'Greatsword' };
 const RING_REACH = 90;   // px from the sword's line within which the rings appear
 const RING_DWELL = 280;  // ms the pointer must rest near the sword before the rings appear
