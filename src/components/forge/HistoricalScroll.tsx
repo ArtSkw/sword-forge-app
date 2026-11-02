@@ -77,6 +77,8 @@ export function HistoricalScroll() {
   const name = (list: { id: string; name: string }[], id: string) => list.find((x) => x.id === id)?.name ?? id;
   const note = (list: { id: string; note: string }[], id: string) => list.find((x) => x.id === id)?.note ?? '';
   return (
+    <>
+    <div className="scroll-veil" aria-hidden="true" onClick={() => setReading(false)} />
     <div className="scroll" ref={scrollRef} inert={!reading} style={SCROLL_ART}>
       <div className="rod" />
       <div className="sheet" ref={sheetRef} role="dialog" aria-label="History & use">
@@ -105,5 +107,6 @@ export function HistoricalScroll() {
       </div>
       <div className="rod" ref={rodRef} />
     </div>
+    </>
   );
 }

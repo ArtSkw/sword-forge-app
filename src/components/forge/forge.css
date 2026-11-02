@@ -298,7 +298,7 @@
   .forge .wide-only, .forge span.wide-only { display: none; }
   /* The title shrinks with the screen so it always clears the two corner buttons (40 px + margins each). */
   /* Centred across the whole width (left: 50% alone would leave it only the right half to grow into). */
-  .forge .title { top: 18px; left: 66px; right: 66px; transform: none; }
+  .forge .title { top: 26px; left: 66px; right: 66px; transform: none; }
   .forge .title h1 { font-size: min(22px, 5.4vw); letter-spacing: .08em; overflow: hidden; text-overflow: ellipsis; }
   .forge .title .formsw { margin-top: 16px; }
   .forge .corner-l, .forge .corner-r:not(.focus-only) { top: 12px; }
@@ -334,12 +334,15 @@
 .forge .inspector.embedded .insp-kicker { display: none; }
 .forge .inspector.embedded h2 { margin-top: 2px; }
 
+/* Tablets: the room around the scroll is a veil; a tap on it closes the scroll. */
+.forge .scroll-veil { display: none; position: absolute; inset: 0; z-index: 19; background: rgba(5, 3, 2, .38); opacity: 0; pointer-events: none; transition: opacity 260ms var(--ease-out); }
+.forge.reading .scroll-veil { opacity: 1; pointer-events: auto; }
 /* The seal that closes the scroll: red wax pressed with a cross. */
-.forge .sheet .close.seal { top: calc(var(--roll-h) * .5 + 8px); right: 12px; width: 48px; height: 48px; border: 0; border-radius: 50%; color: #f6dcc6;
+.forge .sheet .close.seal { top: calc(var(--roll-h) * .5 + 12px); right: 14px; width: 36px; height: 36px; border: 0; border-radius: 50%; color: #f6dcc6;
   background: radial-gradient(circle at 36% 30%, #c0443a, #8d2318 52%, #5f150e 86%);
-  box-shadow: inset 0 2px 2px rgba(255, 190, 170, .35), inset 0 -3px 5px rgba(40, 6, 3, .55), inset 0 0 0 4px rgba(120, 28, 18, .9), inset 0 0 0 5px rgba(255, 170, 150, .22), 0 3px 6px rgba(40, 14, 6, .45);
+  box-shadow: inset 0 2px 2px rgba(255, 190, 170, .35), inset 0 -3px 5px rgba(40, 6, 3, .55), inset 0 0 0 3px rgba(120, 28, 18, .9), inset 0 0 0 4px rgba(255, 170, 150, .22), 0 3px 6px rgba(40, 14, 6, .45);
   transition: transform 160ms var(--ease-out), filter 160ms; }
-.forge .sheet .close.seal::before { content: ""; position: absolute; inset: -3px; border-radius: 47% 53% 50% 48% / 52% 46% 54% 48%; background: inherit; z-index: -1; filter: brightness(.82); }
+.forge .sheet .close.seal::before { content: ""; position: absolute; inset: -2px; border-radius: 47% 53% 50% 48% / 52% 46% 54% 48%; background: inherit; z-index: -1; filter: brightness(.82); }
 .forge .sheet .close.seal svg { width: 18px; height: 18px; filter: drop-shadow(0 1px 0 rgba(60, 10, 4, .7)); }
 .forge .sheet .close.seal:hover { filter: brightness(1.08); border-color: transparent; color: #fff0e2; }
 .forge .sheet .close.seal:active { transform: scale(.94) rotate(-4deg); }
@@ -348,15 +351,20 @@
 /* Tablets and phones: the scroll opens alone in the middle of the screen; the sword and the overview step
    aside (the text is long, so it gets the whole stage). Its seal closes it. */
 @media (max-width: 1179px) {
-  .forge .scroll { --roll-h: 44px; left: 50%; top: max(20px, 4vh); width: min(560px, calc(100vw - 2 * var(--cap) - 8px)); transform: translateX(-50%); }
+  .forge .scroll { --roll-h: 44px; left: 50%; top: max(20px, 4vh); width: min(660px, calc(100vw - 2 * var(--cap) - 8px)); transform: translateX(-50%); }
+  .forge .scroll-veil { display: block; }
   .forge .sheet { max-height: calc(100dvh - 2 * max(20px, 4vh) - var(--roll-h)); padding-left: 30px; padding-right: 30px; }
   .forge.reading .corner-l { opacity: 0; pointer-events: none; }
 }
 @media (max-width: 700px) {
-  .forge .scroll { --roll-h: 34px; }
-  .forge .sheet { padding: calc(var(--roll-h) * .5 + 22px) 22px calc(var(--roll-h) * .5 + 18px); }
-  .forge .sheet .close.seal { width: 42px; height: 42px; right: 6px; }
-  .forge .sheet h2 { padding: 0 34px; }
+  /* Phones: the scroll spans the whole screen like an open document. The rollers sit just off its top and
+     bottom edges, so unrolling runs the lower roller down and out of sight, and rolling brings it back. */
+  .forge .scroll { --roll-h: 40px; left: 0; top: calc(-1 * var(--roll-h)); width: 100vw; transform: none; }
+  .forge .scroll .rod { margin: 0; border-width: 0; border-image: none; background: var(--roller) center / auto 100% no-repeat; }
+  .forge .sheet { margin: calc(var(--roll-h) * -.5) 0; height: calc(100dvh + var(--roll-h)); max-height: none;
+    padding: calc(var(--roll-h) * .5 + env(safe-area-inset-top) + 26px) 24px calc(var(--roll-h) * .5 + env(safe-area-inset-bottom) + 28px); }
+  .forge .sheet .close.seal { top: calc(var(--roll-h) * .5 + env(safe-area-inset-top) + 16px); right: 16px; }
+  .forge .sheet h2 { padding: 0 44px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
