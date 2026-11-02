@@ -26,6 +26,16 @@ const CLING_PARAMS: Record<ArchetypeKey, ClingParams> = {
   estoc: { playbackRate: 1.03, filterType: 'peaking', filterFreq: 5000, volume: 0.38 },
   greatsword: { playbackRate: 0.98, filterType: 'lowpass', filterFreq: 5500, volume: 0.41 },
 };
+// Each type's own short blade sound (ElevenLabs, chosen by the author); a type without one yet keeps the cling.
+const TYPE_SOUND: Partial<Record<ArchetypeKey, string>> = {
+  vikingSword: `${BASE}sounds/type-vikingSword.mp3`, falchion: `${BASE}sounds/type-falchion.mp3`,
+  estoc: `${BASE}sounds/type-estoc.mp3`, greatsword: `${BASE}sounds/type-greatsword.mp3`,
+};
+const typeSound = (k: ArchetypeKey) => {
+  const own = TYPE_SOUND[k];
+  if (own) playCling(own, { playbackRate: 0.98 + Math.random() * 0.04, filterType: 'allpass', filterFreq: 1000, volume: 0.3 });
+  else playCling(CLING, CLING_PARAMS[k]);
+};
 const SHORT_NAMES: Record<ArchetypeKey, string> = { armingSword: 'Arming', longsword: 'Longsword', bastardSword: 'Bastard', vikingSword: 'Viking', falchion: 'Falchion', estoc: 'Estoc', greatsword: 'Greatsword' };
 const RING_REACH = 90;   // px from the sword's line within which the rings appear
 const RING_DWELL = 280;  // ms the pointer must rest near the sword before the rings appear
@@ -501,7 +511,7 @@ export function ForgeUI() {
           {SWORD_TYPE_ORDER.map((k) => (
             <button key={k} className="tcard glass" aria-pressed={config.archetype === k} aria-label={SWORD_TYPES[k].name}
               data-tip={SWORD_TYPES[k].name} data-tip-body={`${ARCHETYPE_ERA[k]} · ${SWORD_TYPES[k].description}`}
-              onClick={() => { if (k !== config.archetype) setArchetype(k); playCling(CLING, CLING_PARAMS[k]); }}>
+              onClick={() => { if (k !== config.archetype) setArchetype(k); typeSound(k); }}>
               <img src={`${BASE}type-cards/${k}.png`} alt="" />
               <span className="plate">{SHORT_NAMES[k]}</span>
             </button>
