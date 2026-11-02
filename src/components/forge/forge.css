@@ -299,12 +299,29 @@
   .forge .arch { left: 0; right: 0; bottom: 16px; transform: none; overflow-x: auto; padding: 10px 16px 4px; scroll-snap-type: x mandatory; scrollbar-width: none; }
   .forge.focus .arch { transform: translateY(16px); }
   .forge .tcard { zoom: .8; scroll-snap-align: center; flex: none; }
-  /* Edit mode on phones: the inspector spans the top of the screen and scrolls; the sword sits below it. */
-  .forge .inspector { left: 12px; right: 12px; top: 12px; width: auto; max-height: 42%; padding: 14px 14px 4px; }
-  /* Done and Back to default keep the bottom corner; the part steps and the choices sit above them. */
-  .forge .nav { bottom: 76px; }
-  .forge .chooser { bottom: 146px; }
+  /* Edit mode on phones: Done in the middle of the bottom bar, Back to default just left of it. */
+  .forge .corner-r.focus-only { left: 0; right: 0; bottom: 16px; display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; }
+  .forge .corner-r.focus-only > :first-child { justify-self: end; }
 }
+
+/* Phone edit sheet (PhoneSheet): its height follows its content; opened, the details scroll inside it. */
+.forge .psheet { position: absolute; z-index: 9; left: 8px; right: 8px; bottom: 70px; display: flex; flex-direction: column; max-height: 56%; padding: 0 0 12px; border-radius: 18px; }
+.forge .ps-handle { flex: none; width: 100%; height: 28px; display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--gold); touch-action: none; cursor: grab; }
+.forge .ps-handle .grab { width: 34px; height: 4px; border-radius: 2px; background: rgba(233, 212, 154, .38); }
+.forge .ps-handle svg { width: 16px; height: 16px; transition: transform 200ms var(--ease-out); }
+.forge .ps-handle:focus-visible { outline-offset: -4px; }
+.forge .ps-head { flex: none; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0 6px 6px; }
+.forge .ps-head b { font: var(--type-subheading); letter-spacing: var(--track-label-lg); color: var(--gold-hi); text-transform: uppercase; }
+.forge .ps-head .step { height: 32px; padding: 0 8px; font: var(--type-label-sm); }
+.forge .ps-head .step:last-child { justify-self: end; }
+.forge .psheet .chooser { position: static; flex: none; transform: none; justify-content: flex-start; overflow-x: auto; padding: 4px 12px 0; scrollbar-width: none; scroll-snap-type: x proximity; }
+.forge .psheet .chooser .item { flex: none; scroll-snap-align: start; }
+.forge .ps-more { display: grid; grid-template-rows: 0fr; min-height: 0; flex: 0 1 auto; transition: grid-template-rows 300ms var(--ease-out); }
+.forge .psheet[data-open="true"] .ps-more { grid-template-rows: 1fr; }
+.forge .ps-more > div { min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.forge .inspector.embedded { position: static; width: auto; max-height: none; overflow: visible; padding: 10px 16px 0; animation: none; }
+.forge .inspector.embedded .insp-kicker { display: none; }
+.forge .inspector.embedded h2 { margin-top: 2px; }
 
 @media (prefers-reduced-motion: reduce) {
   .forge *, .forge *::before, .forge *::after { animation: none !important; transition-duration: 1ms !important; transition-delay: 0s !important; }

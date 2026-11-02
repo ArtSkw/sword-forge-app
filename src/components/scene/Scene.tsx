@@ -44,11 +44,13 @@ const BLADE_NUDGE = { x: 44, y: 12 };   // px: Blade sits this much right of and
 // Screen space taken by the edit panels: inspector on the right, variant row + nav at the bottom.
 const PANEL_RIGHT = 320, PANEL_BOTTOM = 220, MARGIN_TOP = 56;
 type Panels = { top: number; bottom: number; right: number };
-// Must match forge.css: on phones (≤ 700 px) the type row is smaller and the
-// inspector spans the top of the screen (at most 42% of it) instead of the right side.
+// Must match forge.css: on phones (≤ 700 px) the type row is smaller, and in edit mode a sheet at the bottom
+// holds the choices (see PhoneSheet); formerly the inspector spanned the top of the screen (at most 42% of it) instead of the right side.
 const PHONE = 700;
 const overviewPanels = (w: number): Panels => ({ top: 110, bottom: w <= PHONE ? 120 : 140, right: 0 });
-const editPanels = (w: number, h: number): Panels => (w <= PHONE ? { top: Math.round(h * 0.42) + 20, bottom: 252, right: 0 } : { top: MARGIN_TOP, bottom: PANEL_BOTTOM, right: PANEL_RIGHT });
+// The phone sheet's height (set from the store before each framing; the bar with Done sits below it).
+let phoneSheetPx = 200;
+const editPanels = (w: number, h: number): Panels => (w <= PHONE ? { top: Math.round(h * 0.03), bottom: phoneSheetPx + 84, right: 0 } : { top: MARGIN_TOP, bottom: PANEL_BOTTOM, right: PANEL_RIGHT });
 const PART_SHIFT_Y = 0.07;       // hilt parts: a little above centre (they're small; centred in the free space looked low)
 const FOV = 35;
 const READING_SHIFT = -0.17;   // sword moves right while the historical account is open
@@ -123,7 +125,8 @@ function SceneContents() {
   const move = useRef({ t0: 0, ms: 0, fromTarget: new THREE.Vector3(), toTarget: new THREE.Vector3(), fromDist: OVERVIEW_DISTANCE, toDist: OVERVIEW_DISTANCE, fromShift: 0, toShift: 0, shift: 0, fromShiftY: 0, toShiftY: 0, shiftY: 0, fromSph: new THREE.Spherical(), toSph: new THREE.Spherical(), turn: false, active: false });
 
   // Framing follows the screen size and the sword's length: a longer blade or a smaller screen re-fits.
-  const sizeKey = `${size.width}x${size.height}`;
+  const sheetPx = useConfigStore((s) => s.sheetPx);
+  const sizeKey = `${size.width}x${size.height}x${size.width <= PHONE ? sheetPx : 0}`;
   const fitLayout = getSwordLayout(config);
   const geoKey = `${fitLayout.total.toFixed(3)}|${fitLayout.bladeLen.toFixed(3)}`;
   const dir = useRef(new THREE.Vector3());
@@ -174,6 +177,7 @@ function SceneContents() {
     const controls = orbitRef.current, group = swordGroupRef.current;
     if (!controls || !group) return;
     group.updateWorldMatrix(true, false);
+    phoneSheetPx = sheetPx;
     const m = move.current, w = size.width, h = size.height;
     const last = lastFramed.current;
     const refit = last?.station === station && last?.reading === reading && last?.reframe === again;
@@ -222,7 +226,7 @@ function SceneContents() {
     m.t0 = performance.now(); m.ms = motionReduced.current || resizeOnly ? 1 : refit ? REFIT_MS : station ? FOCUS_MS : OVERVIEW_MS; m.active = true;
     // The config is read through geoKey: only a change of the sword's length re-fits, not every part swap.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [station, reading, camera, sizeKey, again, geoKey]);
+  }, [station, reading, camera, sizeKey, again, geoKey, sheetPx]);
 
   const handleStart = useCallback(() => {
     interaction.dragging = true; interaction.touchUntil = 0;

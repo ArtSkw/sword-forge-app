@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
-import { ArrowLeft01Icon, ArrowReloadHorizontalIcon, ArrowRight01Icon, Camera01Icon, InformationCircleIcon, MoreHorizontalIcon, ScrollTextIcon, VolumeHighIcon, VolumeMute02Icon } from '@hugeicons/core-free-icons';
+import { ArrowLeft01Icon, ArrowReloadHorizontalIcon, ArrowRight01Icon, ArrowDown01Icon, ArrowUp01Icon, Camera01Icon, InformationCircleIcon, MoreHorizontalIcon, ScrollTextIcon, VolumeHighIcon, VolumeMute02Icon } from '@hugeicons/core-free-icons';
 import './forge.css';
 import { typeConfig, useConfigStore, type ArchetypeKey } from '../../store/configStore';
 import { SWORD_TYPES, SWORD_TYPE_ORDER } from '../../presets/swordTypes';
@@ -36,7 +36,7 @@ const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matche
 const icon = (svg: IconSvgElement) => <HugeiconsIcon icon={svg} size={16} strokeWidth={1.5} />;
 const ICONS = {
   scroll: icon(ScrollTextIcon), reset: icon(ArrowReloadHorizontalIcon), sound: icon(VolumeHighIcon), muted: icon(VolumeMute02Icon),
-  shot: icon(Camera01Icon), more: icon(MoreHorizontalIcon), prev: icon(ArrowLeft01Icon), next: icon(ArrowRight01Icon),
+  shot: icon(Camera01Icon), more: icon(MoreHorizontalIcon), up: icon(ArrowUp01Icon), down: icon(ArrowDown01Icon), prev: icon(ArrowLeft01Icon), next: icon(ArrowRight01Icon),
   info: <HugeiconsIcon icon={InformationCircleIcon} size={18} strokeWidth={1.5} />,
 };
 
@@ -199,11 +199,11 @@ function Chooser({ station, choices }: { station: StationId; choices: StationCho
 }
 
 // ── Inspector: properties of the chosen part, on the right (Figma / Framer pattern) ──
-function Inspector({ station, choices }: { station: StationId; choices: StationChoices }) {
+function Inspector({ station, choices, embedded = false }: { station: StationId; choices: StationChoices; embedded?: boolean }) {
   const sel = choices.cards.find((c) => c.selected);
   const name = STATIONS.find((s) => s.id === station)?.name ?? '';
   return (
-    <aside className="inspector glass pane" aria-label={`${name} properties`}>
+    <aside className={embedded ? 'inspector embedded' : 'inspector glass pane'} aria-label={`${name} properties`}>
       <div className="insp-head">
         <span className="insp-kicker">{name}</span>
         <h2>{sel?.name}</h2>
@@ -224,6 +224,55 @@ function Inspector({ station, choices }: { station: StationId; choices: StationC
         </section>
       ))}
     </aside>
+  );
+}
+
+// ── Phones: one sheet at the bottom holds the part steps and its variants; dragged (or tapped) open it adds
+// the part's note and every option, scrolling if they do not fit. Its height follows its content, and is
+// published so the camera frames the sword in the space above it.
+const PHONE_QUERY = '(max-width: 700px)';
+const subscribePhone = (cb: () => void) => { const m = matchMedia(PHONE_QUERY); m.addEventListener('change', cb); return () => m.removeEventListener('change', cb); };
+const usePhone = () => useSyncExternalStore(subscribePhone, () => matchMedia(PHONE_QUERY).matches, () => false);
+
+function PhoneSheet({ station, choices, onStep, opens }: { station: StationId; choices: StationChoices; onStep: (d: number) => void; opens: number }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null), drag = useRef<{ y: number; id: number } | null>(null);
+  const setSheetPx = useConfigStore((s) => s.setSheetPx);
+  // Report the settled height (after the open/close transition), not every frame of it.
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let t: ReturnType<typeof setTimeout> | undefined;
+    const ro = new ResizeObserver(() => { clearTimeout(t); t = setTimeout(() => setSheetPx(Math.round(el.offsetHeight)), 140); });
+    ro.observe(el);
+    setSheetPx(Math.round(el.offsetHeight));
+    return () => { ro.disconnect(); clearTimeout(t); };
+  }, [setSheetPx]);
+  const i = STATIONS.findIndex((s) => s.id === station);
+  const prev = STATIONS[(i + STATIONS.length - 1) % STATIONS.length], next = STATIONS[(i + 1) % STATIONS.length];
+  // Drag the handle: up opens, down closes; a tap toggles.
+  const down = (e: React.PointerEvent) => { drag.current = { y: e.clientY, id: e.pointerId }; e.currentTarget.setPointerCapture(e.pointerId); };
+  const up = (e: React.PointerEvent) => {
+    const d = drag.current; drag.current = null;
+    if (!d) return;
+    const dy = e.clientY - d.y;
+    setOpen(Math.abs(dy) < 8 ? !open : dy < 0);
+  };
+  return (
+    <div className="psheet glass pane" ref={ref} data-open={open}>
+      <button className="ps-handle" aria-expanded={open} aria-label={open ? 'Show fewer options' : 'Show all options'}
+        onPointerDown={down} onPointerUp={up} onPointerCancel={() => { drag.current = null; }}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(!open); } }}>
+        <i className="grab" />{open ? ICONS.down : ICONS.up}
+      </button>
+      <div className="ps-head">
+        <button className="step" onClick={() => onStep(-1)} aria-label={`Previous part: ${prev.name}`}>{ICONS.prev}<span>{prev.name}</span></button>
+        <b>{STATIONS[i].name}</b>
+        <button className="step" onClick={() => onStep(1)} aria-label={`Next part: ${next.name}`}><span>{next.name}</span>{ICONS.next}</button>
+      </div>
+      <Chooser key={`${station}-${opens}`} station={station} choices={choices} />
+      <div className="ps-more" inert={!open}><div><Inspector station={station} choices={choices} embedded /></div></div>
+    </div>
   );
 }
 
@@ -414,6 +463,7 @@ export function ForgeUI() {
     return () => removeEventListener('keydown', onKey);
   }, []);
 
+  const phone = usePhone();
   const preset = SWORD_TYPES[config.archetype];
   const mode = `forge${station ? ' focus' : ''}${reading ? ' reading' : ''}`;
   const overviewOff = !!station || reading;
@@ -428,14 +478,15 @@ export function ForgeUI() {
         <div inert={overviewOff}><Hotspots hidden={overviewOff} onOpen={open} /></div>
 
         <div className="edit-layer" inert={!station}>
-          {shown && choices && (
-            <>
+          {shown && choices && (phone
+            ? <PhoneSheet key={`${config.archetype}-${opens}`} station={shown} choices={choices} onStep={step} opens={opens} />
+            : <>
               <Chooser key={`${shown}-${config.archetype}-${opens}`} station={shown} choices={choices} />
               <Inspector key={`i-${shown}-${opens}`} station={shown} choices={choices} />
             </>
           )}
         </div>
-        <Nav station={station} onStep={step} />
+        {!phone && <Nav station={station} onStep={step} />}
 
         <div className="arch fade hide-focus hide-reading" inert={overviewOff}>
           {SWORD_TYPE_ORDER.map((k) => (

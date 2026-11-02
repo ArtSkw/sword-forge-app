@@ -84,6 +84,9 @@ interface ConfigStore {
   setStation: (id: StationId | null) => void;
   reading: boolean;
   setReading: (on: boolean) => void;
+  // Phones: the edit sheet's height in px, so the camera frames the sword in the space above it.
+  sheetPx: number;
+  setSheetPx: (px: number) => void;
 }
 
 // A type opens on its first Form (the most iconic one).
@@ -113,4 +116,6 @@ export const useConfigStore = create<ConfigStore>((set) => ({
   setStation: (id) => set({ station: id, reading: false }),
   reading: false,
   setReading: (on) => set({ reading: on, station: null }),
+  sheetPx: 200,
+  setSheetPx: (px) => set({ sheetPx: px }),
 }));
