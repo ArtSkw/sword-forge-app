@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect, type ComponentRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Environment, ContactShadows, OrbitControls } from '@react-three/drei';
+import { Environment, ContactShadows, OrbitControls, PerformanceMonitor } from '@react-three/drei';
 import * as THREE from 'three';
 import { Sword } from './Sword';
 import { getSwordLayout } from './swordLayout';
@@ -22,6 +22,12 @@ const SWORD_INTRO_DURATION = 1.2;
 // grow from here; see the performance step in the plan).
 const LOW_TIER = typeof window !== 'undefined' && (matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 700);
 const STUDIO_HDRI = `${import.meta.env.BASE_URL}hdri/studio_small_03_${LOW_TIER ? '1k' : '2k'}.hdr`;
+// Frames the contact shadow keeps drawing after a re-render (~2 s at 60 fps: covers the intro and a part's swap).
+const SHADOW_FRAMES = 120;
+// Render resolution: at most 2× (a phone's 3× costs more than it shows), stepping down to 1.25× (1× on
+// ordinary screens) when the frame rate cannot hold, and back up when it can.
+const MAX_DPR = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2) : 1;
+const MIN_DPR = Math.min(MAX_DPR, 1.25);
 const SWORD_ROTATION: [number, number, number] = [0.08, 0, -0.80];
 
 // Edit mode: how close the camera comes to each hilt part (Blade and Finish are fitted, see below),
@@ -31,14 +37,18 @@ const FOCUS_RADIUS: Record<'guard' | 'grip' | 'pommel', number> = { guard: 0.15,
 // Finish frames the whole sword; Blade frames the blade. Both fit the free area, never past its edges.
 const FIT_FILL_FINISH = 1.0, FIT_FILL_BLADE = 1.0;
 // Overview: the whole sword must fit at any turn of the orbit, between the title and the sword types.
-const OVERVIEW_PANELS = { top: 110, bottom: 140, right: 0 }, OVERVIEW_FILL = 0.92;
+const OVERVIEW_FILL = 0.92;
 const REFIT_MS = 450;
 const FINISH_DROP = 36;          // px: Finish sits this much below the free area's centre
 const BLADE_NUDGE = { x: 44, y: 12 };   // px: Blade sits this much right of and above the centre
 // Screen space taken by the edit panels: inspector on the right, variant row + nav at the bottom.
 const PANEL_RIGHT = 320, PANEL_BOTTOM = 220, MARGIN_TOP = 56;
-const EDIT_PANELS = { top: MARGIN_TOP, bottom: PANEL_BOTTOM, right: PANEL_RIGHT };
-type Panels = typeof EDIT_PANELS;
+type Panels = { top: number; bottom: number; right: number };
+// Must match forge.css: below 1180 px the type row rises above the corner buttons; on phones (≤ 700 px) the
+// inspector spans the top of the screen (at most 42% of it) instead of the right side.
+const NARROW = 1180, PHONE = 700;
+const overviewPanels = (w: number): Panels => ({ top: 110, bottom: w <= PHONE ? 176 : w < NARROW ? 196 : 140, right: 0 });
+const editPanels = (w: number, h: number): Panels => (w <= PHONE ? { top: Math.round(h * 0.42) + 20, bottom: 252, right: 0 } : { top: MARGIN_TOP, bottom: PANEL_BOTTOM, right: PANEL_RIGHT });
 const PART_SHIFT_Y = 0.07;       // hilt parts: a little above centre (they're small; centred in the free space looked low)
 const FOV = 35;
 const READING_SHIFT = -0.17;   // sword moves right while the historical account is open
@@ -71,7 +81,7 @@ const WORLD_UP = new THREE.Vector3(0, 1, 0);
 
 // Distance at which the whole sword fits the free area of the screen, seen from `viewDir`
 // (unit vector from the target to the camera): the sword's axis is projected onto the screen axes.
-function fitDistance(axis: THREE.Vector3, viewDir: THREE.Vector3, w: number, h: number, fill: number, panels: Panels = EDIT_PANELS) {
+function fitDistance(axis: THREE.Vector3, viewDir: THREE.Vector3, w: number, h: number, fill: number, panels: Panels = editPanels(w, h)) {
   const tan = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
   const right = new THREE.Vector3().crossVectors(WORLD_UP, viewDir).normalize();
   const up = new THREE.Vector3().crossVectors(viewDir, right);
@@ -85,14 +95,14 @@ function fitDistance(axis: THREE.Vector3, viewDir: THREE.Vector3, w: number, h: 
 function overviewFit(axis: THREE.Vector3, phi: number, w: number, h: number) {
   const sph = new THREE.Spherical(1, phi, 0), v = new THREE.Vector3();
   let d = 0;
-  for (let k = 0; k < 16; k++) { sph.theta = (k / 16) * Math.PI * 2; d = Math.max(d, fitDistance(axis, v.setFromSpherical(sph), w, h, OVERVIEW_FILL, OVERVIEW_PANELS)); }
+  for (let k = 0; k < 16; k++) { sph.theta = (k / 16) * Math.PI * 2; d = Math.max(d, fitDistance(axis, v.setFromSpherical(sph), w, h, OVERVIEW_FILL, overviewPanels(w))); }
   return d;
 }
 
 // Hilt close-ups: no closer than keeps the part's radius inside the free area.
 function partFit(radius: number, w: number, h: number) {
   const tan = Math.tan(THREE.MathUtils.degToRad(FOV / 2));
-  const freeH = Math.max(0.3, (h - PANEL_BOTTOM - MARGIN_TOP) / h), freeW = Math.max(0.3, (w - PANEL_RIGHT) / w);
+  const p = editPanels(w, h), freeH = Math.max(0.3, (h - p.bottom - p.top) / h), freeW = Math.max(0.3, (w - p.right) / w);
   return radius / (tan * Math.min(freeH, freeW * (w / h)));
 }
 
@@ -182,7 +192,8 @@ function SceneContents() {
     const layout = getSwordLayout(config);
     const axisOf = (len: number) => new THREE.Vector3(0, 1, 0).transformDirection(group.matrixWorld).multiplyScalar(len);
     if (station) {
-      m.toShift = (PANEL_RIGHT / 2) / w;
+      const panels = editPanels(w, h);
+      m.toShift = (panels.right / 2) / w;
       if (station === 'blade' || station === 'finish') {
         const blade = station === 'blade', len = blade ? layout.bladeLen : layout.total;
         m.toTarget.set(0, blade ? layout.bladeY : 0, 0).applyMatrix4(group.matrixWorld);
@@ -190,13 +201,13 @@ function SceneContents() {
         // sword: fitting the turned view would zoom right in whenever the blade points at the camera.
         m.toDist = fitDistance(axisOf(len), faceDir, w, h, blade ? FIT_FILL_BLADE : FIT_FILL_FINISH);
         // Centred in the free area; Finish sits a little lower than that.
-        m.toShiftY = ((PANEL_BOTTOM - MARGIN_TOP) / 2 + (blade ? BLADE_NUDGE.y : -FINISH_DROP)) / h;
-        if (blade) m.toShift -= BLADE_NUDGE.x / w;
+        m.toShiftY = ((panels.bottom - panels.top) / 2 + (blade ? BLADE_NUDGE.y : -FINISH_DROP)) / h;
+        if (blade && panels.right) m.toShift -= BLADE_NUDGE.x / w;
       } else {
         const part = station as keyof typeof FOCUS_DISTANCE;
         m.toTarget.set(0, anchorY(station, layout), 0).applyMatrix4(group.matrixWorld);
         m.toDist = Math.max(FOCUS_DISTANCE[part], partFit(FOCUS_RADIUS[part], w, h));
-        m.toShiftY = PART_SHIFT_Y;
+        m.toShiftY = w <= PHONE ? (panels.bottom - panels.top) / 2 / h : PART_SHIFT_Y;
       }
     } else {
       m.toTarget.set(0, 0, 0);
@@ -304,7 +315,9 @@ function SceneContents() {
       {/* Same CC0 Poly Haven HDRI drei's "studio" preset uses, served locally instead of from a third-party CDN */}
       <Environment files={STUDIO_HDRI} environmentIntensity={1.18} />
       <Lighting inspect={station !== null} />
-      <ContactShadows position={[0, shadowY, 0]} blur={2} opacity={0.4} far={4} />
+      {/* The sword never moves under its shadow (only the camera does), so the shadow is drawn for a moment
+          after each change, when this component re-renders, not in every frame. */}
+      <ContactShadows position={[0, shadowY, 0]} blur={2} opacity={0.4} far={4} frames={SHADOW_FRAMES} />
       {/* Presentation tilt: ~23° lean so blade reads as diagonal, not vertical */}
       <group ref={swordGroupRef} rotation={SWORD_ROTATION}>
         <Sword />
@@ -314,8 +327,10 @@ function SceneContents() {
 }
 
 export function Scene() {
+  const [dpr, setDpr] = useState(MAX_DPR);
   return (
     <Canvas
+      dpr={dpr}
       gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }}
       camera={{ position: CAMERA_POSITION, fov: FOV }}
       onCreated={({ gl }) => {
@@ -325,6 +340,9 @@ export function Scene() {
       }}
       style={{ background: 'transparent' }}
     >
+      <PerformanceMonitor flipflops={4} onFallback={() => setDpr(MIN_DPR)}
+        onDecline={() => setDpr((d) => Math.max(MIN_DPR, +(d - 0.25).toFixed(2)))}
+        onIncline={() => setDpr((d) => Math.min(MAX_DPR, +(d + 0.25).toFixed(2)))} />
       <SceneContents />
     </Canvas>
   );

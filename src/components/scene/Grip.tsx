@@ -15,7 +15,9 @@ import { woodTexture } from './gripTextures';
 const GRIP_RADIUS_TOP = 0.011;
 const GRIP_RADIUS_BOT = 0.014;
 export const GRIP_FLATTEN = 0.86;
-const AROUND = 112;
+// Touch devices and small screens: a lighter mesh (the wrap's ridges keep their pitch, with fewer rows).
+const LOW_TIER = typeof window !== 'undefined' && (matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 700);
+const AROUND = LOW_TIER ? 72 : 112, ROWS_PER_TURN = LOW_TIER ? 4 : 6, STRIP_ROWS = LOW_TIER ? 14 : 24;
 
 type Wrap = { pitch: number; height: number; kind: 'none' | 'strip' | 'cord' | 'wire' };
 const WRAPS: Record<GripMaterial, Wrap> = {
@@ -42,7 +44,7 @@ const MOULDING_T = 0.52;
 
 function gripGeometry(len: number, rBot: number, rTop: number, material: GripMaterial, shape: GripShape): THREE.BufferGeometry {
   const w = WRAPS[material];
-  const rows = Math.max(140, Math.ceil(w.pitch ? (len / w.pitch) * (w.kind === 'strip' ? 24 : 6) : 140));
+  const rows = Math.max(140, Math.ceil(w.pitch ? (len / w.pitch) * (w.kind === 'strip' ? STRIP_ROWS : ROWS_PER_TURN) : 140));
   const positions: number[] = [], uvs: number[] = [], index: number[] = [];
   for (let i = 0; i <= rows; i++) {
     const t = i / rows, y = -len / 2 + t * len;
@@ -62,7 +64,7 @@ function gripGeometry(len: number, rBot: number, rTop: number, material: GripMat
         const phase = y / w.pitch + u, f = phase - Math.floor(phase);
         if (w.kind === 'cord') r += w.height * wrapOn * Math.sqrt(Math.max(0, 1 - (2 * f - 1) ** 2));
         if (w.kind === 'wire') {
-          const bead = 0.5 + 0.5 * Math.cos(a * 28);   // the twist of the strands, a whole number per turn (no seam)
+          const bead = 0.5 + 0.5 * Math.cos(a * (LOW_TIER ? 18 : 28));   // the twist of the strands, a whole number per turn (no seam)
           r += w.height * wrapOn * Math.sqrt(Math.max(0, 1 - (2 * f - 1) ** 2)) * (0.72 + 0.28 * bead);
         }
         // Leather strip: thickest at its overlapping edge, then a rounded step down onto the next turn.

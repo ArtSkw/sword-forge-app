@@ -271,11 +271,18 @@
 .forge .glass.dense { -webkit-backdrop-filter: var(--g-dense-blur); backdrop-filter: var(--g-dense-blur);
   background: var(--grain), linear-gradient(160deg, rgba(40, 27, 15, .86), rgba(16, 11, 6, .9)); }
 
+/* Below 1180 px the type row no longer fits between the corner buttons: it rises above them. */
+@media (max-width: 1179px) { .forge .arch { bottom: 78px; } }
 /* Narrow screens: the cards shrink and the row scrolls sideways, snapping to each sword. */
 @media (max-width: 700px) {
-  .forge .arch { left: 0; right: 0; bottom: 16px; transform: none; overflow-x: auto; padding: 10px 16px 4px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .forge .arch { left: 0; right: 0; bottom: 72px; transform: none; overflow-x: auto; padding: 10px 16px 4px; scroll-snap-type: x mandatory; scrollbar-width: none; }
   .forge.focus .arch { transform: translateY(16px); }
   .forge .tcard { zoom: .8; scroll-snap-align: center; flex: none; }
+  /* Edit mode on phones: the inspector spans the top of the screen and scrolls; the sword sits below it. */
+  .forge .inspector { left: 12px; right: 12px; top: 12px; width: auto; max-height: 42%; padding: 14px 14px 4px; }
+  /* Done and Back to default keep the bottom corner; the part steps and the choices sit above them. */
+  .forge .nav { bottom: 76px; }
+  .forge .chooser { bottom: 146px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
