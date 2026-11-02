@@ -28,6 +28,7 @@ const CLING_PARAMS: Record<ArchetypeKey, ClingParams> = {
 };
 // Each type's own short blade sound (ElevenLabs, chosen by the author); a type without one yet keeps the cling.
 const TYPE_SOUND: Partial<Record<ArchetypeKey, string>> = {
+  armingSword: `${BASE}sounds/type-armingSword.mp3`, longsword: `${BASE}sounds/type-longsword.mp3`, bastardSword: `${BASE}sounds/type-bastardSword.mp3`,
   vikingSword: `${BASE}sounds/type-vikingSword.mp3`, falchion: `${BASE}sounds/type-falchion.mp3`,
   estoc: `${BASE}sounds/type-estoc.mp3`, greatsword: `${BASE}sounds/type-greatsword.mp3`,
 };
