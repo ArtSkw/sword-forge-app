@@ -5,109 +5,6 @@ import { NoiseOverlay } from './NoiseOverlay';
 import { AtmosphereOverlay } from './AtmosphereOverlay';
 import { ForgeUI } from '../forge/ForgeUI';
 import { makeAudioLayer } from '../../lib/audio';
-import { useViewportSize } from '../../hooks/useViewportSize';
-import { Button } from './primitives/Button';
-
-const BRACKET_SIZE = 14;
-const DESKTOP_NOTICE_BREAKPOINT = 900;
-
-type BracketProps = { side: 'left' | 'right' };
-
-function Bracket({ side }: BracketProps) {
-  const isLeft = side === 'left';
-  return (
-    <svg
-      width={BRACKET_SIZE}
-      height={BRACKET_SIZE}
-      viewBox="0 0 14 14"
-      style={{ transform: isLeft ? 'none' : 'scaleX(-1)', flexShrink: 0 }}
-      aria-hidden="true"
-    >
-      <path
-        d="M 1 1 L 1 13 M 1 1 L 13 1"
-        stroke={tokens.color.borderAccent}
-        strokeWidth={1}
-        fill="none"
-      />
-    </svg>
-  );
-}
-
-function DesktopRecommendation({ onDismiss }: { onDismiss: () => void }) {
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        zIndex: 42,
-        display: 'grid',
-        placeItems: 'center',
-        padding: 22,
-        background: 'rgba(5, 3, 2, 0.66)',
-        backdropFilter: 'blur(6px)',
-        animation: 'cc-reveal 0.35s ease both',
-      }}
-    >
-      <div
-        style={{
-          width: 'min(100%, 430px)',
-          position: 'relative',
-          padding: '24px 22px 22px',
-          background: `linear-gradient(180deg, rgba(28, 24, 20, 0.96), rgba(10, 9, 7, 0.98))`,
-          border: `1px solid ${tokens.color.borderAccent}`,
-          borderRadius: tokens.radius.sharp,
-          boxShadow: tokens.shadow.panel,
-          textAlign: 'center',
-        }}
-      >
-        <div
-          style={{
-            position: 'absolute',
-            top: 12,
-            left: 12,
-          }}
-        >
-          <Bracket side="left" />
-        </div>
-        <div
-          style={{
-            position: 'absolute',
-            top: 12,
-            right: 12,
-          }}
-        >
-          <Bracket side="right" />
-        </div>
-        <h2
-          style={{
-            margin: '6px 0 12px',
-            fontFamily: tokens.font.display,
-            fontWeight: 500,
-            fontSize: 18,
-            letterSpacing: tokens.letterSpacing.display,
-            textTransform: 'uppercase',
-            color: tokens.color.textPrimary,
-          }}
-        >
-          Best on a wider screen
-        </h2>
-        <p
-          style={{
-            margin: '0 auto 20px',
-            maxWidth: 330,
-            fontFamily: tokens.font.control,
-            fontSize: 18,
-            lineHeight: 1.35,
-            color: tokens.color.textSecondary,
-          }}
-        >
-          The forge is laid out for a desktop. On a smaller screen the sword and its controls crowd each other.
-        </p>
-        <Button label="Continue anyway" onClick={onDismiss} compact />
-      </div>
-    </div>
-  );
-}
 
 const ENTRY_EXIT_MS = 520;
 // Touch devices and small screens show the forge as a still (no 5 MB video to fetch and decode under a blur).
@@ -206,12 +103,9 @@ function EntryScreen({ exiting, onEnter }: { exiting: boolean; onEnter: () => vo
 type AppShellProps = { children: ReactNode };
 
 export function AppShell({ children }: AppShellProps) {
-  const { width } = useViewportSize();
   const [hasEntered, setHasEntered] = useState(false);
   const [entryExiting, setEntryExiting] = useState(false);
-  const [noticeDismissed, setNoticeDismissed] = useState(false);
   const audioCleanupRef = useRef<(() => void) | null>(null);
-  const showDesktopNotice = hasEntered && width < DESKTOP_NOTICE_BREAKPOINT && !noticeDismissed;
 
   useEffect(() => {
     return () => {
@@ -278,7 +172,6 @@ export function AppShell({ children }: AppShellProps) {
       )}
       <ViewportFrame />
       {!hasEntered && <EntryScreen exiting={entryExiting} onEnter={handleEnter} />}
-      {showDesktopNotice && <DesktopRecommendation onDismiss={() => setNoticeDismissed(true)} />}
     </div>
   );
 }

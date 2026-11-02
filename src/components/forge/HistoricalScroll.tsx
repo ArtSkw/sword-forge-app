@@ -80,8 +80,8 @@ export function HistoricalScroll() {
     <div className="scroll" ref={scrollRef} inert={!reading} style={SCROLL_ART}>
       <div className="rod" />
       <div className="sheet" ref={sheetRef} role="dialog" aria-label="History & use">
-        <button className="close" aria-label="Close" onClick={() => setReading(false)}>
-          <HugeiconsIcon icon={Cancel01Icon} size={16} strokeWidth={1.5} />
+        <button className="close seal" aria-label="Close" data-tip="Close" data-tip-body="Back to the forge (Esc)" onClick={() => setReading(false)}>
+          <HugeiconsIcon icon={Cancel01Icon} size={18} strokeWidth={2} />
         </button>
         <h2>{acc.title}</h2>
         <div className="era">{form ? `${form.name} · ${form.era}` : content.preset.description}</div>

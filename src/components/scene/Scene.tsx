@@ -6,6 +6,7 @@ import { Sword } from './Sword';
 import { getSwordLayout } from './swordLayout';
 import { Lighting } from './Lighting';
 import { useConfigStore } from '../../store/configStore';
+import { useViewportSize } from '../../hooks/useViewportSize';
 import { anchors, interaction, publishAnchors } from '../../lib/anchors';
 import { STATIONS, type StationId } from '../../presets/forge';
 
@@ -332,6 +333,10 @@ function SceneContents() {
 
 export function Scene() {
   const [dpr, setDpr] = useState(MAX_DPR);
+  // Tablets and phones: History & use takes the whole stage, so the sword fades out behind it.
+  const reading = useConfigStore((s) => s.reading);
+  const { width } = useViewportSize();
+  const hidden = reading && width < 1180;
   return (
     <Canvas
       dpr={dpr}
@@ -342,7 +347,7 @@ export function Scene() {
         gl.toneMappingExposure = 1.03;
         gl.outputColorSpace = THREE.SRGBColorSpace;
       }}
-      style={{ background: 'transparent' }}
+      style={{ background: 'transparent', opacity: hidden ? 0 : 1, transition: `opacity ${hidden ? 260 : 420}ms cubic-bezier(.2, 0, 0, 1)` }}
     >
       <PerformanceMonitor flipflops={4} onFallback={() => setDpr(MIN_DPR)}
         onDecline={() => setDpr((d) => Math.max(MIN_DPR, +(d - 0.25).toFixed(2)))}
