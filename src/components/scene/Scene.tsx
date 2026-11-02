@@ -50,7 +50,7 @@ const PHONE = 700;
 const overviewPanels = (w: number): Panels => ({ top: 110, bottom: w <= PHONE ? 120 : 140, right: 0 });
 // The phone sheet's height (set from the store before each framing; the bar with Done sits below it).
 let phoneSheetPx = 200;
-const editPanels = (w: number, h: number): Panels => (w <= PHONE ? { top: Math.round(h * 0.03), bottom: phoneSheetPx + 84, right: 0 } : { top: MARGIN_TOP, bottom: PANEL_BOTTOM, right: PANEL_RIGHT });
+const editPanels = (w: number, h: number): Panels => (w <= PHONE ? { top: Math.round(h * 0.03), bottom: phoneSheetPx + 80, right: 0 } : { top: MARGIN_TOP, bottom: PANEL_BOTTOM, right: PANEL_RIGHT });
 const PART_SHIFT_Y = 0.07;       // hilt parts: a little above centre (they're small; centred in the free space looked low)
 const FOV = 35;
 const READING_SHIFT = -0.17;   // sword moves right while the historical account is open

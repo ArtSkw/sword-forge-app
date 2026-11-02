@@ -71,6 +71,12 @@ body,
   padding: 0;
 }
 
+/* The app is one fixed stage: the page itself never scrolls, pans or rubber-bands (on touch screens a drag
+   anywhere would otherwise move the whole interface). Only the rows and panels that scroll opt back in. */
+html, body { overflow: hidden; overscroll-behavior: none; }
+html { touch-action: none; }
+#root { position: fixed; inset: 0; overflow: hidden; }
+
 body {
   font-family: var(--font-body);
   color: var(--color-text-primary);

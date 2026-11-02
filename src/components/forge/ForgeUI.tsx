@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
-import { ArrowLeft01Icon, ArrowReloadHorizontalIcon, ArrowRight01Icon, ArrowDown01Icon, ArrowUp01Icon, Camera01Icon, InformationCircleIcon, MoreHorizontalIcon, ScrollTextIcon, VolumeHighIcon, VolumeMute02Icon } from '@hugeicons/core-free-icons';
+import { ArrowLeft01Icon, ArrowReloadHorizontalIcon, ArrowRight01Icon, Camera01Icon, InformationCircleIcon, MoreHorizontalIcon, ScrollTextIcon, VolumeHighIcon, VolumeMute02Icon } from '@hugeicons/core-free-icons';
 import './forge.css';
 import { typeConfig, useConfigStore, type ArchetypeKey } from '../../store/configStore';
 import { SWORD_TYPES, SWORD_TYPE_ORDER } from '../../presets/swordTypes';
@@ -36,7 +36,7 @@ const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matche
 const icon = (svg: IconSvgElement) => <HugeiconsIcon icon={svg} size={16} strokeWidth={1.5} />;
 const ICONS = {
   scroll: icon(ScrollTextIcon), reset: icon(ArrowReloadHorizontalIcon), sound: icon(VolumeHighIcon), muted: icon(VolumeMute02Icon),
-  shot: icon(Camera01Icon), more: icon(MoreHorizontalIcon), up: icon(ArrowUp01Icon), down: icon(ArrowDown01Icon), prev: icon(ArrowLeft01Icon), next: icon(ArrowRight01Icon),
+  shot: icon(Camera01Icon), more: icon(MoreHorizontalIcon), prev: icon(ArrowLeft01Icon), next: icon(ArrowRight01Icon),
   info: <HugeiconsIcon icon={InformationCircleIcon} size={18} strokeWidth={1.5} />,
 };
 
@@ -263,7 +263,7 @@ function PhoneSheet({ station, choices, onStep, opens }: { station: StationId; c
       <button className="ps-handle" aria-expanded={open} aria-label={open ? 'Show fewer options' : 'Show all options'}
         onPointerDown={down} onPointerUp={up} onPointerCancel={() => { drag.current = null; }}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(!open); } }}>
-        <i className="grab" />{open ? ICONS.down : ICONS.up}
+        <i className="grab" />
       </button>
       <div className="ps-head">
         <button className="step" onClick={() => onStep(-1)} aria-label={`Previous part: ${prev.name}`}>{ICONS.prev}<span>{prev.name}</span></button>
