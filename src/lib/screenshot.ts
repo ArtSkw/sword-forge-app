@@ -7,11 +7,12 @@ function download(blob: Blob) {
   a.href = url;
   a.download = `sword-forge-${Date.now()}.png`;
   a.click();
-  URL.revokeObjectURL(url);
+  // Firefox and Safari start the download asynchronously: release the URL a moment later.
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
 export async function takeScreenshot(): Promise<void> {
-  const canvas = document.querySelector('canvas');
+  const canvas = document.querySelector<HTMLCanvasElement>('canvas[data-engine]') ?? document.querySelector('canvas');
   if (!canvas) return;
 
   const W = canvas.width;

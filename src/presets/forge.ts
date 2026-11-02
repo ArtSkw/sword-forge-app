@@ -149,7 +149,7 @@ export type Form = {
 type Variant<T extends string> = { id: T; name: string; era?: string; years?: [number, number]; note: string; anchor?: string; anchorUrl?: string };
 
 export const GUARDS: Variant<GuardStyle>[] = [
-  { id: 'vikingBar', name: 'Short bar', era: '8th–11th c.', years: [750, 1050], note: 'A short, heavy guard, elliptical in section with gently domed faces: 8 to 12 cm across.', anchor: 'Finnish Heritage Agency KM 18402:1', anchorUrl: 'http://museovirasto.finna.fi/Record/museovirasto.FE4D68B51D0D5FEE17E1354056773CBA' },
+  { id: 'vikingBar', name: 'Short bar', era: '8th–11th c.', years: [750, 1050], note: 'A short, heavy guard, elliptical in section with gently domed faces: 8 to 12 cm across.', anchor: 'Finnish Heritage Agency KM 18402:1', anchorUrl: 'https://museovirasto.finna.fi/Record/museovirasto.FE4D68B51D0D5FEE17E1354056773CBA' },
   { id: 'vikingCurved', name: 'Curved bar', era: 'late 9th–11th c.', years: [870, 1100], note: 'A short guard curved toward the blade, as on the English and late Viking hilts.' },
   { id: 'longBar', name: 'Long cross', era: '10th–16th c.', years: [950, 1600], note: 'The knightly cross: a slim straight bar, 17 to 20 cm across.' },
   { id: 'bowtie', name: 'Bow-tie', era: '12th–14th c.', years: [1150, 1350], note: 'A flat cross flaring toward its ends, like a bow tie.', anchor: 'the Szczerbiec, Wawel', anchorUrl: 'https://en.wikipedia.org/wiki/Szczerbiec' },
@@ -168,7 +168,7 @@ export const POMMELS: Variant<PommelStyle>[] = [
   { id: 'scentStopper', name: 'Scent stopper', era: '14th–16th c.', years: [1350, 1600], note: 'Shaped like the stopper of a perfume bottle; popular in the late Middle Ages.' },
   { id: 'fishtail', name: 'Fishtail', era: '15th c.', years: [1400, 1500], note: 'A flared, faceted pommel of the late fifteenth century.' },
   { id: 'ornate', name: 'Ornate', era: '15th–16th c.', years: [1400, 1550], note: 'A grooved wheel with a decorative band.' },
-  { id: 'pyramid', name: 'Pyramid cap', era: 'c. 775–950', years: [775, 950], note: 'A small three-sided cap riveted to a wide, domed upper guard: the commonest Norwegian hilt.', anchor: 'Finnish Heritage Agency KM 18402:1', anchorUrl: 'http://museovirasto.finna.fi/Record/museovirasto.FE4D68B51D0D5FEE17E1354056773CBA' },
+  { id: 'pyramid', name: 'Pyramid cap', era: 'c. 775–950', years: [775, 950], note: 'A small three-sided cap riveted to a wide, domed upper guard: the commonest Norwegian hilt.', anchor: 'Finnish Heritage Agency KM 18402:1', anchorUrl: 'https://museovirasto.finna.fi/Record/museovirasto.FE4D68B51D0D5FEE17E1354056773CBA' },
   { id: 'lobed5', name: 'Five-lobe', era: '9th–10th c.', years: [800, 1000], note: 'Five even lobes in a row over a short, square-ish upper guard: the Frankish hilt.', anchor: 'Wallace Collection A456', anchorUrl: 'https://artsandculture.google.com/asset/sword-detail-unknown/SgEJJIhsBWl9YA' },
   { id: 'writhen', name: 'Writhen', era: 'c. 1490–1530', years: [1490, 1530], note: 'A pear-shaped pommel cut with spiral flutes: the mark of a South German or Swiss sword of about 1500.', anchor: 'Cleveland Museum of Art 1921.1253', anchorUrl: 'https://clevelandart.org/art/1921.1253' },
   { id: 'lobed3', name: 'Three-lobe', era: 'late 9th–10th c.', years: [870, 1000], note: 'A great rounded central lobe between two smaller ones, over its own upper guard.', anchor: 'Portable Antiquities Scheme KENT-328AD5', anchorUrl: 'https://finds.org.uk/database/artefacts/record/id/237370' },

@@ -37,7 +37,8 @@ const _bufferPending = new Map<string, Promise<AudioBuffer>>();
 
 async function getCtx(): Promise<AudioContext> {
   if (!_audioCtx) _audioCtx = new AudioContext();
-  if (_audioCtx.state === 'suspended') await _audioCtx.resume();
+  // Without a user gesture Safari may never settle resume(): wait for it at most a moment.
+  if (_audioCtx.state === 'suspended') await Promise.race([_audioCtx.resume(), new Promise((r) => setTimeout(r, 300))]);
   return _audioCtx;
 }
 
@@ -45,13 +46,17 @@ async function getBuffer(src: string): Promise<AudioBuffer> {
   if (_bufferCache.has(src)) return _bufferCache.get(src)!;
   if (_bufferPending.has(src)) return _bufferPending.get(src)!;
   const promise = (async () => {
-    const res = await fetch(src);
-    const arr = await res.arrayBuffer();
-    const ctx = await getCtx();
-    const buf = await ctx.decodeAudioData(arr);
-    _bufferCache.set(src, buf);
-    _bufferPending.delete(src);
-    return buf;
+    try {
+      const res = await fetch(src);
+      if (!res.ok) throw new Error(`${src}: ${res.status}`);
+      const arr = await res.arrayBuffer();
+      const ctx = await getCtx();
+      const buf = await ctx.decodeAudioData(arr);
+      _bufferCache.set(src, buf);
+      return buf;
+    } finally {
+      _bufferPending.delete(src);   // a failed load is tried again next time
+    }
   })();
   _bufferPending.set(src, promise);
   return promise;
@@ -92,20 +97,26 @@ export function makeAudioLayer(src: string, target: number, delayMs: number): ()
   const steps = 40;
   const intervalMs = 2000 / steps;
   let retryRamp: ReturnType<typeof setInterval> | null = null;
+  let ramp: ReturnType<typeof setInterval> | null = null;
   let resumeListener: (() => void) | null = null;
+  // Fade the layer up to its level (also after an unmute that comes before the first fade ever ran).
+  const fadeUp = () => {
+    if (ramp !== null) clearInterval(ramp);
+    let step = Math.round((audio.volume / target) * steps);
+    ramp = setInterval(() => {
+      step++;
+      audio.volume = Math.min(target, (step / steps) * target);
+      if (step >= steps && ramp !== null) { clearInterval(ramp); ramp = null; }
+    }, intervalMs);
+  };
 
   const startDelay = setTimeout(() => {
     if (_muted) return;
 
-    let step = 0;
-    const ramp = setInterval(() => {
-      step++;
-      audio.volume = Math.min(target, (step / steps) * target);
-      if (step >= steps) clearInterval(ramp);
-    }, intervalMs);
+    fadeUp();
 
     audio.play().catch(() => {
-      clearInterval(ramp);
+      if (ramp !== null) { clearInterval(ramp); ramp = null; }
       audio.volume = 0;
 
       resumeListener = () => {
@@ -126,7 +137,7 @@ export function makeAudioLayer(src: string, target: number, delayMs: number): ()
 
   const unsub = audioState.subscribe((m) => {
     if (m) audio.pause();
-    else if (!document.hidden) audio.play().catch(() => {});
+    else if (!document.hidden) { audio.play().catch(() => {}); if (audio.volume < target) fadeUp(); }
   });
   // Quiet while the tab is hidden (another tab, a minimised window); back when it is shown again.
   const onVisibility = () => {
@@ -138,6 +149,7 @@ export function makeAudioLayer(src: string, target: number, delayMs: number): ()
   return () => {
     clearTimeout(startDelay);
     if (retryRamp !== null) clearInterval(retryRamp);
+    if (ramp !== null) clearInterval(ramp);
     if (resumeListener !== null) window.removeEventListener('pointerdown', resumeListener);
     unsub();
     document.removeEventListener('visibilitychange', onVisibility);
@@ -156,6 +168,14 @@ export function makePlaylist(srcs: string[], target: number, delayMs: number): (
   players.forEach((p) => { p.preload = 'auto'; p.volume = 0; });
   let track = 0, active = 0, fadeFrom = -1, fadeT0 = 0, started = false, startT0 = 0;
   const load = (p: HTMLAudioElement, i: number) => { p.src = srcs[i % srcs.length]; p.currentTime = 0; };
+  // A track that will not load is skipped: the next one starts in its place.
+  let failures = 0;   // consecutive failed tracks: stop once every track has failed
+  const skip = (p: HTMLAudioElement) => () => {
+    if (p !== players[active] || ++failures >= srcs.length) return;
+    track++; load(p, track); play(p);
+  };
+  players.forEach((p) => p.addEventListener('playing', () => { failures = 0; }));
+  players.forEach((p) => { p.onerror = skip(p); });
   load(players[0], 0);
   const play = (p: HTMLAudioElement) => { if (!_muted && !document.hidden) p.play().catch(() => {}); };
   const tick = setInterval(() => {
