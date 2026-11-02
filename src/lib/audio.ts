@@ -166,23 +166,26 @@ async function noiseBurst(dur: number, type: BiquadFilterType, f0: number, f1: n
 export const playPaper = () => noiseBurst(0.65, 'bandpass', 2600, 1200, 0.06, 18);
 
 // --- The forge strike: one sound for every change to the sword ---
-// The same anvil sample, played once, voiced by what was changed: steel rings bright, fittings a little
-// lower, wood knocks, leather and cord thud. Small random variation keeps repeated changes alive.
-const STRIKE_SRC = `${import.meta.env.BASE_URL}sounds/anvil.wav`;
-export type StrikeVoice = 'steel' | 'fitting' | 'wood' | 'leather' | 'soft';
-const VOICES: Record<StrikeVoice, ClingParams> = {
-  steel: { playbackRate: 1.06, filterType: 'peaking', filterFreq: 4200, volume: 0.34 },
-  fitting: { playbackRate: 0.94, filterType: 'peaking', filterFreq: 2800, volume: 0.32 },
-  wood: { playbackRate: 0.82, filterType: 'lowpass', filterFreq: 2400, volume: 0.36 },
-  leather: { playbackRate: 0.74, filterType: 'lowpass', filterFreq: 1300, volume: 0.4 },
-  soft: { playbackRate: 0.9, filterType: 'lowpass', filterFreq: 3200, volume: 0.2 },
+// Each kind of change has its own recorded strike (ElevenLabs sound effects, chosen by the author): steel
+// rings, iron fittings clink lower, a wooden grip knocks, a finish is a whetstone stroke. Whole-sword changes
+// (a new Form, Back to default) keep the anvil. Leather and cord still use the anvil, voiced down, until
+// their own sound is chosen. A small random variation keeps repeated changes alive.
+const SND = `${import.meta.env.BASE_URL}sounds/`;
+export type StrikeVoice = 'anvil' | 'steel' | 'fitting' | 'wood' | 'leather' | 'soft';
+const STRIKES: Record<StrikeVoice, { src: string } & ClingParams> = {
+  anvil: { src: `${SND}anvil.wav`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.34 },
+  steel: { src: `${SND}strike-steel.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.3 },
+  fitting: { src: `${SND}strike-fitting.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.28 },
+  wood: { src: `${SND}strike-wood.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.34 },
+  leather: { src: `${SND}anvil.wav`, playbackRate: 0.74, filterType: 'lowpass', filterFreq: 1300, volume: 0.4 },
+  soft: { src: `${SND}strike-finish.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.18 },
 };
 let lastStrike = 0;
-export function playStrike(voice: StrikeVoice = 'steel') {
+export function playStrike(voice: StrikeVoice = 'anvil') {
   // Never two strikes on top of each other (a burst of key presses rings once).
   const now = performance.now();
   if (now - lastStrike < 70) return;
   lastStrike = now;
-  const v = VOICES[voice];
-  playCling(STRIKE_SRC, { ...v, playbackRate: v.playbackRate * (0.97 + Math.random() * 0.06) });
+  const { src, ...v } = STRIKES[voice];
+  playCling(src, { ...v, playbackRate: v.playbackRate * (0.97 + Math.random() * 0.06) });
 }
