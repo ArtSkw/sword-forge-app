@@ -1,5 +1,5 @@
 import type { ArchetypeKey, SwordConfig } from '../store/configStore';
-import type { ProfileFamily } from './bladeProfiles';
+import type { Section } from './bladeSections';
 
 export type SwordPreset = {
   key: ArchetypeKey;
@@ -15,32 +15,26 @@ export type SwordPreset = {
   // Smoothstep blend window (in t units) around bodyTaperEnd. 0 = sharp
   // shoulder corner; ~0.06 rounds the kink for a fingertip-rounded tip.
   tipShoulderRound: number;
-  // Cross-section family — drives the fundamental blade geometry.
-  crossSection: ProfileFamily;
-  // Edge-side outward bow as a fraction of halfWidth (0 = straight edge).
-  // Peaks mid-blade via sin(πt); combined with the default taper so the edge
-  // remains tapered at the base and tip.
-  edgeBow: number;
-  // Fraction of blade length where the spine starts its angular clip-drop to
-  // the tip. 1.0 = spine follows the default symmetric taper (no clip).
-  spineClipT: number;
-  // Optional fuller span along blade length. Defaults live in Blade.tsx.
+  // Cross-section (presets/bladeSections.ts); a blade profile or the user may choose another.
+  section: Section;
+  // Single-edged blades only ('wedge'): how far the edge swells toward the clip, as a multiple of
+  // half-width (0 = parallel), and where the back starts to drop to the point (1 = no clip).
+  swell: number;
+  clipT: number;
+  // Optional fuller span along blade length. Defaults live in lib/bladeSpec.ts.
   fullerStart?: number;
   fullerEnd?: number;
+  // The grip's usual length on this type, in cm (research: Viking 9–10, arming ~10, longsword 20–28,
+  // bastard 21–30, two-hander 35–45, falchion ~10, estoc ~30).
+  gripCm: number;
   defaults: Omit<SwordConfig, 'archetype'>;
-};
-
-const DEFAULT_FANTASY: SwordConfig['fantasy'] = {
-  enabled: false,
-  runes: false,
-  gemstone: 'none',
 };
 
 const finish = (
   gripColor: string,
   overrides: Partial<Omit<SwordConfig['finish'], 'gripColor'>> = {},
 ): SwordConfig['finish'] => ({
-  condition: 'pristine',
+  age: 0,
   steelFinish: 'polished',
   hardwareTone: 'steel',
   gripMaterial: 'leather',
@@ -52,144 +46,144 @@ export const SWORD_TYPES: Record<ArchetypeKey, SwordPreset> = {
   armingSword: {
     key: 'armingSword',
     name: 'Arming Sword',
-    description: 'The quintessential knightly sword — balanced, versatile, deadly.',
+    description: 'The one-handed knightly sword, balanced for cut and thrust.',
     bodyTaperEnd: 0.84, // reference-like fuller section with deliberate terminal taper
     bodyTaperMidWidth: 0.42,
     tipShoulderRound: 0,
-    crossSection: 'lenticular',
-    edgeBow: 0,
-    spineClipT: 1,
+    section: 'lenticular',
+    swell: 0,
+    clipT: 1,
     fullerStart: 0.075,
     fullerEnd: 0.76,
+    gripCm: 10.5,
     defaults: {
       blade: { length: 'medium', width: 'standard', fuller: 'single' },
-      guard: { style: 'straight' },
+      guard: { style: 'longBar' },
       grip: { length: 'short' },
       pommel: { style: 'wheel' },
       finish: finish('#1C1008'), // near-black worn leather — most documented for knightly use
-      fantasy: DEFAULT_FANTASY,
     },
   },
   longsword: {
     key: 'longsword',
     name: 'Longsword',
-    description: 'A two-handed weapon favored by knights and men-at-arms.',
+    description: 'A two-handed weapon favoured by knights and men-at-arms.',
     bodyTaperEnd: 0.87, // long, steady blade body before the final acute point
     bodyTaperMidWidth: 0.44,
     tipShoulderRound: 0,
-    crossSection: 'lenticular',
-    edgeBow: 0,
-    spineClipT: 1,
+    section: 'diamond',
+    swell: 0,
+    clipT: 1,
     fullerStart: 0.080,
     fullerEnd: 0.735,
+    gripCm: 23,
     defaults: {
       blade: { length: 'long', width: 'standard', fuller: 'single' },
-      guard: { style: 'straight' },
+      guard: { style: 'roundCross' },
       grip: { length: 'long' },
       pommel: { style: 'scentStopper' },
       finish: finish('#32150f'), // darker red-brown leather, matching restrained two-hand reproductions
-      fantasy: DEFAULT_FANTASY,
     },
   },
   bastardSword: {
     key: 'bastardSword',
     name: 'Bastard Sword',
-    description: 'The hand-and-a-half sword — adaptable, powerful, elegant.',
+    description: 'The hand-and-a-half sword: one hand in the saddle, two on foot.',
     bodyTaperEnd: 0.83,
     bodyTaperMidWidth: 0.34,
     tipShoulderRound: 0,
-    crossSection: 'lenticular',
-    edgeBow: 0,
-    spineClipT: 1,
+    section: 'diamond',
+    swell: 0,
+    clipT: 1,
     fullerStart: 0.070,
     fullerEnd: 0.800,
+    gripCm: 24,
     defaults: {
       blade: { length: 'long', width: 'standard', fuller: 'single' },
-      guard: { style: 'curved' },
+      guard: { style: 'roundCross' },
       grip: { length: 'long' },
       pommel: { style: 'fishtail' },
       finish: finish('#101A2C', { hardwareTone: 'brass' }), // deep navy leather with warmer brass fittings
-      fantasy: DEFAULT_FANTASY,
     },
   },
   vikingSword: {
     key: 'vikingSword',
     name: 'Viking Sword',
-    description: 'Broad, fearless, and beautiful — forged for the northern warrior.',
+    description: 'A broad one-handed blade for cutting, carried with a shield.',
     bodyTaperEnd: 0.92, // near-parallel edges, short stubby tip over last 8%
     bodyTaperMidWidth: 0.88, // Viking blades retain almost full width along the body
     tipShoulderRound: 0.07,  // round the shoulder for the soft, blunted Viking tip
-    crossSection: 'lenticular',
-    edgeBow: 0,
-    spineClipT: 1,
+    section: 'lenticular',
+    swell: 0,
+    clipT: 1,
+    gripCm: 9.5,
     defaults: {
       blade: { length: 'short', width: 'wide', fuller: 'single' },
-      guard: { style: 'straight' },
+      guard: { style: 'vikingBar' },
       grip: { length: 'short' },
       pommel: { style: 'brazilNut' },
-      finish: finish('#655d49', { condition: 'used', steelFinish: 'satin', hardwareTone: 'darkIron', gripMaterial: 'wood' }), // darker aged ivory grip with a lightly used bright steel blade
-      fantasy: DEFAULT_FANTASY,
+      finish: finish('#655d49', { age: 1 / 3, steelFinish: 'satin', hardwareTone: 'darkIron', gripMaterial: 'wood' }), // darker aged ivory grip with a lightly used bright steel blade
     },
   },
   falchion: {
     key: 'falchion',
     name: 'Falchion',
-    description: 'Single-edged and curved, delivering brutal chopping power.',
+    description: 'Single-edged and broad, swelling toward a clipped point, made to chop.',
     bodyTaperEnd: 0.70, // broad chopping body with a clipped, forward-leaning point
     bodyTaperMidWidth: 0.50,
     tipShoulderRound: 0.035,
-    crossSection: 'lenticular',
-    edgeBow: 0.95,     // strong cutting-edge belly; spine stays straighter
-    spineClipT: 0.78,  // spine drops over the last fifth for the falchion clip tip
+    section: 'wedge',
+    swell: 1.1,        // the edge widens toward the clip (Conyers: about twice as wide there as at the guard)
+    clipT: 0.8,        // the back drops over the last fifth to the point
     fullerStart: 0.120,
     fullerEnd: 0.690,
+    gripCm: 10.5,
     defaults: {
-      blade: { length: 'medium', width: 'standard', fuller: 'decorative' },
-      guard: { style: 'curved' },
+      blade: { length: 'medium', width: 'standard', fuller: 'none' },
+      guard: { style: 'arched' },
       grip: { length: 'short' },
       pommel: { style: 'disc' },
       finish: finish('#11100E', { steelFinish: 'satin', hardwareTone: 'darkIron', gripMaterial: 'cord' }), // black cord grip and muted fittings for a practical chopping sword
-      fantasy: DEFAULT_FANTASY,
     },
   },
   estoc: {
     key: 'estoc',
     name: 'Estoc',
-    description: 'A rigid thrusting sword built to pierce plate armor.',
+    description: 'A rigid thrusting sword made to find the gaps in plate armour.',
     bodyTaperEnd: 0.86, // long rigid spike tapering steadily into a needle point
     bodyTaperMidWidth: 0.34,
     tipShoulderRound: 0,
-    crossSection: 'diamond',
-    edgeBow: 0,
-    spineClipT: 1,
+    section: 'triangular',
+    swell: 0,
+    clipT: 1,
+    gripCm: 28,
     defaults: {
       blade: { length: 'extraLong', width: 'narrow', fuller: 'none' },
-      guard: { style: 'straight' },
+      guard: { style: 'longBar' },
       grip: { length: 'long' },
-      pommel: { style: 'wheel' },
+      pommel: { style: 'scentStopper' },
       finish: finish('#2A1710', { steelFinish: 'satin' }), // dark brown grip, subdued steel for a utilitarian armor-piercer
-      fantasy: DEFAULT_FANTASY,
     },
   },
   greatsword: {
     key: 'greatsword',
     name: 'Greatsword',
-    description: 'A monument in steel — the weapon of champions and legends.',
+    description: 'The largest two-hander, often with a second grip on the blade and parrying hooks.',
     bodyTaperEnd: 0.82, // long cutting body with a controlled two-handed taper
     bodyTaperMidWidth: 0.46,
     tipShoulderRound: 0,
-    crossSection: 'hexagonal',
-    edgeBow: 0,
-    spineClipT: 1,
+    section: 'hexagonal',
+    swell: 0,
+    clipT: 1,
     fullerStart: 0.085,
     fullerEnd: 0.650,
+    gripCm: 40,
     defaults: {
       blade: { length: 'extraLong', width: 'standard', fuller: 'double' },
-      guard: { style: 'curved' },
+      guard: { style: 'longQuillons' },
       grip: { length: 'long' },
       pommel: { style: 'fishtail' },
       finish: finish('#4A1118', { steelFinish: 'satin', hardwareTone: 'darkIron', gripMaterial: 'cord' }), // maroon cord grip with subdued war-sword fittings
-      fantasy: DEFAULT_FANTASY,
     },
   },
 };

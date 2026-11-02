@@ -30,27 +30,21 @@ export type SwordMaterialRecipes = {
 
 const BLADE_COLORS: Record<SteelFinish, Record<SwordCondition, string>> = {
   polished: {
-    pristine: '#C8CCD0',
-    used: '#AEB5B7',
-    battleWorn: '#8A908C',
+    pristine: '#DADEE2',
+    used: '#CBD0D3',
+    battleWorn: '#A9A8A2',
     ancient: '#7C756B',
   },
   satin: {
-    pristine: '#B8C0C2',
-    used: '#A4ABAC',
-    battleWorn: '#858B87',
+    pristine: '#A2A9AB',
+    used: '#9AA0A2',
+    battleWorn: '#8E8D88',
     ancient: '#777064',
-  },
-  darkened: {
-    pristine: '#6A6660',
-    used: '#5C5A56',
-    battleWorn: '#4A4A46',
-    ancient: '#403B35',
   },
   patternWelded: {
     pristine: '#BFC7C8',
-    used: '#AAB2B2',
-    battleWorn: '#8B918D',
+    used: '#B4BBBC',
+    battleWorn: '#9C9B95',
     ancient: '#7B7469',
   },
 };
@@ -58,8 +52,8 @@ const BLADE_COLORS: Record<SteelFinish, Record<SwordCondition, string>> = {
 const HARDWARE_COLORS: Record<HardwareTone, Record<SwordCondition, string>> = {
   steel: {
     pristine: '#C8CCD0',
-    used: '#AEB2B1',
-    battleWorn: '#868B86',
+    used: '#BCC0C2',
+    battleWorn: '#9C9C97',
     ancient: '#756E64',
   },
   brass: {
@@ -74,6 +68,12 @@ const HARDWARE_COLORS: Record<HardwareTone, Record<SwordCondition, string>> = {
     battleWorn: '#6F4A2B',
     ancient: '#5A3D27',
   },
+  gilt: {
+    pristine: '#D9B866',
+    used: '#CDAE62',
+    battleWorn: '#B39657',
+    ancient: '#8C7448',
+  },
   darkIron: {
     pristine: '#585450',
     used: '#4C4A46',
@@ -83,10 +83,10 @@ const HARDWARE_COLORS: Record<HardwareTone, Record<SwordCondition, string>> = {
 };
 
 const HARDWARE_ROUGHNESS: Record<SwordCondition, number> = {
-  pristine: 0.36,
-  used: 0.45,
-  battleWorn: 0.56,
-  ancient: 0.68,
+  pristine: 0.34,
+  used: 0.36,
+  battleWorn: 0.39,
+  ancient: 0.58,
 };
 
 const HARDWARE_EMISSIVE: Record<HardwareTone, string> = {
@@ -94,6 +94,7 @@ const HARDWARE_EMISSIVE: Record<HardwareTone, string> = {
   brass: '#B8925A',
   bronze: '#9B6A35',
   darkIron: '#000000',
+  gilt: '#C9A040',
 };
 
 const HARDWARE_EMISSIVE_INTENSITY: Record<HardwareTone, number> = {
@@ -101,6 +102,7 @@ const HARDWARE_EMISSIVE_INTENSITY: Record<HardwareTone, number> = {
   brass: 0.05,
   bronze: 0.035,
   darkIron: 0,
+  gilt: 0.04,
 };
 
 const GRIP_ROUGHNESS: Record<SwordCondition, number> = {
@@ -149,19 +151,36 @@ const GRIP_FINISH_SHADE: Record<SwordCondition, number> = {
   ancient: 0.58,
 };
 
+// Age darkens and varies steel, it does not blur it: a rough metal in a bright studio reads milky white.
+// Roughness stays close to the finish's own until rust takes over; the tarnish and wear live in the shader.
 const BLADE_PHYSICAL_BY_CONDITION: Record<SwordCondition, BladePhysicalRecipe> = {
-  pristine: { roughness: 0.16, clearcoat: 0.50, clearcoatRoughness: 0.10, anisotropy: 0.60 },
-  used: { roughness: 0.28, clearcoat: 0.30, clearcoatRoughness: 0.16, anisotropy: 0.50 },
-  battleWorn: { roughness: 0.42, clearcoat: 0.16, clearcoatRoughness: 0.24, anisotropy: 0.40 },
-  ancient: { roughness: 0.56, clearcoat: 0.04, clearcoatRoughness: 0.36, anisotropy: 0.28 },
+  pristine: { roughness: 0.14, clearcoat: 0.50, clearcoatRoughness: 0.10, anisotropy: 0.60 },
+  used: { roughness: 0.16, clearcoat: 0.40, clearcoatRoughness: 0.12, anisotropy: 0.56 },
+  battleWorn: { roughness: 0.19, clearcoat: 0.30, clearcoatRoughness: 0.14, anisotropy: 0.52 },
+  ancient: { roughness: 0.38, clearcoat: 0.05, clearcoatRoughness: 0.30, anisotropy: 0.30 },
 };
 
 const STEEL_FINISH_PHYSICAL_MODIFIERS: Record<SteelFinish, BladePhysicalModifier> = {
-  polished: { roughness: -0.03, clearcoat: 0.08, clearcoatRoughness: -0.02, anisotropy: 0.06 },
-  satin: { roughness: 0.04, clearcoat: -0.04, clearcoatRoughness: 0.04, anisotropy: -0.02 },
-  darkened: { roughness: 0.10, clearcoat: -0.12, clearcoatRoughness: 0.08, anisotropy: -0.08 },
+  // Mirror polish against a brushed grey: the two must read apart at a glance.
+  polished: { roughness: -0.1, clearcoat: 0.08, clearcoatRoughness: -0.04, anisotropy: -0.3 },
+  satin: { roughness: 0.14, clearcoat: -0.3, clearcoatRoughness: 0.08, anisotropy: 0.25 },
   patternWelded: { roughness: 0.02, clearcoat: -0.02, clearcoatRoughness: 0.03, anisotropy: 0.02 },
 };
+
+const STOPS: SwordCondition[] = ['pristine', 'used', 'battleWorn', 'ancient'];
+/** Reads a four-stop table at a continuous age (0–1). */
+function atAge(table: Record<SwordCondition, number>, age: number): number {
+  const x = clamp(age, 0, 1) * 3, i = Math.min(2, Math.floor(x)), k = x - i;
+  return table[STOPS[i]] * (1 - k) + table[STOPS[i + 1]] * k;
+}
+function hexAtAge(table: Record<SwordCondition, string>, age: number): string {
+  const x = clamp(age, 0, 1) * 3, i = Math.min(2, Math.floor(x)), k = x - i;
+  const a = parseInt(table[STOPS[i]].slice(1), 16), b = parseInt(table[STOPS[i + 1]].slice(1), 16);
+  const ch = (sh: number) => Math.round(((a >> sh) & 255) * (1 - k) + ((b >> sh) & 255) * k);
+  return `#${((1 << 24) + (ch(16) << 16) + (ch(8) << 8) + ch(0)).toString(16).slice(1)}`;
+}
+const pick = <K extends keyof BladePhysicalRecipe>(key: K) =>
+  Object.fromEntries(STOPS.map((c) => [c, BLADE_PHYSICAL_BY_CONDITION[c][key]])) as Record<SwordCondition, number>;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -176,37 +195,40 @@ export function shadeHex(hex: string, factor: number): string {
   return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }
 
-export function getBladePhysicalRecipe(condition: SwordCondition, steelFinish: SteelFinish): BladePhysicalRecipe {
-  const base = BLADE_PHYSICAL_BY_CONDITION[condition];
+export function getBladePhysicalRecipe(age: number, steelFinish: SteelFinish): BladePhysicalRecipe {
+  const base = { roughness: atAge(pick('roughness'), age), clearcoat: atAge(pick('clearcoat'), age), clearcoatRoughness: atAge(pick('clearcoatRoughness'), age), anisotropy: atAge(pick('anisotropy'), age) };
   const modifier = STEEL_FINISH_PHYSICAL_MODIFIERS[steelFinish];
 
   return {
-    roughness: clamp(base.roughness + (modifier.roughness ?? 0), 0.08, 0.82),
-    clearcoat: clamp(base.clearcoat + (modifier.clearcoat ?? 0), 0, 0.72),
+    roughness: clamp(base.roughness + (modifier.roughness ?? 0), 0.05, 0.82),
+    // Floors above zero: a feature reaching 0 mid-scrub would recompile the material (a visible hitch).
+    clearcoat: clamp(base.clearcoat + (modifier.clearcoat ?? 0), 0.001, 0.72),
     clearcoatRoughness: clamp(base.clearcoatRoughness + (modifier.clearcoatRoughness ?? 0), 0.05, 0.55),
-    anisotropy: clamp(base.anisotropy + (modifier.anisotropy ?? 0), 0.12, 0.78),
+    anisotropy: clamp(base.anisotropy + (modifier.anisotropy ?? 0), 0.001, 0.9),
   };
 }
 
-export function getSwordMaterialRecipes(finish: SwordConfig['finish']): SwordMaterialRecipes {
-  const { condition, steelFinish, hardwareTone, gripColor, gripMaterial } = finish;
+export function getSwordMaterialRecipes(finish: SwordConfig['finish'], woodTint?: string): SwordMaterialRecipes {
+  const { age, steelFinish, hardwareTone, gripColor, gripMaterial } = finish;
   const gripRecipe = GRIP_MATERIAL_RECIPES[gripMaterial];
 
   return {
     blade: {
-      color: BLADE_COLORS[steelFinish][condition],
+      color: hexAtAge(BLADE_COLORS[steelFinish], age),
     },
     hardware: {
-      color: HARDWARE_COLORS[hardwareTone][condition],
+      color: hexAtAge(HARDWARE_COLORS[hardwareTone], age),
       emissive: HARDWARE_EMISSIVE[hardwareTone],
       emissiveIntensity: HARDWARE_EMISSIVE_INTENSITY[hardwareTone],
-      roughness: HARDWARE_ROUGHNESS[condition],
+      roughness: atAge(HARDWARE_ROUGHNESS, age),
     },
     grip: {
       material: gripMaterial,
-      color: shadeHex(gripColor, GRIP_FINISH_SHADE[condition] * gripRecipe.colorFactor),
+      // Wood shows its own grain (a white tint that darkens with age); leather and cord take the dye.
+      // A Form may give its wood a colour of its own (the Milanese court sword's black horn).
+      color: gripMaterial === 'wood' ? shadeHex(woodTint ?? '#c9ab8a', atAge(GRIP_FINISH_SHADE, age)) : shadeHex(gripColor, atAge(GRIP_FINISH_SHADE, age) * gripRecipe.colorFactor),
       metalness: gripRecipe.metalness,
-      roughness: clamp(GRIP_ROUGHNESS[condition] + gripRecipe.roughnessOffset, 0.18, 0.98),
+      roughness: clamp(atAge(GRIP_ROUGHNESS, age) + gripRecipe.roughnessOffset, 0.18, 0.98),
       normalScale: gripRecipe.normalScale,
     },
   };

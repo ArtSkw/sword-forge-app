@@ -1,0 +1,370 @@
+/* Forge UI — "Smith's Eye". Gold on dark glass, one button system, Cinzel + Alegreya. */
+.forge {
+  --gold: #C9A961; --gold-hi: #E9D49A; --gold-dim: #8B6F47; --gold-text: #D8C08A; --gold-line: rgba(201, 169, 97, .38);
+  --glass: rgba(24, 15, 8, .5); --gold-meta: #A88B62; --ink: #2B2117; --rubric: #7A2A1E;
+  --ease-out: cubic-bezier(.2, 0, 0, 1); --ease-io: cubic-bezier(.65, 0, .35, 1);
+  --display: "Cinzel", serif; --text: "Alegreya", serif;
+  /* Type scale: nine roles, two families. Cinzel names things (tracked capitals), Alegreya is for reading.
+     Sizes step 11 · 12 · 14 · 16 · 18 · 22 · 26; nothing outside the scale. */
+  --type-title: 500 26px/1.1 var(--display);        /* the sword's name */
+  --type-heading: 600 22px/1.2 var(--display);      /* the account's title, the +N count */
+  --type-subheading: 600 18px/1.25 var(--display);  /* the part being worked on */
+  --type-label-lg: 600 14px/1.2 var(--display);     /* the Form, Form names in the list */
+  --type-label: 600 12px/1.2 var(--display);        /* buttons, sword types, part steps, account sections */
+  --type-label-sm: 600 11px/1.2 var(--display);     /* kickers, row labels, variant names, chips, tooltip titles */
+  --type-body-lg: 400 18px/1.55 var(--text);        /* the historical account */
+  --type-body: 400 16px/1.45 var(--text);           /* inspector notes, tooltip text, Form notes */
+  --type-meta: 400 14px/1.35 var(--text);           /* eras, captions, values, links */
+  --track-title: .1em; --track-heading: .08em; --track-label-lg: .14em; --track-label: .12em; --track-label-sm: .16em; --track-tight: .06em;  /* tight: labels in narrow cards */
+  color: var(--gold-text);
+  font-family: var(--text);
+}
+.forge button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+.forge button:focus-visible { outline: 1px solid var(--gold-hi); outline-offset: 3px; }
+
+/* Shared surface: dark glass, gold hairline, inner rule */
+.forge .glass { position: relative; background: var(--glass); border: 1px solid var(--gold-line); box-shadow: var(--rim-in), 0 8px 24px rgba(0, 0, 0, .45); }
+
+/* Visibility by mode: overview, focus (edit a part), reading (historical account) */
+.forge .fade { transition: opacity 360ms var(--ease-out), transform 360ms var(--ease-out); }
+.forge.focus .hide-focus, .forge.reading .hide-reading { opacity: 0; pointer-events: none; }
+/* Coming back from the account, the overview waits for the scroll to lift away. */
+.forge:not(.reading):not(.focus) .hide-reading { transition-delay: 280ms; }
+.forge.reading .hide-reading { transition-delay: 0ms; }
+.forge .focus-only { opacity: 0; pointer-events: none; transform: translateY(8px); transition: opacity 360ms var(--ease-out) 120ms, transform 360ms var(--ease-out) 120ms; }
+.forge.focus .focus-only { opacity: 1; pointer-events: auto; transform: none; }
+
+/* One button system: text, primary, icon, small */
+.forge .btn { height: 40px; padding: 0 18px 0 16px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; border-radius: 6px; font: var(--type-label); letter-spacing: var(--track-label); color: var(--gold-hi); background: var(--glass); border: 1px solid var(--gold-line); box-shadow: var(--rim-in), 0 8px 24px rgba(0, 0, 0, .45); transition: transform 160ms var(--ease-out), border-color 160ms, box-shadow 200ms, color 160ms, opacity 360ms var(--ease-out); user-select: none; white-space: nowrap; }
+.forge .btn svg { width: 16px; height: 16px; flex: none; }
+.forge .btn:hover { transform: translateY(-1px); box-shadow: var(--rim-in), 0 10px 26px rgba(0, 0, 0, .5), 0 0 18px rgba(233, 212, 154, .14); }
+.forge .btn:active { transform: translateY(0) scale(.97); transition-duration: 70ms; }
+.forge .btn.primary { background: linear-gradient(180deg, rgba(201, 169, 97, .24), rgba(201, 169, 97, .07)), var(--glass); }
+.forge .btn.icon { width: 40px; padding: 0; }
+.forge .btn[aria-disabled="true"] { opacity: .42; cursor: default; transform: none; box-shadow: var(--rim-in), 0 8px 24px rgba(0, 0, 0, .45); }
+.forge .btn[aria-pressed="true"] { box-shadow: inset 0 1px 0 rgba(255, 236, 200, .25), inset 0 0 0 1px var(--gold-hi), 0 8px 24px rgba(0, 0, 0, .45); color: var(--gold-hi); background: linear-gradient(180deg, rgba(201, 169, 97, .22), rgba(201, 169, 97, .06)), var(--glass); }
+.forge .corner-l { position: absolute; z-index: 11; left: 24px; bottom: 24px; }
+.forge .corner-r { position: absolute; z-index: 11; right: 24px; bottom: 24px; display: flex; gap: 8px; }
+
+/* Title */
+.forge .title { position: absolute; z-index: 10; top: 22px; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none; }
+.forge.focus .title { transform: translateX(-50%) translateY(-12px); }
+.forge .title h1 { margin: 0; font: var(--type-title); letter-spacing: var(--track-title); text-transform: uppercase; color: var(--gold-hi); text-shadow: 0 2px 12px rgba(0, 0, 0, .6); white-space: nowrap; }
+.forge .formsw { position: relative; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 4px; pointer-events: auto; }
+.forge .fs-step { width: 32px; height: 32px; display: grid; place-items: center; color: var(--gold-dim); border-radius: 50%; transition: color 160ms, background 160ms, transform 160ms var(--ease-out); }
+.forge .fs-step:hover { color: var(--gold-hi); background: rgba(201, 169, 97, .08); }
+.forge .fs-step:active { transform: scale(.92); transition-duration: 70ms; }
+.forge .fs-step svg { width: 16px; height: 16px; }
+.forge .fs-name { display: flex; align-items: baseline; gap: 10px; padding: 5px 14px; border-radius: 5px; font: var(--type-label-lg); letter-spacing: var(--track-label-lg); color: var(--gold); text-shadow: 0 1px 8px rgba(0, 0, 0, .7); white-space: nowrap; transition: color 160ms, background 160ms; }
+.forge .fs-name:hover, .forge .fs-name[aria-expanded="true"] { color: var(--gold-hi); background: rgba(201, 169, 97, .07); }
+.forge .fs-era { font: var(--type-body); letter-spacing: 0; color: var(--gold-meta); }
+.forge .fs-alt { font: var(--type-meta); letter-spacing: 0; color: var(--gold-meta); opacity: .85; }
+.forge .fs-alt::before { content: "· "; }
+.forge .fs-list { position: absolute; top: calc(100% + 8px); left: 50%; padding: 6px; display: flex; flex-direction: column; width: 380px; border-radius: 8px; text-align: left; }
+/* The list unfolds out of the Form's name: it grows from its top centre while a clip opens downward, and the
+   rows follow 40 ms apart. Closing folds it back up, faster and all at once. */
+.forge .fs-list { transform-origin: 50% 0; transform: translateX(-50%) translateY(-6px) scale(.96); clip-path: inset(0 0 100% 0 round 8px); opacity: 0; visibility: hidden;
+  transition: transform 160ms var(--ease-out), clip-path 160ms var(--ease-out), opacity 120ms var(--ease-out), visibility 0s linear 160ms; }
+.forge .fs-list[data-open="true"] { transform: translateX(-50%); clip-path: inset(-56px -56px -80px -56px round 8px); opacity: 1; visibility: visible;
+  transition: transform 260ms var(--ease-out), clip-path 300ms var(--ease-out), opacity 160ms var(--ease-out), visibility 0s; }
+.forge .fs-list > button { opacity: 0; transform: translateY(-4px); transition: opacity 120ms var(--ease-out), transform 120ms var(--ease-out), background 140ms; }
+.forge .fs-list[data-open="true"] > button { opacity: 1; transform: none; transition: opacity 220ms var(--ease-out) calc(60ms + var(--i) * 40ms), transform 260ms var(--ease-out) calc(60ms + var(--i) * 40ms), background 140ms; }
+.forge .fs-list button { width: 100%; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 9px 12px; border-radius: 5px; text-align: left; }
+.forge .fs-list button:hover { background: rgba(201, 169, 97, .08); }
+.forge .fs-list button[aria-current="true"] { background: rgba(201, 169, 97, .14); }
+.forge .fs-list b { font: var(--type-label-lg); letter-spacing: var(--track-label); color: var(--gold-hi); }
+.forge .fs-list .fs-note { grid-column: 1 / -1; margin-top: 2px; font: var(--type-body); color: var(--gold-text); }
+.forge .fs-list .fs-anchor { grid-column: 1 / -1; font: var(--type-meta); color: var(--gold-meta); }
+
+/* Hotspots: hidden until the pointer is over the sword; gone while orbiting or zooming */
+.forge .hot { position: absolute; z-index: 8; left: 0; top: 0; width: 44px; height: 44px; margin: -22px 0 0 -22px; display: grid; place-items: center; will-change: transform; }
+.forge .hot i { position: relative; width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--gold); background: rgba(18, 13, 9, .35); box-shadow: 0 0 0 1px rgba(0, 0, 0, .4), 0 0 10px rgba(201, 169, 97, .25); opacity: 0; transform: scale(.6); transition: opacity 200ms var(--ease-out), transform 260ms cubic-bezier(.2, .85, .25, 1.2), border-color 150ms; }
+.forge .hot i::before { content: ""; position: absolute; inset: 0; margin: auto; width: 6px; height: 6px; transform: rotate(45deg); background: var(--gold-hi); }
+.forge .hots[data-show="false"] .hot { pointer-events: none; }
+.forge .hots[data-show="false"] .hot i { transition-duration: 160ms, 160ms, 150ms; }
+.forge .hots[data-show="true"] .hot i { opacity: 1; transform: scale(1); animation: forge-breathe 2400ms ease-in-out 300ms infinite; }
+.forge .hots[data-show="true"] .hot:nth-child(2) i { transition-delay: 30ms; } .forge .hots[data-show="true"] .hot:nth-child(3) i { transition-delay: 60ms; }
+.forge .hots[data-show="true"] .hot:nth-child(4) i { transition-delay: 90ms; } .forge .hots[data-show="true"] .hot:nth-child(5) i { transition-delay: 120ms; }
+.forge .hots[data-show="true"] .hot:hover i { transform: scale(1.18); border-color: var(--gold-hi); animation: none; transition-delay: 0ms; }
+.forge .hot:active i { transform: scale(1.02); transition-duration: 70ms; }
+.forge .hlabel { position: absolute; left: 40px; top: 50%; font: var(--type-label-sm); letter-spacing: var(--track-label-sm); color: var(--gold-hi); padding: 5px 10px; border-radius: 4px; white-space: nowrap; pointer-events: none; opacity: 0; transform: translate(-6px, -50%); transition: opacity 160ms var(--ease-out), transform 200ms var(--ease-out); }
+.forge .hots[data-show="true"] .hot:hover .hlabel, .forge .hot:focus-visible .hlabel { opacity: 1; transform: translate(0, -50%); }
+.forge .hot:focus-visible i { opacity: 1; transform: scale(1); }
+@keyframes forge-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+
+/* Edit mode panels: variant row (bottom centre) and the inspector (right) */
+.forge .edit-layer { position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 260ms var(--ease-out); }
+.forge.focus .edit-layer { opacity: 1; transition-delay: 120ms; }
+.forge.focus .edit-layer > * { pointer-events: auto; }
+.forge .chooser { position: absolute; z-index: 9; left: 50%; bottom: 94px; transform: translateX(-50%); display: flex; gap: 6px; align-items: flex-start; }
+.forge .item { min-width: 84px; padding: 0 2px; text-align: center; }
+.forge .item .card { position: relative; width: 72px; height: 72px; margin: 0 auto; border-radius: 6px; display: grid; place-items: center; transition: transform 160ms var(--ease-out), border-color 160ms, box-shadow 200ms; color: var(--gold-hi); }
+.forge .item .card svg { width: 64px; height: 64px; }
+.forge .item .nm { display: block; margin-top: 7px; font: var(--type-label-sm); letter-spacing: var(--track-label); color: var(--gold); text-shadow: 0 1px 6px rgba(0, 0, 0, .8); white-space: nowrap; }
+.forge .item:hover .card { transform: translateY(-2px); }
+.forge .item:active .card { transform: scale(.97); transition-duration: 70ms; }
+.forge .item[aria-pressed="true"] .card { box-shadow: inset 0 1px 0 rgba(255, 236, 200, .25), inset 0 0 0 1px var(--gold-hi), 0 0 18px rgba(233, 212, 154, .25); }
+.forge .item[aria-pressed="true"] .nm { color: var(--gold-hi); }
+.forge .item:focus-visible { outline: none; }
+.forge .item:focus-visible .card { outline: 1px solid var(--gold-hi); outline-offset: 3px; }
+.forge .item.more .card, .forge .item.back .card { border-style: dashed; color: var(--gold); }
+.forge .item.back .card svg { width: 18px; height: 18px; }
+/* Off-period badge: a small "i" pinned to the card's corner; its tooltip says why */
+.forge .item .badge { position: absolute; top: -8px; right: -8px; width: 20px; height: 20px; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #2a1f15, #120d09); box-shadow: 0 0 0 2px rgba(18, 13, 9, .9), 0 2px 6px rgba(0, 0, 0, .6); color: var(--gold); cursor: help; transition: transform 160ms var(--ease-out), color 160ms; }
+.forge .item .badge svg { width: 20px; height: 20px; }
+.forge .item .badge::before { content: ""; position: absolute; inset: -6px; border-radius: 50%; }
+.forge .item .badge:hover { transform: scale(1.12); color: var(--gold-hi); }
+.forge .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.forge .item .count { font: var(--type-heading); letter-spacing: var(--track-heading); color: var(--gold-hi); }
+
+.forge .inspector { position: absolute; z-index: 9; right: 24px; top: 24px; width: 268px; max-height: calc(100% - 112px); overflow-y: auto; overflow-x: hidden; touch-action: pan-y; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: var(--gold-dim) transparent; padding: 18px 18px 6px; border-radius: 8px; animation: forge-panel 280ms var(--ease-out) backwards; }
+.forge .insp-kicker { display: block; font: var(--type-label-sm); letter-spacing: var(--track-label-sm); color: var(--gold-meta); }
+.forge .inspector h2 { margin: 6px 0 0; font: var(--type-subheading); letter-spacing: var(--track-heading); color: var(--gold-hi); }
+.forge .insp-era { display: block; margin-top: 2px; font: var(--type-meta); color: var(--gold); }
+.forge .insp-note { margin: 12px 0 14px; padding-top: 12px; border-top: 1px solid var(--gold-line); font: var(--type-body); color: var(--gold-text); text-wrap: pretty; }
+.forge .insp-after { margin: -6px 0 14px; font: var(--type-meta); color: var(--gold-meta); }
+.forge .insp-after a { color: var(--gold); text-decoration: underline; text-decoration-color: rgba(201, 169, 97, .35); text-underline-offset: 3px; transition: color 160ms, text-decoration-color 160ms; }
+.forge .insp-after a:hover { color: var(--gold-hi); text-decoration-color: var(--gold-hi); }
+.forge .insp-group { padding: 12px 0 14px; border-top: 1px solid var(--gold-line); }
+.forge .insp-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.forge .insp-row span { font: var(--type-label-sm); letter-spacing: var(--track-label-sm); color: var(--gold); }
+.forge .insp-row b { font: var(--type-meta); color: var(--gold-hi); }
+.forge .insp-swatches { display: flex; gap: 10px; flex-wrap: wrap; padding: 2px; }
+.forge .insp-seg { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+.forge .insp-list { grid-template-columns: 1fr; }
+.forge .insp-seg:not(.insp-list):has(> :nth-child(3):last-child) { grid-template-columns: repeat(3, 1fr); }
+.forge .seg { height: 32px; border-radius: 5px; border: 1px solid rgba(201, 169, 97, .26); background: rgba(14, 9, 5, .38); font: var(--type-label-sm); letter-spacing: var(--track-label); color: var(--gold); transition: border-color 160ms, color 160ms, background 160ms, transform 160ms var(--ease-out); }
+.forge .seg { position: relative; }
+/* The same period badge as on the cards, smaller, on the option's corner. */
+.forge .seg .badge { position: absolute; top: -7px; right: -7px; width: 16px; height: 16px; display: grid; place-items: center; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #2a1f15, #120d09); box-shadow: 0 0 0 1.5px rgba(18, 13, 9, .9), 0 2px 5px rgba(0, 0, 0, .6); color: var(--gold); cursor: help; transition: transform 160ms var(--ease-out), color 160ms; }
+.forge .seg .badge svg { width: 16px; height: 16px; }
+.forge .seg .badge:hover { transform: scale(1.12); color: var(--gold-hi); }
+.forge .seg:hover { border-color: var(--gold); color: var(--gold-hi); }
+.forge .seg:active { transform: scale(.97); transition-duration: 70ms; }
+.forge .seg[aria-pressed="true"] { border-color: var(--gold-hi); color: var(--gold-hi); background: linear-gradient(180deg, rgba(201, 169, 97, .22), rgba(201, 169, 97, .06)); }
+@keyframes forge-panel { from { opacity: 0; transform: translateX(10px); } }
+
+/* Tooltips */
+.forge .tooltip { position: fixed; z-index: 40; left: -999px; top: -999px; transform: translate(-50%, -100%); width: max-content; max-width: 280px; padding: 8px 12px 9px; border-radius: 6px; pointer-events: none; text-align: center; animation: forge-tip 180ms var(--ease-out) backwards; }
+.forge .tooltip b { display: block; font: var(--type-label-sm); letter-spacing: var(--track-label-sm); color: var(--gold-hi); }
+.forge .tooltip span { display: block; margin-top: 3px; font: var(--type-body); color: var(--gold-text); text-wrap: balance; }
+.forge .tooltip::after { content: ""; position: absolute; left: calc(50% + var(--arrow-x, 0px)); bottom: -5px; width: 8px; height: 8px; margin-left: -4px; transform: rotate(45deg); background: #120c07; border-right: 1px solid rgba(233, 200, 130, .3); border-bottom: 1px solid rgba(233, 200, 130, .3); }
+.forge .tooltip[data-place="below"] { transform: translate(-50%, 0); animation-name: forge-tip-below; }
+.forge .tooltip[data-place="below"]::after { bottom: auto; top: -5px; transform: rotate(225deg); }
+@keyframes forge-tip { from { opacity: 0; transform: translate(-50%, calc(-100% + 4px)); } }
+@keyframes forge-tip-below { from { opacity: 0; transform: translate(-50%, -4px); } }
+
+/* Focus navigation */
+.forge .nav { position: absolute; z-index: 12; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(14px); opacity: 0; pointer-events: none; transition: opacity 360ms var(--ease-out) 120ms, transform 360ms var(--ease-out) 120ms; }
+.forge.focus .nav { opacity: 1; pointer-events: auto; transform: translateX(-50%); }
+.forge .navbar { display: flex; align-items: center; gap: 4px; padding: 6px; border-radius: 6px; }
+.forge .step { height: 36px; padding: 0 12px; display: flex; align-items: center; gap: 8px; font: var(--type-label); letter-spacing: var(--track-label); color: var(--gold); border-radius: 6px; transition: color 160ms, background 160ms, transform 160ms var(--ease-out); }
+.forge .step:hover { color: var(--gold-hi); background: rgba(201, 169, 97, .08); }
+.forge .step:active { transform: scale(.97); transition-duration: 70ms; }
+.forge .step svg { width: 14px; height: 14px; }
+.forge .cur { min-width: 170px; text-align: center; padding: 0 12px; border-left: 1px solid var(--gold-line); border-right: 1px solid var(--gold-line); }
+.forge .cur b { display: block; font: var(--type-subheading); letter-spacing: var(--track-label-lg); color: var(--gold-hi); }
+.forge .pips { display: flex; justify-content: center; gap: 6px; margin-top: 5px; }
+.forge .pips i { width: 5px; height: 5px; transform: rotate(45deg); background: var(--gold-dim); opacity: .5; }
+.forge .pips i.on { background: var(--gold-hi); opacity: 1; }
+/* Age slider: a gold line with four stops; the thumb settles onto a stop when released near it */
+.forge .age { padding: 4px 22px 2px; }   /* inset, so the end names can centre on their stops */
+.forge .age-track { position: relative; height: 44px; margin: -8px 0; cursor: pointer; touch-action: none; outline: none; }
+.forge .age-track:focus-visible .age-thumb { box-shadow: 0 0 0 2px #120d09, 0 0 0 3.5px var(--gold-hi); }
+.forge .age-line, .forge .age-fill { position: absolute; left: 0; right: 0; top: 21px; height: 2px; border-radius: 1px; background: var(--gold-line); }
+.forge .age-fill { background: linear-gradient(90deg, var(--gold-dim), var(--gold)); transform-origin: left; }
+.forge .age-stop { position: absolute; top: 18px; width: 8px; height: 8px; margin-left: -4px; transform: rotate(45deg); background: #120d09; border: 1px solid var(--gold-dim); transition: background 160ms, border-color 160ms; }
+.forge .age-stop[data-on="true"] { background: var(--gold); border-color: var(--gold-hi); }
+.forge .age-thumb { position: absolute; top: 14px; width: 16px; height: 16px; margin-left: -8px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, var(--gold-hi), var(--gold) 55%, var(--gold-dim)); box-shadow: 0 0 0 2px #120d09, 0 2px 8px rgba(0, 0, 0, .6), 0 0 14px rgba(233, 212, 154, .3); transition: transform 160ms var(--ease-out); }
+.forge .age-thumb[data-drag="true"] { transform: scale(1.18); }
+.forge .age-names { position: relative; height: 22px; }
+.forge .age-names button { position: absolute; top: 1px; transform: translateX(-50%); font: var(--type-meta); font-style: italic; color: var(--gold-dim); white-space: nowrap; transition: color 160ms; }
+.forge .age-names button:hover, .forge .age-names button[data-on="true"] { color: var(--gold-hi); }
+.forge .dot { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--gold-line); transition: transform 160ms var(--ease-out), box-shadow 160ms; }
+.forge .dot:hover { transform: translateY(-2px); }
+.forge .dot:active { transform: scale(.94); }
+.forge .dot[aria-pressed="true"] { box-shadow: 0 0 0 2px #120d09, 0 0 0 3.5px var(--gold-hi); }
+.forge .dot:focus-visible { outline: 1px solid var(--gold-hi); outline-offset: 5px; }
+
+/* Archetypes */
+.forge .arch { position: absolute; z-index: 10; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; align-items: flex-end; }
+.forge.focus .arch { transform: translateX(-50%) translateY(16px); }
+/* Type cards: square glass with the sword on a diagonal (pommel, grip, guard and the top of the blade),
+   the name on a brass plate that forms the card's base. */
+.forge .tcard { box-sizing: border-box; width: 92px; height: 92px; padding: 0; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; transition: transform 150ms var(--ease-out); }
+.forge .tcard img { position: absolute; left: 50%; top: 4px; width: 62px; height: 62px; transform: translateX(-50%); object-fit: contain; filter: drop-shadow(0 3px 5px rgba(0, 0, 0, .55)); }
+/* The plate runs flush to the card's edges, over its border, as the card's base. */
+.forge .tcard .plate { position: relative; width: calc(100% + 2px); flex: none; margin: 0 -1px -1px; padding: 5px 4px 4px; border-radius: 0 0 6px 6px; text-align: center; white-space: nowrap; font: var(--type-label-sm); letter-spacing: .03em; text-transform: uppercase; color: #1a1007;
+  background: linear-gradient(180deg, #d6ba79, #b8954f 60%, #9c7a3c); box-shadow: inset 0 1px 0 rgba(255, 240, 200, .45), 0 -1px 0 rgba(0, 0, 0, .35); transition: background 200ms; }
+@media (hover: hover) and (pointer: fine) { .forge .tcard:hover { transform: translateY(-2px); } .forge .tcard:hover::before { opacity: 1; } }
+.forge .tcard[aria-pressed="true"] { transform: translateY(-3px); box-shadow: inset 0 1px 0 rgba(255, 236, 200, .25), inset 0 0 0 1px var(--gold-hi), 0 0 16px rgba(233, 212, 154, .22); }
+.forge .tcard[aria-pressed="true"]::before { opacity: 0; }
+.forge .tcard[aria-pressed="true"] .plate { background: linear-gradient(180deg, #f4e1a8, #d4ae5c 60%, #b58f45); }
+.forge .tcard:active { transform: translateY(-1px) scale(.97); transition-duration: 70ms; }
+.forge .tcard:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 4px; }
+
+/* History & use: a scroll that unrolls between two painted rollers. The roller image is
+   sliced in three (handles fixed, rolled vellum stretched), the vellum tiles, the side edges are deckled. */
+.forge .scroll { --roll-h: 52px; --cap: calc(var(--roll-h) * 216 / 128); position: absolute; z-index: 20; left: calc(14px + var(--cap)); top: 36px; width: min(480px, calc(40vw - var(--cap))); pointer-events: none; filter: drop-shadow(0 14px 22px rgba(0, 0, 0, .5)); }
+.forge .scroll.open { pointer-events: auto; }
+.forge .rod { position: relative; z-index: 2; height: var(--roll-h); margin: 0 calc(-1 * var(--cap)); border: solid transparent; border-width: 0 var(--cap); border-image: var(--roller) 0 216 fill / 0 var(--cap) stretch; filter: drop-shadow(0 6px 7px rgba(0, 0, 0, .55)) drop-shadow(0 1px 1px rgba(0, 0, 0, .4)); opacity: 0; transition: opacity 200ms; }
+.forge .scroll.open .rod { opacity: 1; }
+.forge .sheet { position: relative; margin: calc(var(--roll-h) * -.5) calc(var(--cap) * -.18); padding: calc(var(--roll-h) * .5 + 30px) 38px calc(var(--roll-h) * .5 + 22px); color: var(--ink);
+  background: linear-gradient(rgba(255, 246, 226, .14), rgba(255, 246, 226, .14)), linear-gradient(90deg, rgba(104, 66, 30, .30), rgba(104, 66, 30, 0) 8%, rgba(104, 66, 30, 0) 92%, rgba(104, 66, 30, .30)), var(--paper) center top / 384px repeat, #EBD7AE;
+  background-attachment: local;
+  box-shadow: inset 0 22px 18px -14px rgba(58, 34, 14, .55), inset 0 -22px 18px -14px rgba(58, 34, 14, .55);
+  -webkit-mask: var(--edge-l) left top / 12px 180px repeat-y, var(--edge-r) right top / 12px 180px repeat-y, linear-gradient(#000, #000) center / calc(100% - 22px) 100% no-repeat;
+  mask: var(--edge-l) left top / 12px 180px repeat-y, var(--edge-r) right top / 12px 180px repeat-y, linear-gradient(#000, #000) center / calc(100% - 22px) 100% no-repeat;
+  clip-path: inset(0 0 100% 0); max-height: calc(100vh - 196px); overflow-y: auto; scrollbar-width: none; }
+/* No scrollbar: the text running under the lower roller shows there is more; wheel, touch and keys scroll it. */
+.forge .sheet h2 { margin: 0; font: var(--type-heading); letter-spacing: var(--track-heading); color: var(--ink); text-align: center; text-wrap: balance; }
+.forge .sheet .era { margin: 6px 0 14px; text-align: center; font: var(--type-body); font-style: italic; color: #5B4A33; }
+.forge .sheet .orn { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 2px 0 18px; }
+.forge .sheet .orn::before, .forge .sheet .orn::after { content: ""; width: 72px; height: 1px; background: linear-gradient(90deg, transparent, #8E7A58); }
+.forge .sheet .orn::after { transform: scaleX(-1); }
+.forge .sheet .orn i { width: 7px; height: 7px; transform: rotate(45deg); background: var(--rubric); box-shadow: 0 0 0 3px rgba(122, 42, 30, .14); }
+.forge .sheet h3 { margin: 22px 0 8px; font: var(--type-label); letter-spacing: var(--track-label-sm); color: var(--rubric); }
+.forge .sheet p { margin: 0 0 10px; font: var(--type-body-lg); color: #2B2117; text-wrap: pretty; hanging-punctuation: first; }
+.forge .sheet p.lead::first-letter { float: left; font: 600 62px/.8 var(--display); color: var(--rubric); margin: 7px 8px 0 0; text-shadow: 0 1px 0 rgba(255, 245, 220, .5); }
+.forge .sheet dl { margin: 0; display: grid; grid-template-columns: 82px 1fr; gap: 6px 12px; font: var(--type-body); }
+.forge .sheet dt { font: var(--type-label-sm); letter-spacing: var(--track-label); color: #5B4A33; padding-top: 4px; }
+.forge .sheet dd { margin: 0; }
+.forge .sheet p.after { margin-top: -4px; font: var(--type-meta); color: #5B4A33; }
+.forge .sheet p.after a { color: var(--rubric); text-decoration: underline; text-decoration-color: rgba(122, 42, 30, .35); text-underline-offset: 3px; }
+.forge .sheet p.after a:hover { text-decoration-color: var(--rubric); }
+.forge .sheet .foot { margin-top: 18px; font: var(--type-meta); font-style: italic; color: #7A6A50; text-align: center; }
+.forge .sheet .close { position: absolute; top: calc(var(--roll-h) * .5 + 14px); right: 18px; width: 32px; height: 32px; display: grid; place-items: center; color: #5B4A33; border-radius: 6px; border: 1px solid transparent; transition: color 160ms, border-color 160ms, transform 160ms var(--ease-out); }
+.forge .sheet .close:hover { color: var(--rubric); border-color: rgba(122, 42, 30, .35); }
+.forge .sheet .close:active { transform: scale(.94); }
+
+/* ── Glass: dark amber liquid glass, lit by the forge. Three densities: small surfaces (cards, bars,
+   buttons), panes (inspector, Form list) and dense (tooltips, labels: more fill, so text over the scene stays
+   crisp). A specular rim, brightest at the top left, takes the place of a border; the fire's warm light
+   leaks in from the lower left, and a fine grain keeps the glass from reading as plastic. */
+.forge {
+  --g-blur: blur(16px) saturate(1.7) brightness(.92); --g-pane-blur: blur(26px) saturate(1.9) brightness(.88); --g-dense-blur: blur(18px) saturate(1.5) brightness(.9);
+  --rim-in: inset 0 1px 0 rgba(255, 236, 200, .2), inset 0 -1px 0 rgba(0, 0, 0, .3);
+  --ember: radial-gradient(140% 90% at 0% 100%, rgba(255, 120, 40, .06), transparent 60%);
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .9 0 0 0 0 .75 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* Touch devices and small screens: a lighter blur (the scene behind costs the GPU enough there). */
+@media (pointer: coarse), (max-width: 700px) {
+  .forge { --g-blur: blur(10px) saturate(1.6); --g-pane-blur: blur(14px) saturate(1.8); --g-dense-blur: blur(10px) saturate(1.4); }
+}
+.forge .glass, .forge .btn { -webkit-backdrop-filter: var(--g-blur); backdrop-filter: var(--g-blur); border-color: transparent; }
+.forge .glass { background: var(--grain), var(--ember), var(--glass); }
+.forge .glass::before, .forge .btn::before { content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(150deg, rgba(255, 244, 222, .9), rgba(233, 200, 130, .42) 22%, rgba(201, 169, 97, .1) 55%, rgba(201, 169, 97, .14) 80%, rgba(255, 228, 180, .5));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
+.forge .btn { position: relative; background: var(--grain), var(--ember), var(--glass); }
+.forge .glass::before, .forge .btn::before { opacity: .75; transition: opacity 160ms var(--ease-out); }
+.forge .btn:hover::before, .forge .btn.primary::before, .forge .item:hover .card::before { opacity: 1; }
+.forge .btn[aria-disabled="true"]::before { opacity: .45; }
+/* Selected: the gold ring is the frame, so the rim steps back. */
+.forge .btn[aria-pressed="true"]::before, .forge .item[aria-pressed="true"] .card::before { opacity: 0; }
+.forge .item.more .card, .forge .item.back .card { border-color: var(--gold-line); }
+.forge .item.more .card::before, .forge .item.back .card::before { display: none; }
+.forge .glass.pane { -webkit-backdrop-filter: var(--g-pane-blur); backdrop-filter: var(--g-pane-blur);
+  background: var(--grain), radial-gradient(130% 70% at 0% 100%, rgba(255, 120, 40, .07), transparent 62%), linear-gradient(160deg, rgba(255, 214, 160, .06), rgba(34, 22, 12, .5) 28%, rgba(18, 12, 7, .58) 70%, rgba(12, 8, 4, .64));
+  box-shadow: inset 1px 1px 0 rgba(255, 244, 222, .34), inset 0 0 0 1px rgba(233, 200, 130, .2), inset 0 -1px 0 rgba(0, 0, 0, .4), inset 0 0 22px rgba(255, 200, 140, .06), 0 22px 48px rgba(0, 0, 0, .5); }
+.forge .glass.pane::before { display: none; }
+.forge .glass.dense { -webkit-backdrop-filter: var(--g-dense-blur); backdrop-filter: var(--g-dense-blur);
+  background: var(--grain), linear-gradient(160deg, rgba(40, 27, 15, .86), rgba(16, 11, 6, .9)); }
+
+/* Phones fold the overview's actions into one menu (see MoreMenu). */
+.forge .phone-only { display: none; }
+.forge span.wide-only { display: contents; }
+.forge .more { position: relative; }
+.forge .more-list { position: absolute; top: calc(100% + 8px); right: 0; z-index: 30; min-width: 196px; padding: 6px; display: flex; flex-direction: column; border-radius: 8px;
+  transform-origin: 100% 0; transform: translateY(-4px) scale(.96); opacity: 0; visibility: hidden;
+  transition: transform 140ms var(--ease-out), opacity 120ms var(--ease-out), visibility 0s linear 140ms; }
+.forge .more-list[data-open="true"] { transform: none; opacity: 1; visibility: visible; transition: transform 220ms var(--ease-out), opacity 160ms var(--ease-out), visibility 0s; }
+.forge .more-list button { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 5px; font: var(--type-label); letter-spacing: var(--track-label); color: var(--gold-hi); text-align: left; transition: background 140ms; }
+.forge .more-list button svg { width: 18px; height: 18px; color: var(--gold); }
+.forge .more-list button:active { background: rgba(201, 169, 97, .12); }
+.forge .more-list button[aria-disabled="true"] { opacity: .42; }
+/* Below 1180 px the corner buttons move to the top corners, leaving the bottom to the type row. */
+@media (max-width: 1179px) {
+  .forge .corner-l, .forge .corner-r:not(.focus-only) { top: 24px; bottom: auto; }
+}
+/* Narrow screens: the cards shrink and the row scrolls sideways, snapping to each sword. */
+@media (max-width: 700px) {
+  .forge .title h1 { font: var(--type-heading); letter-spacing: var(--track-title); }
+  .forge .corner-l { left: 14px; } .forge .corner-r:not(.focus-only) { right: 14px; }
+  .forge .corner-l .btn.history { width: 40px; padding: 0; }
+  .forge .corner-l .btn.history span { display: none; }
+  .forge .phone-only { display: block; }
+  .forge .wide-only, .forge span.wide-only { display: none; }
+  /* The title shrinks with the screen so it always clears the two corner buttons (40 px + margins each). */
+  /* Centred across the whole width (left: 50% alone would leave it only the right half to grow into). */
+  .forge .title { top: 26px; left: 66px; right: 66px; transform: none; }
+  .forge.focus .title { transform: translateY(-12px); }
+  .forge .title h1 { font-size: min(22px, 5.4vw); letter-spacing: .08em; overflow: hidden; text-overflow: ellipsis; }
+  .forge .title .formsw { margin-top: 16px; }
+  .forge .corner-l, .forge .corner-r:not(.focus-only) { top: 12px; }
+  .forge .arch { left: 0; right: 0; bottom: 16px; transform: none; overflow-x: auto; overflow-y: hidden; touch-action: pan-x; overscroll-behavior-x: contain; padding: 10px 16px 4px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .forge.focus .arch { transform: translateY(16px); }
+  .forge .tcard { zoom: .8; scroll-snap-align: center; flex: none; }
+  /* Edit mode on phones: one bar under the sheet and as wide as it: Back to default as a square icon
+     button, Done filling the rest (a wide primary action, its secondary beside it). */
+  .forge .corner-r.focus-only { left: 8px; right: 8px; bottom: 12px; display: flex; gap: 8px; }
+  .forge .corner-r.focus-only .btn { height: 48px; }
+  .forge .corner-r.focus-only .btn.icon { width: 48px; }
+  .forge .corner-r.focus-only .btn.primary { flex: 1; }
+}
+
+/* Phone edit sheet (PhoneSheet): its height follows its content; opened, the details scroll inside it. */
+.forge .psheet { position: absolute; z-index: 9; left: 8px; right: 8px; bottom: 68px; display: flex; flex-direction: column; max-height: 56%; padding: 0 0 12px; border-radius: 18px; }
+.forge .ps-handle { flex: none; width: 100%; height: 24px; display: flex; align-items: center; justify-content: center; touch-action: none; cursor: grab; }
+.forge .ps-handle .grab { width: 34px; height: 4px; border-radius: 2px; background: rgba(233, 212, 154, .38); }
+.forge .ps-handle:focus-visible { outline-offset: -4px; }
+.forge .ps-head { position: relative; z-index: 2; flex: none; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; padding: 0 6px 6px; }
+/* What scrolls under the header and the variants melts away under a short fade, not a hard edge. */
+.forge .ps-more > div { -webkit-mask: linear-gradient(transparent, #000 18px); mask: linear-gradient(transparent, #000 18px); }
+.forge .ps-head b { font: var(--type-subheading); letter-spacing: var(--track-label-lg); color: var(--gold-hi); text-transform: uppercase; }
+.forge .ps-head .step { height: 32px; padding: 0 8px; font: var(--type-label-sm); }
+.forge .ps-head .step:last-child { justify-self: end; }
+.forge .psheet .chooser { position: relative; inset: auto; z-index: 1; flex: none; transform: none; justify-content: flex-start; overflow-x: auto; overflow-y: hidden; touch-action: pan-x; overscroll-behavior-x: contain; padding: 10px 12px 2px; scrollbar-width: none; scroll-snap-type: x proximity; }
+.forge .psheet .chooser .item { flex: none; scroll-snap-align: start; }
+.forge .ps-more { display: grid; grid-template-rows: 0fr; min-height: 0; flex: 0 1 auto; transition: grid-template-rows 300ms var(--ease-out); }
+.forge .psheet[data-open="true"] .ps-more { grid-template-rows: 1fr; }
+.forge .ps-more > div { min-height: 0; overflow-y: auto; overflow-x: hidden; touch-action: pan-y; overscroll-behavior: contain; scrollbar-width: none; }
+.forge .inspector.embedded { position: static; width: auto; max-height: none; overflow: visible; padding: 10px 16px 0; animation: none; }
+.forge .inspector.embedded .insp-kicker { display: none; }
+.forge .inspector.embedded h2 { margin-top: 2px; }
+
+/* Tablets: the room around the scroll is a veil; a tap on it closes the scroll. */
+.forge .scroll-veil { display: none; position: absolute; inset: 0; z-index: 19; background: rgba(5, 3, 2, .38); opacity: 0; pointer-events: none; transition: opacity 260ms var(--ease-out); }
+.forge.reading .scroll-veil { opacity: 1; pointer-events: auto; }
+/* The seal that closes the scroll: red wax pressed with a cross. */
+.forge .sheet .close.seal { top: calc(var(--roll-h) * .5 + 12px); right: 14px; width: 36px; height: 36px; border: 0; border-radius: 47% 53% 50% 48% / 52% 46% 54% 48%; color: #f6dcc6;
+  background: radial-gradient(circle at 36% 30%, #c0443a, #8d2318 52%, #5f150e 86%);
+  box-shadow: inset 0 2px 2px rgba(255, 190, 170, .35), inset 0 -3px 5px rgba(40, 6, 3, .55), inset 0 0 0 3px rgba(120, 28, 18, .9), inset 0 0 0 4px rgba(255, 170, 150, .22), 0 0 0 2px #6a1810, 0 3px 6px rgba(40, 14, 6, .45);
+  transition: transform 160ms var(--ease-out), filter 160ms; }
+.forge .sheet .close.seal svg { width: 18px; height: 18px; filter: drop-shadow(0 1px 0 rgba(60, 10, 4, .7)); }
+.forge .sheet .close.seal:hover { filter: brightness(1.08); border-color: transparent; color: #fff0e2; }
+.forge .sheet .close.seal:active { transform: scale(.94) rotate(-4deg); }
+.forge .sheet .close.seal:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 3px; }
+
+/* Tablets and phones: the scroll opens alone in the middle of the screen; the sword and the overview step
+   aside (the text is long, so it gets the whole stage). Its seal closes it. */
+@media (max-width: 1179px) {
+  .forge .scroll { --roll-h: 44px; left: 50%; top: max(20px, 4vh); width: min(660px, calc(100vw - 2 * var(--cap) - 8px)); translate: -50% 0; }
+  .forge .scroll-veil { display: block; }
+  .forge .sheet { max-height: calc(100dvh - 2 * max(20px, 4vh) - var(--roll-h)); padding-left: 30px; padding-right: 30px; }
+  .forge.reading .corner-l { opacity: 0; pointer-events: none; }
+}
+@media (max-width: 700px) {
+  /* Phones: the scroll spans the whole screen like an open document. The rollers sit just off its top and
+     bottom edges, so unrolling runs the lower roller down and out of sight, and rolling brings it back. */
+  .forge .scroll { --roll-h: 40px; left: 0; top: calc(-1 * var(--roll-h)); width: 100vw; translate: none; }
+  .forge .scroll .rod { margin: 0; border-width: 0; border-image: none; background: var(--roller) center / auto 100% no-repeat; }
+  .forge .sheet { margin: calc(var(--roll-h) * -.5) 0; height: calc(100dvh + var(--roll-h)); max-height: none;
+    padding: calc(var(--roll-h) * .5 + env(safe-area-inset-top) + 26px) 24px calc(var(--roll-h) * .5 + env(safe-area-inset-bottom) + 28px); }
+  .forge .sheet .close.seal { top: calc(var(--roll-h) * .5 + env(safe-area-inset-top) + 16px); right: 16px; }
+  .forge .sheet h2 { padding: 0 44px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .forge *, .forge *::before, .forge *::after { animation: none !important; transition-duration: 1ms !important; transition-delay: 0s !important; }
+}

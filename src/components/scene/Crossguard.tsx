@@ -1,223 +1,128 @@
+import type { ArchetypeKey, GuardStyle, GuardTerminal, HardwareTone } from '../../store/configStore';
+import { surface } from './surface';
 import * as THREE from 'three';
 import { useEffect, useMemo } from 'react';
-import type { ArchetypeKey, GuardStyle } from '../../store/configStore';
-import { getGuardTerminalRecipe } from '../../presets/archetypeDetails';
+import { turnedGeometry } from './turned';
+import { guardDef, type GuardDef } from '../../presets/guardShapes';
 
 // Central slot height used by Sword.tsx for assembly positioning.
 export const GUARD_HEIGHT = 0.018;
 
-// Cross-section dimensions at the centre of the guard.
-const SECTION_HALF_SPAN  = 0.009; // Y half-extent (blade direction)
-const SECTION_HALF_REACH = 0.007; // Z half-extent (front-to-back depth)
 
-// Normalized 8-point octagon (chamfered rectangle) in the YZ plane.
-// Listed CCW when viewed from +X (the right-tip direction).
-// [y_norm, z_norm] — will be scaled by SECTION_HALF_SPAN and SECTION_HALF_REACH.
-const CF = 0.60; // chamfer fraction
-const CROSS_SECTION: [number, number][] = [
-  [-CF, -1], [ CF, -1],  // bottom face
-  [ 1, -CF], [ 1,  CF],  // back face
-  [ CF,  1], [-CF,  1],  // top face
-  [-1,  CF], [-1, -CF],  // front face
-];
-const N_CS = CROSS_SECTION.length; // 8
-
-interface GuardParams {
-  width:    number; // total guard length
-  tipScale: number; // cross-section scale at tip — <1 taper, >1 flare
-  tipY:     number; // path Y offset at tip (positive = toward blade)
-  tipZ:     number; // path Z offset at tip (positive = toward viewer)
-  segments: number;
-  sectionScale?: number;
+// Cross-section: a rectangle with rounded corners (an arc of CORNER_STEPS per corner), so each long face
+// stays flat and every arris catches a thin line of light. Listed CCW seen from +X, in [y, z].
+const CORNER_FRACTION = 0.32;   // corner radius as a share of the smaller half-extent
+const CORNER_STEPS = 4;
+function section(sy: number, sz: number, round = CORNER_FRACTION): [number, number][] {
+  const r = Math.min(sy, sz) * Math.min(0.999, round), pts: [number, number][] = [];
+  const centres: [number, number, number][] = [[sy - r, -(sz - r), -Math.PI / 2], [sy - r, sz - r, 0], [-(sy - r), sz - r, Math.PI / 2], [-(sy - r), -(sz - r), Math.PI]];
+  for (const [cy, cz, a0] of centres) {
+    for (let k = 0; k <= CORNER_STEPS; k++) { const a = a0 + (k / CORNER_STEPS) * (Math.PI / 2); pts.push([cy + r * Math.cos(a), cz + r * Math.sin(a)]); }
+  }
+  return pts;
 }
+const N_CS = 4 * (CORNER_STEPS + 1);
+// The arm ends are domed: a few shrinking rings past each tip before the end cap.
+const END_RINGS = [0.45, 0.75, 0.93];
+// Engraving runs along the arms: u in tiles along the guard, v across the face (0–1 from edge to edge).
+const ENGRAVE_TILE = 0.028;   // m per repeat: matches the scroll band's 1.5 : 1 proportion on an 18 mm face
 
-const GUARD_PARAMS: Record<GuardStyle, GuardParams> = {
-  // Chamfered bar, arms taper toward the ends.
-  straight: { width: 0.220, tipScale: 0.60, tipY: 0,      tipZ: 0,      segments: 20 },
-  // Same proportions; arms follow a parabolic curve upward toward the blade.
-  curved:   { width: 0.220, tipScale: 0.62, tipY:  0.022, tipZ: 0,      segments: 24 },
-  // Arms taper aggressively so the scroll terminals read as the visual endpoint.
-  ornate:   { width: 0.220, tipScale: 0.20, tipY: 0,      tipZ: 0,      segments: 20 },
-  // Wider, flared tips, double-axis sweep (upward + forward) for dramatic flair.
-  fantasy:  { width: 0.260, tipScale: 1.25, tipY:  0.030, tipZ: 0.012,  segments: 28 },
-};
-
-const VIKING_GUARD_PARAMS: GuardParams = {
-  width: 0.165,
-  tipScale: 0.82,
-  tipY: 0,
-  tipZ: 0,
-  segments: 18,
-  sectionScale: 1.28,
-};
-
-const ARMING_GUARD_PARAMS: GuardParams = {
-  width: 0.205,
-  tipScale: 0.68,
-  tipY: 0.010,
-  tipZ: 0,
-  segments: 22,
-  sectionScale: 0.92,
-};
-
-const LONGSWORD_GUARD_PARAMS: GuardParams = {
-  width: 0.238,
-  tipScale: 0.56,
-  tipY: 0.012,
-  tipZ: 0,
-  segments: 24,
-  sectionScale: 0.96,
-};
-
-const BASTARD_GUARD_PARAMS: GuardParams = {
-  width: 0.232,
-  tipScale: 0.48,
-  tipY: 0.029,
-  tipZ: 0,
-  segments: 26,
-  sectionScale: 0.90,
-};
-
-const FALCHION_GUARD_PARAMS: GuardParams = {
-  width: 0.206,
-  tipScale: 0.52,
-  tipY: 0.026,
-  tipZ: 0,
-  segments: 24,
-  sectionScale: 0.88,
-};
-
-const ESTOC_GUARD_PARAMS: GuardParams = {
-  width: 0.228,
-  tipScale: 0.42,
-  tipY: 0.006,
-  tipZ: 0,
-  segments: 24,
-  sectionScale: 0.58,
-};
-
-const GREATSWORD_GUARD_PARAMS: GuardParams = {
-  width: 0.285,
-  tipScale: 0.50,
-  tipY: 0.034,
-  tipZ: 0,
-  segments: 30,
-  sectionScale: 1.04,
-};
-
-function getGuardParams(style: GuardStyle, archetype: ArchetypeKey): GuardParams {
-  if (archetype === 'armingSword' && style === 'straight') {
-    return ARMING_GUARD_PARAMS;
-  }
-  if (archetype === 'longsword' && style === 'straight') {
-    return LONGSWORD_GUARD_PARAMS;
-  }
-  if (archetype === 'bastardSword' && style === 'curved') {
-    return BASTARD_GUARD_PARAMS;
-  }
-  if (archetype === 'falchion' && style === 'curved') {
-    return FALCHION_GUARD_PARAMS;
-  }
-  if (archetype === 'estoc' && style === 'straight') {
-    return ESTOC_GUARD_PARAMS;
-  }
-  if (archetype === 'greatsword' && style === 'curved') {
-    return GREATSWORD_GUARD_PARAMS;
-  }
-  if (archetype === 'vikingSword' && style === 'straight') {
-    return VIKING_GUARD_PARAMS;
-  }
-  return GUARD_PARAMS[style];
-}
-
-// Onion/scroll finial profile for the ornate terminal (LatheGeometry, Y = axis).
-const SCROLL_PROFILE = [
-  new THREE.Vector2(0.000,  0),
-  new THREE.Vector2(0.004,  0.003),
-  new THREE.Vector2(0.009,  0.008),
-  new THREE.Vector2(0.010,  0.013), // max width
-  new THREE.Vector2(0.008,  0.018),
-  new THREE.Vector2(0.010,  0.023), // scroll bump
-  new THREE.Vector2(0.006,  0.027),
-  new THREE.Vector2(0,      0.026),
+// Turned (baluster) finial for an arm tip of 6 mm half-section, as [radius, along the arm]: a neck, a bead,
+// a swelling bulb and a small button. Scaled to the arm's real tip and turned around the arm (axis X).
+const FINIAL_PROFILE: [number, number][] = [
+  [0, 0], [0.0058, 0], [0.0048, 0.002], [0.0072, 0.0042], [0.0072, 0.0056], [0.0046, 0.0074],
+  [0.0068, 0.0108], [0.0092, 0.0148], [0.0086, 0.0186], [0.0052, 0.0216], [0.0036, 0.0232], [0.0042, 0.0246], [0, 0.0262],
 ];
 
-function buildGuardGeometry(style: GuardStyle, archetype: ArchetypeKey): THREE.BufferGeometry {
-  const { width, tipScale, tipY, tipZ, segments, sectionScale = 1 } = getGuardParams(style, archetype);
+const FLARE = 1.5, HOOK = 0.019;
+const ease2 = (a: number, b: number, x: number) => { const k = Math.max(0, Math.min(1, (x - a) / (b - a))); return k * k; };
+// Where an arm is at u (0 centre, 1 tip) on side ±1: its bend toward the blade and its front-back offset.
+const bendAt = (d: GuardDef, u: number) => (d.linear ? d.tipY * u : d.tipY * u * u);
+const recurveAt = (d: GuardDef, u: number, side: number) => side * (d.recurve ?? 0) * u * u;
+
+/** Where the arm ends and how thick it is there (for placing terminals). */
+function armEnd(d: GuardDef, terminal: GuardTerminal) {
+  const flare = terminal === 'flared' ? 1 + FLARE : 1;
+  return { x: d.width / 2, y: bendAt(d, 1) + (terminal === 'hooked' ? HOOK : 0), z: d.recurve ?? 0, sy: d.secY * d.tipScale * flare, sz: d.secZ * d.tipScale * (terminal === 'flared' ? 0.7 : 1) };
+}
+
+function buildGuardGeometry(d: GuardDef, terminal: GuardTerminal): THREE.BufferGeometry {
+  const { width, tipScale } = d, steps = 72;
+  const flared = terminal === 'flared', hooked = terminal === 'hooked';
+  // Spatulate ends broaden in the blade's direction and thin front to back; hooked ends turn toward the blade.
+  const flareAt = (u: number) => (flared ? ease2(0.62, 1, u) : 0);
+  const hookAt = (u: number) => (hooked ? HOOK * ease2(0.66, 1, u) : 0);
+  // Hooked arms keep their thickness to the end (no thin, whippy tip) and finish in a small knob.
+  const tipK = hooked ? Math.max(tipScale, 0.86) : tipScale, knob = hooked ? 1.22 : 1;
+  // Sections stand upright (in y–z) while the arm bends toward the blade: where it runs steeply, an upright
+  // section of the arm's height cuts it on a slant and the arm looks thin. Grow the section by the slope.
+  const yAt = (u: number) => bendAt(d, u) + hookAt(u);
+  const slant = (u: number) => { const h = 0.004, dy = (yAt(Math.min(1, u + h)) - yAt(Math.max(0, u - h))) / (Math.min(1, u + h) - Math.max(0, u - h)); return Math.min(1.7, Math.sqrt(1 + (dy / (width / 2)) ** 2)); };
+  const engraveUv: number[] = [];
+  const ringAt = (x: number, py: number, pz: number, sy: number, sz: number) =>
+    section(sy, sz, d.round).map(([y, z]) => { engraveUv.push(x / ENGRAVE_TILE, 0.5 + 0.5 * (y / sy)); return new THREE.Vector3(x, py + y, pz + z); });
 
   const rings: THREE.Vector3[][] = [];
-
-  for (let i = 0; i <= segments; i++) {
-    const t  = i / segments;
-    const x  = (t - 0.5) * width;
-    const u  = Math.abs(2 * t - 1);  // 0 at centre, 1 at tips
-    const u2 = u * u;
-
-    const py = tipY * u2;
-    const pz = tipZ * u2;
-    const sc = 1.0 - u * (1.0 - tipScale);
-    const sy = SECTION_HALF_SPAN  * sectionScale * sc;
-    const sz = SECTION_HALF_REACH * sectionScale * sc;
-
-    const ring = CROSS_SECTION.map(([yn, zn]) =>
-      new THREE.Vector3(x, py + yn * sy, pz + zn * sz)
-    );
-    rings.push(ring);
+  const tip = (side: -1 | 1) => {
+    const sy = d.secY * tipK * knob * (1 + FLARE * flareAt(1)), sz = d.secZ * tipK * knob * (1 - 0.3 * flareAt(1)), len = Math.min(sy, sz) * 0.9;
+    const ty = bendAt(d, 1) + hookAt(1), tz = recurveAt(d, 1, side);
+    // Built in the order the rings are laid (left end: outermost first), so the engraving coordinates line up.
+    return (side < 0 ? [...END_RINGS].reverse() : END_RINGS).map((k) => ringAt(side * (width / 2 + k * len), ty, tz, sy * Math.sqrt(1 - k * k), sz * Math.sqrt(1 - k * k)));
+  };
+  rings.push(...tip(-1));
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps, x = (t - 0.5) * width, u = Math.abs(2 * t - 1), side = t < 0.5 ? -1 : 1;
+    const sc = (1.0 - u * (1.0 - tipK)) * (1 + (knob - 1) * ease2(0.9, 1, u)), fl = flareAt(u);
+    rings.push(ringAt(x, yAt(u), recurveAt(d, u, side), d.secY * sc * slant(u) * (1 + FLARE * fl), d.secZ * sc * (1 - 0.3 * fl)));
   }
-
-  const positions: number[] = [];
-  const indexArr:  number[] = [];
-
-  for (const ring of rings) {
-    for (const v of ring) positions.push(v.x, v.y, v.z);
-  }
-
-  // Cap centres (centroid of each end ring)
-  const leftCapIdx = positions.length / 3;
-  const lc = rings[0]
-    .reduce((a, v) => a.clone().add(v), new THREE.Vector3())
-    .divideScalar(N_CS);
-  positions.push(lc.x, lc.y, lc.z);
-
-  const rightCapIdx = positions.length / 3;
-  const rc = rings[segments]
-    .reduce((a, v) => a.clone().add(v), new THREE.Vector3())
-    .divideScalar(N_CS);
-  positions.push(rc.x, rc.y, rc.z);
-
-  // Side quads — winding (a,b,c),(b,d,c) gives outward normals
-  // for a cross-section that is CCW when viewed from +X.
-  for (let i = 0; i < segments; i++) {
+  rings.push(...tip(1));
+  const positions: number[] = [], normals: number[] = [], index: number[] = [];
+  const around = new THREE.Vector3(), along = new THREE.Vector3(), n = new THREE.Vector3(), c = new THREE.Vector3();
+  rings.forEach((ring, i) => {
+    c.set(0, 0, 0); ring.forEach((v) => c.add(v)); c.divideScalar(N_CS);
+    ring.forEach((v, j) => {
+      around.subVectors(ring[(j + 1) % N_CS], ring[(j - 1 + N_CS) % N_CS]);
+      along.subVectors(rings[Math.min(rings.length - 1, i + 1)][j], rings[Math.max(0, i - 1)][j]);
+      n.crossVectors(around, along).normalize();
+      // The section is convex: point the normal away from the ring's centre.
+      if (n.y * (v.y - c.y) + n.z * (v.z - c.z) < 0) n.negate();
+      positions.push(v.x, v.y, v.z); normals.push(n.x, n.y, n.z);
+    });
+  });
+  const last = rings.length - 1;
+  for (let i = 0; i < last; i++) {
     for (let j = 0; j < N_CS; j++) {
-      const j1 = (j + 1) % N_CS;
-      const a = i * N_CS + j;
-      const b = i * N_CS + j1;
-      const c = (i + 1) * N_CS + j;
-      const d = (i + 1) * N_CS + j1;
-      indexArr.push(a, b, c);
-      indexArr.push(b, d, c);
+      const j1 = (j + 1) % N_CS, a = i * N_CS + j, b = i * N_CS + j1, cc = (i + 1) * N_CS + j, d = (i + 1) * N_CS + j1;
+      index.push(a, b, cc, b, d, cc);
     }
   }
-
-  // Left cap — normal faces −X → winding (cap, j1, j)
+  // End caps close the domes.
+  const capL = positions.length / 3, l = rings[0][0];
+  positions.push(l.x - 0.0004, l.y - rings[0][0].y + rings[0].reduce((a, v) => a + v.y, 0) / N_CS, rings[0].reduce((a, v) => a + v.z, 0) / N_CS); normals.push(-1, 0, 0);
+  const capR = capL + 1, r0 = rings[last][0];
+  positions.push(r0.x + 0.0004, rings[last].reduce((a, v) => a + v.y, 0) / N_CS, rings[last].reduce((a, v) => a + v.z, 0) / N_CS); normals.push(1, 0, 0);
+  engraveUv.push(0, 0.5, 0, 0.5);
   for (let j = 0; j < N_CS; j++) {
-    indexArr.push(leftCapIdx, (j + 1) % N_CS, j);
+    index.push(capL, (j + 1) % N_CS, j);
+    index.push(capR, last * N_CS + j, last * N_CS + (j + 1) % N_CS);
   }
-
-  // Right cap — normal faces +X → winding (cap, j, j1)
-  const rightBase = segments * N_CS;
-  for (let j = 0; j < N_CS; j++) {
-    indexArr.push(rightCapIdx, rightBase + j, rightBase + (j + 1) % N_CS);
-  }
-
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  geo.setIndex(indexArr);
-  geo.computeVertexNormals();
+  geo.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  geo.setAttribute('engraveUv', new THREE.Float32BufferAttribute(engraveUv, 2));
+  geo.setIndex(index);
+  geo.computeBoundingSphere();
   return geo;
 }
 
 type CrossguardProps = {
+  tone: HardwareTone;
+  engraved?: boolean;
+  terminal: GuardTerminal;
+  ecusson: boolean;
+  rings: 0 | 1 | 2;
+  wire?: 'chequer' | 'lozenge' | 'bands';
+  cm?: number;
   archetype: ArchetypeKey;
   style: GuardStyle;
   color: string;
@@ -227,62 +132,75 @@ type CrossguardProps = {
   position: [number, number, number];
 };
 
-export function Crossguard({ archetype, style, color, emissive, emissiveIntensity, roughness, position }: CrossguardProps) {
-  const params = getGuardParams(style, archetype);
-  const geo    = useMemo(() => buildGuardGeometry(style, archetype), [style, archetype]);
-  // Geometry passed via prop is not owned by R3F, so release the old one ourselves.
-  useEffect(() => () => geo.dispose(), [geo]);
-  const halfW  = params.width / 2;
-  const terminalY = params.tipY;
-  const terminalZ = params.tipZ;
-  const terminal = getGuardTerminalRecipe(archetype, style);
+// A quatrefoil plate: four overlapping lobes, extruded with a bevel (the plane of the blade's flat).
+function quatrefoil(r: number, depth: number): THREE.BufferGeometry {
+  const shape = new THREE.Shape(), steps = 96;
+  for (let i = 0; i <= steps; i++) {
+    const a = (i / steps) * Math.PI * 2, rr = r * (0.72 + 0.28 * Math.abs(Math.cos(2 * a)) ** 0.6);
+    const p = [Math.cos(a) * rr, Math.sin(a) * rr] as const;
+    if (i === 0) shape.moveTo(p[0], p[1]); else shape.lineTo(p[0], p[1]);
+  }
+  const bevel = Math.min(0.0012, depth * 0.3);
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: depth - 2 * bevel, bevelEnabled: true, bevelThickness: bevel, bevelSize: bevel * 0.8, bevelSegments: 3 });
+  geo.translate(0, 0, -(depth - 2 * bevel) / 2);
+  geo.computeVertexNormals();
+  return geo;
+}
 
+// Écusson: a leaf-shaped plate rising from the cross over the blade, one on each face.
+function ecusson(): THREE.BufferGeometry {
+  const shape = new THREE.Shape();
+  shape.moveTo(-0.012, 0);
+  shape.bezierCurveTo(-0.012, 0.012, -0.006, 0.022, 0, 0.03);
+  shape.bezierCurveTo(0.006, 0.022, 0.012, 0.012, 0.012, 0);
+  shape.lineTo(-0.012, 0);
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.0008, bevelEnabled: true, bevelThickness: 0.0004, bevelSize: 0.0006, bevelSegments: 3, curveSegments: 24 });
+  geo.computeVertexNormals();
+  return geo;
+}
+
+export function Crossguard({ tone, engraved, wire, cm, archetype, style, terminal, ecusson: withEcusson, rings, color, emissive, emissiveIntensity, roughness, position }: CrossguardProps) {
+  // Brass and bronze age to a brown-green patina, iron and steel to rust.
+  const metal = tone === 'brass' || tone === 'bronze' ? 'copper' : 'iron';
+  const fit = surface(metal);
+  // An engraved guard carries a running scroll along the faces of its arms.
+  const bar = engraved ? surface(metal, { kind: 'guard' }, wire) : wire ? surface(metal, undefined, wire) : fit;
+  const def = useMemo(() => guardDef(style, archetype, cm), [style, archetype, cm]);
+  const geo = useMemo(() => buildGuardGeometry(def, terminal), [def, terminal]);
+  const end = armEnd(def, terminal);
+  const tipR = Math.max(end.sy, end.sz);
+  const parts = useMemo(() => ({
+    knob: terminal === 'knob' ? new THREE.SphereGeometry(Math.max(0.0068, tipR * 1.45), 64, 40) : null,
+    finial: terminal === 'finial' ? turnedGeometry(FINIAL_PROFILE.map(([r, y]) => [r * (tipR / 0.006), y * (tipR / 0.006)] as [number, number]), { axis: 'x', segments: 64 }) : null,
+    foil: terminal === 'quatrefoil' ? quatrefoil(tipR * 2.1, end.sz * 1.6) : null,
+    ecusson: withEcusson ? ecusson() : null,
+    ring: rings ? new THREE.TorusGeometry(0.022, 0.0023, 20, 96) : null,
+  }), [terminal, tipR, end.sz, withEcusson, rings]);
+  useEffect(() => () => geo.dispose(), [geo]);
+  useEffect(() => () => Object.values(parts).forEach((g) => g?.dispose()), [parts]);
+
+  const mat = <meshStandardMaterial key={fit.key} {...fit.props} color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />;
+  const ends = [-1, 1] as const;
+  // Side rings lean out in front of the cross toward the blade, their lower edge on the guard block.
+  const tilt = 0.7, ringC = (side: 1 | -1) => [0, 0.022 * Math.cos(tilt), side * (0.0075 + 0.022 * Math.sin(tilt))] as [number, number, number];
   return (
     <group position={position}>
       <mesh geometry={geo}>
-        <meshStandardMaterial color={color} metalness={1.0} roughness={roughness} emissive={emissive} emissiveIntensity={emissiveIntensity} />
+        <meshStandardMaterial key={bar.key} {...bar.props} color={color} metalness={1.0} roughness={roughness} emissive={emissive} emissiveIntensity={emissiveIntensity} />
       </mesh>
-
-      {style === 'ornate' && (
-        <>
-          <mesh position={[-halfW, 0, 0]} rotation={[0, 0,  Math.PI / 2]}>
-            <latheGeometry args={[SCROLL_PROFILE, 20]} />
-            <meshStandardMaterial color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
-          </mesh>
-          <mesh position={[ halfW, 0, 0]} rotation={[0, 0, -Math.PI / 2]}>
-            <latheGeometry args={[SCROLL_PROFILE, 20]} />
-            <meshStandardMaterial color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
-          </mesh>
-        </>
-      )}
-      {terminal.kind !== 'none' && style !== 'ornate' && (
-        <>
-          <mesh
-            position={[-halfW, terminalY, terminalZ]}
-            scale={[terminal.scaleX ?? 0.72, terminal.scaleY ?? 1, 1]}
-            rotation={terminal.kind === 'disc' ? [0, 0, Math.PI / 2] : [0, 0, 0]}
-          >
-            {terminal.kind === 'disc' ? (
-              <cylinderGeometry args={[terminal.radius ?? 0.01, terminal.radius ?? 0.01, terminal.depth ?? 0.004, 24]} />
-            ) : (
-              <sphereGeometry args={[terminal.radius ?? 0.01, 24, 12]} />
-            )}
-            <meshStandardMaterial color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
-          </mesh>
-          <mesh
-            position={[halfW, terminalY, terminalZ]}
-            scale={[terminal.scaleX ?? 0.72, terminal.scaleY ?? 1, 1]}
-            rotation={terminal.kind === 'disc' ? [0, 0, Math.PI / 2] : [0, 0, 0]}
-          >
-            {terminal.kind === 'disc' ? (
-              <cylinderGeometry args={[terminal.radius ?? 0.01, terminal.radius ?? 0.01, terminal.depth ?? 0.004, 24]} />
-            ) : (
-              <sphereGeometry args={[terminal.radius ?? 0.01, 24, 12]} />
-            )}
-            <meshStandardMaterial color={color} metalness={1.0} roughness={Math.max(0.32, roughness - 0.04)} emissive={emissive} emissiveIntensity={emissiveIntensity} />
-          </mesh>
-        </>
-      )}
+      {ends.map((side) => (
+        <group key={side} position={[side * end.x, end.y, end.z]}>
+          {parts.knob && <mesh geometry={parts.knob} position={[side * Math.max(0.0068, tipR * 1.45) * 0.75, 0, 0]} scale={[1, 1, end.sz / end.sy > 0.9 ? 1 : 0.85]}>{mat}</mesh>}
+          {parts.finial && <mesh geometry={parts.finial} rotation={[0, side < 0 ? Math.PI : 0, 0]}>{mat}</mesh>}
+          {parts.foil && <mesh geometry={parts.foil} position={[side * tipR * 1.7, 0, 0]}>{mat}</mesh>}
+        </group>
+      ))}
+      {parts.ecusson && [1, -1].map((side) => (
+        <mesh key={side} geometry={parts.ecusson!} position={[0, GUARD_HEIGHT * 0.3, side * 0.0066]} rotation={[0, side < 0 ? Math.PI : 0, 0]}>{mat}</mesh>
+      ))}
+      {parts.ring && ([1, -1] as const).slice(0, rings).map((side) => (
+        <mesh key={side} geometry={parts.ring!} position={ringC(side)} rotation={[side * tilt, 0, 0]}>{mat}</mesh>
+      ))}
     </group>
   );
 }

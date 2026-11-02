@@ -37,7 +37,8 @@ const _bufferPending = new Map<string, Promise<AudioBuffer>>();
 
 async function getCtx(): Promise<AudioContext> {
   if (!_audioCtx) _audioCtx = new AudioContext();
-  if (_audioCtx.state === 'suspended') await _audioCtx.resume();
+  // Without a user gesture Safari may never settle resume(): wait for it at most a moment.
+  if (_audioCtx.state === 'suspended') await Promise.race([_audioCtx.resume(), new Promise((r) => setTimeout(r, 300))]);
   return _audioCtx;
 }
 
@@ -45,13 +46,17 @@ async function getBuffer(src: string): Promise<AudioBuffer> {
   if (_bufferCache.has(src)) return _bufferCache.get(src)!;
   if (_bufferPending.has(src)) return _bufferPending.get(src)!;
   const promise = (async () => {
-    const res = await fetch(src);
-    const arr = await res.arrayBuffer();
-    const ctx = await getCtx();
-    const buf = await ctx.decodeAudioData(arr);
-    _bufferCache.set(src, buf);
-    _bufferPending.delete(src);
-    return buf;
+    try {
+      const res = await fetch(src);
+      if (!res.ok) throw new Error(`${src}: ${res.status}`);
+      const arr = await res.arrayBuffer();
+      const ctx = await getCtx();
+      const buf = await ctx.decodeAudioData(arr);
+      _bufferCache.set(src, buf);
+      return buf;
+    } finally {
+      _bufferPending.delete(src);   // a failed load is tried again next time
+    }
   })();
   _bufferPending.set(src, promise);
   return promise;
@@ -92,20 +97,26 @@ export function makeAudioLayer(src: string, target: number, delayMs: number): ()
   const steps = 40;
   const intervalMs = 2000 / steps;
   let retryRamp: ReturnType<typeof setInterval> | null = null;
+  let ramp: ReturnType<typeof setInterval> | null = null;
   let resumeListener: (() => void) | null = null;
+  // Fade the layer up to its level (also after an unmute that comes before the first fade ever ran).
+  const fadeUp = () => {
+    if (ramp !== null) clearInterval(ramp);
+    let step = Math.round((audio.volume / target) * steps);
+    ramp = setInterval(() => {
+      step++;
+      audio.volume = Math.min(target, (step / steps) * target);
+      if (step >= steps && ramp !== null) { clearInterval(ramp); ramp = null; }
+    }, intervalMs);
+  };
 
   const startDelay = setTimeout(() => {
     if (_muted) return;
 
-    let step = 0;
-    const ramp = setInterval(() => {
-      step++;
-      audio.volume = Math.min(target, (step / steps) * target);
-      if (step >= steps) clearInterval(ramp);
-    }, intervalMs);
+    fadeUp();
 
     audio.play().catch(() => {
-      clearInterval(ramp);
+      if (ramp !== null) { clearInterval(ramp); ramp = null; }
       audio.volume = 0;
 
       resumeListener = () => {
@@ -126,14 +137,114 @@ export function makeAudioLayer(src: string, target: number, delayMs: number): ()
 
   const unsub = audioState.subscribe((m) => {
     if (m) audio.pause();
-    else audio.play().catch(() => {});
+    else if (!document.hidden) { audio.play().catch(() => {}); if (audio.volume < target) fadeUp(); }
   });
+  // Quiet while the tab is hidden (another tab, a minimised window); back when it is shown again.
+  const onVisibility = () => {
+    if (document.hidden) audio.pause();
+    else if (!_muted && audio.volume > 0) audio.play().catch(() => {});
+  };
+  document.addEventListener('visibilitychange', onVisibility);
 
   return () => {
     clearTimeout(startDelay);
     if (retryRamp !== null) clearInterval(retryRamp);
+    if (ramp !== null) clearInterval(ramp);
     if (resumeListener !== null) window.removeEventListener('pointerdown', resumeListener);
     unsub();
+    document.removeEventListener('visibilitychange', onVisibility);
     audio.pause();
   };
+}
+
+// Music: the tracks play one after another and the list loops, so a long visit hears several pieces instead
+// of one on repeat. Every track file carries its own soft fades (8 s in, 7 s out, all at one loudness), so the
+// next track simply starts as the last one begins to fade: the two fades overlap into a seamless crossfade.
+// Quiet when muted or when the tab is hidden; a browser that blocks autoplay starts it on the first tap.
+// Returns a cleanup function.
+const OVERLAP_S = 7;
+export function makePlaylist(srcs: string[], target: number, delayMs: number): () => void {
+  const players = [new Audio(), new Audio()];
+  players.forEach((p) => { p.preload = 'auto'; p.volume = 0; });
+  let track = 0, active = 0, fadeFrom = -1, fadeT0 = 0, started = false, startT0 = 0;
+  const load = (p: HTMLAudioElement, i: number) => { p.src = srcs[i % srcs.length]; p.currentTime = 0; };
+  // A track that will not load is skipped: the next one starts in its place.
+  let failures = 0;   // consecutive failed tracks: stop once every track has failed
+  const skip = (p: HTMLAudioElement) => () => {
+    if (p !== players[active] || ++failures >= srcs.length) return;
+    track++; load(p, track); play(p);
+  };
+  players.forEach((p) => p.addEventListener('playing', () => { failures = 0; }));
+  players.forEach((p) => { p.onerror = skip(p); });
+  load(players[0], 0);
+  const play = (p: HTMLAudioElement) => { if (!_muted && !document.hidden) p.play().catch(() => {}); };
+  const tick = setInterval(() => {
+    if (!started || _muted || document.hidden) return;
+    const now = performance.now(), cur = players[active];
+    // The first track fades in over 2 s.
+    const intro = Math.min(1, (now - startT0) / 2000);
+    // Start the next track as this one begins its fade-out; the outgoing one plays on to its end.
+    if (fadeFrom < 0 && cur.duration && cur.currentTime >= cur.duration - OVERLAP_S) {
+      fadeFrom = active; active = 1 - active; track++; fadeT0 = now;
+      load(players[active], track); play(players[active]);
+    }
+    players[active].volume = target * intro;
+    if (fadeFrom >= 0) {
+      const out = players[fadeFrom];
+      out.volume = target;
+      if (out.ended || now - fadeT0 > (OVERLAP_S + 2) * 1000) { out.pause(); fadeFrom = -1; }
+    }
+  }, 100);
+  const begin = () => { if (_muted) return; started = true; startT0 = performance.now(); play(players[active]); };
+  let resume: (() => void) | null = null;
+  let due = false;   // the start delay has passed (a mute before it only postpones the start)
+  const startDelay = setTimeout(() => {
+    due = true;
+    if (_muted) return;
+    players[active].play().then(() => { started = true; startT0 = performance.now(); }).catch(() => {
+      resume = () => { begin(); if (resume) window.removeEventListener('pointerdown', resume); resume = null; };
+      window.addEventListener('pointerdown', resume);
+    });
+  }, delayMs);
+  const both = (fn: (p: HTMLAudioElement) => void) => { fn(players[active]); if (fadeFrom >= 0) fn(players[fadeFrom]); };
+  const unsub = audioState.subscribe((m) => {
+    if (m) both((p) => p.pause());
+    else if (!document.hidden) { if (started) both(play); else if (due) begin(); }
+  });
+  const onVisibility = () => { if (document.hidden) both((p) => p.pause()); else if (started && !_muted) both(play); };
+  document.addEventListener('visibilitychange', onVisibility);
+  return () => {
+    clearTimeout(startDelay); clearInterval(tick);
+    if (resume) window.removeEventListener('pointerdown', resume);
+    unsub(); document.removeEventListener('visibilitychange', onVisibility);
+    players.forEach((p) => p.pause());
+  };
+}
+
+// --- History & use: the vellum rustles as it unrolls and as it rolls up ---
+export const playScroll = (opening: boolean) =>
+  playCling(`${import.meta.env.BASE_URL}sounds/scroll-${opening ? 'open' : 'close'}.mp3`, { playbackRate: 0.97 + Math.random() * 0.06, filterType: 'allpass', filterFreq: 1000, volume: opening ? 0.42 : 0.34 });
+
+// --- The forge strike: one sound for every change to the sword ---
+// Each kind of change has its own recorded strike (ElevenLabs sound effects, chosen by the author): steel
+// rings, iron fittings clink lower, a wooden grip knocks, a leather or cord grip creaks under the hand, a finish is a whetstone
+// stroke. Whole-sword changes (a new Form, Back to default) ring a crisp, juicy anvil ping: the sword reforged. A small random variation keeps repeated changes alive.
+const SND = `${import.meta.env.BASE_URL}sounds/`;
+export type StrikeVoice = 'reforge' | 'steel' | 'fitting' | 'wood' | 'leather' | 'soft';
+const STRIKES: Record<StrikeVoice, { src: string } & ClingParams> = {
+  reforge: { src: `${SND}reforge.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.34 },
+  steel: { src: `${SND}strike-steel.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.3 },
+  fitting: { src: `${SND}strike-fitting.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.28 },
+  wood: { src: `${SND}strike-wood.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.34 },
+  leather: { src: `${SND}strike-leather.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.3 },
+  soft: { src: `${SND}strike-finish.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.18 },
+};
+let lastStrike = 0;
+export function playStrike(voice: StrikeVoice = 'reforge') {
+  // Never two strikes on top of each other (a burst of key presses rings once).
+  const now = performance.now();
+  if (now - lastStrike < 70) return;
+  lastStrike = now;
+  const { src, ...v } = STRIKES[voice];
+  playCling(src, { ...v, playbackRate: v.playbackRate * (0.97 + Math.random() * 0.06) });
 }

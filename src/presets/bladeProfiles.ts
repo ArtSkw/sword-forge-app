@@ -187,21 +187,22 @@ const DIAMOND_DECORATIVE: ProfilePoint[] = [
 // Broad bevelled edges rising to a distinct shoulder at ±0.74, then a
 // gentler face climbs to the central ridge. Creates a sharp bright edge.
 
+// A flat band between shoulders at ±0.28, straight faces down to the edge bevels.
 const HEXAGONAL_NONE: ProfilePoint[] = [
   [-1.000, 0.000],
-  [-0.970, 0.060], // steeper sec bevel — hexagonal edges already rise sharply
-  [-0.880, 0.240],
-  [-0.740, 0.450],
-  [-0.550, 0.650],
-  [-0.280, 0.820],
-  [-0.140, 0.920],
+  [-0.970, 0.080],
+  [-0.880, 0.200],
+  [-0.740, 0.387],
+  [-0.550, 0.640],
+  [-0.280, 1.000],
+  [-0.140, 1.000],
   [ 0.000, 1.000],
-  [ 0.140, 0.920],
-  [ 0.280, 0.820],
-  [ 0.550, 0.650],
-  [ 0.740, 0.450],
-  [ 0.880, 0.240],
-  [ 0.970, 0.060],
+  [ 0.140, 1.000],
+  [ 0.280, 1.000],
+  [ 0.550, 0.640],
+  [ 0.740, 0.387],
+  [ 0.880, 0.200],
+  [ 0.970, 0.080],
   [ 1.000, 0.000],
 ];
 
@@ -288,8 +289,4 @@ export function buildFullProfile(upper: ProfilePoint[]): ProfilePoint[] {
     .reverse()
     .map(([x, z]): ProfilePoint => [x, -z]);
   return [...upper, ...lowerMid];
-}
-
-export function lerpProfiles(a: ProfilePoint[], b: ProfilePoint[], t: number): ProfilePoint[] {
-  return a.map(([ax, az], i) => [ax + (b[i][0] - ax) * t, az + (b[i][1] - az) * t]);
 }

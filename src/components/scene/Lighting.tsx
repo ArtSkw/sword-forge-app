@@ -11,14 +11,32 @@ const PRIMARY_GOLD = new THREE.Color('#FFB04F');
 const SECONDARY_EMBER = new THREE.Color('#C05A10');
 const SECONDARY_COAL = new THREE.Color('#8F3A0A');
 
-export function Lighting() {
+// Edit mode adds a neutral light from the camera and lowers the forge glow, so steel reads as steel
+// up close. The change eases in and out over ~0.8 s.
+const INSPECT_BASE = 1.7;
+const INSPECT_WARM_CUT = 0.6;
+
+export function Lighting({ inspect = false }: { inspect?: boolean }) {
+  const inspectRef = useRef<THREE.DirectionalLight>(null);
+  const mix = useRef(0);
+  const lift = useRef(new THREE.Vector3());
   const primaryRef   = useRef<THREE.PointLight>(null);
   const secondaryRef = useRef<THREE.PointLight>(null);
   const keyRef       = useRef<THREE.DirectionalLight>(null);
   const rimRef       = useRef<THREE.DirectionalLight>(null);
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock, camera }, delta) => {
     const t = clock.elapsedTime;
+    mix.current += ((inspect ? 1 : 0) - mix.current) * Math.min(1, delta * 4);
+    const warm = 1 - INSPECT_WARM_CUT * mix.current;
+    const light = inspectRef.current;
+    if (light) {
+      light.intensity = INSPECT_BASE * mix.current;
+      // From just above the camera, toward where it looks.
+      light.position.copy(camera.position).add(lift.current.copy(camera.up).multiplyScalar(0.6));
+      camera.getWorldDirection(light.target.position).add(camera.position);
+      light.target.updateMatrixWorld();
+    }
     // Slow, deterministic forge pulse. Random spikes looked lively, but they
     // made reflective steel feel like it was blinking.
     const breathe = Math.sin(t * 1.35) * 0.065;
@@ -28,13 +46,13 @@ export function Lighting() {
     const colorMix = 0.5 + Math.sin(t * 1.05 + 0.6) * 0.22 + Math.sin(t * 2.4) * 0.06;
 
     if (primaryRef.current) {
-      primaryRef.current.intensity = PRIMARY_BASE * factor;
+      primaryRef.current.intensity = PRIMARY_BASE * factor * warm;
       primaryRef.current.color.copy(PRIMARY_EMBER).lerp(PRIMARY_GOLD, colorMix);
       primaryRef.current.position.x = 0.08 + Math.sin(t * 0.42) * 0.10 + Math.sin(t * 1.1) * 0.018;
       primaryRef.current.position.z = 1.24 + Math.cos(t * 0.38) * 0.065;
     }
     if (secondaryRef.current) {
-      secondaryRef.current.intensity = SECONDARY_BASE * (1 + breathe * 0.45 + ember * 0.28);
+      secondaryRef.current.intensity = SECONDARY_BASE * (1 + breathe * 0.45 + ember * 0.28) * warm;
       secondaryRef.current.color.copy(SECONDARY_COAL).lerp(SECONDARY_EMBER, 0.64 + colorMix * 0.18);
       secondaryRef.current.position.x = -0.18 + Math.sin(t * 0.32 + 2.0) * 0.085;
       secondaryRef.current.position.z = 0.46 + Math.cos(t * 0.29 + 0.8) * 0.04;
@@ -57,6 +75,9 @@ export function Lighting() {
       <pointLight ref={secondaryRef} position={[-0.18, -1.08, 0.46]} intensity={SECONDARY_BASE} color="#C05A10" distance={5} decay={2} />
       {/* Key overhead — cool neutral to separate polished steel from the warm background */}
       <directionalLight ref={keyRef} position={[2.2, 5.1, 2.15]} intensity={KEY_BASE} color="#E3EEFF" />
+      {/* Inspection light — neutral, from the camera, only in edit mode */}
+      {/* Always present (intensity 0 when idle): toggling visibility would change the light count and recompile shaders */}
+      <directionalLight ref={inspectRef} intensity={0} color="#F4F1EC" />
       {/* Rim — controlled blue edge definition, stronger than fill but not bloom-like */}
       <directionalLight ref={rimRef} position={[-3.2, 1.6, -3.8]} intensity={RIM_BASE} color="#9EBEFF" />
     </>

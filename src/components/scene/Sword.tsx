@@ -1,60 +1,53 @@
+import { useLayoutEffect } from 'react';
 import { useConfigStore } from '../../store/configStore';
-import { SWORD_TYPES } from '../../presets/swordTypes';
+import { getSwordLayout } from './swordLayout';
 import { getSwordMaterialRecipes } from '../../presets/materialRecipes';
 import { Blade } from './Blade';
-import { Crossguard, GUARD_HEIGHT } from './Crossguard';
+import { bladeSpec } from '../../lib/bladeSpec';
+import { hiltSpec } from '../../lib/hilt';
+import { currentForm } from '../../lib/forms';
+import { DEFAULT_GRIP_SHAPE } from '../../presets/forge';
+import { POMMEL_SCALE } from '../../presets/pommelProfiles';
+import { setSurfaceAge } from './surface';
+import { Crossguard } from './Crossguard';
 import { Grip } from './Grip';
 import { HiltDetails } from './HiltDetails';
-import { Pommel, POMMEL_HALF_HEIGHTS } from './Pommel';
-import { BLADE_LENGTHS, GRIP_LENGTHS } from './dimensions';
+import { Pommel } from './Pommel';
+import { MesserHilt } from './MesserHilt';
+import { Beat } from './Beat';
 
 export function Sword() {
   const config = useConfigStore((s) => s.config);
-  const { bodyTaperEnd, bodyTaperMidWidth, tipShoulderRound, crossSection, edgeBow, spineClipT, fullerStart, fullerEnd } = SWORD_TYPES[config.archetype];
-
-  const bladeLen    = BLADE_LENGTHS[config.blade.length];
-  const gripLen     = GRIP_LENGTHS[config.grip.length];
-  const pommelHalfH = POMMEL_HALF_HEIGHTS[config.pommel.style];
-  const total       = bladeLen + GUARD_HEIGHT + gripLen + pommelHalfH * 2;
-
-  const tipY    = total / 2;
-  const bladeY  = tipY - bladeLen / 2;
-  const guardY  = tipY - bladeLen - GUARD_HEIGHT / 2;
-  const gripY   = tipY - bladeLen - GUARD_HEIGHT - gripLen / 2;
-  const pommelY = -total / 2 + pommelHalfH;
+  const spec = bladeSpec(config);
+  const hilt = hiltSpec(config);
+  const messer = config.archetype === 'falchion' && config.grip.hilt === 'messer';
+  // Every surface shader reads the sword's age from one shared uniform (set before the frame renders).
+  useLayoutEffect(() => { setSurfaceAge(config.finish.age); }, [config.finish.age]);
+  const { gripLen, bladeY, guardY, gripY, pommelY } = getSwordLayout(config);
   const gripTopY = gripY + gripLen / 2;
   const gripBottomY = gripY - gripLen / 2;
 
-  const { condition, steelFinish } = config.finish;
-  const fantasyOn = config.fantasy.enabled;
-  const runes     = fantasyOn && config.fantasy.runes;
-  const gemstone  = fantasyOn ? config.fantasy.gemstone : 'none' as const;
-  const materials = getSwordMaterialRecipes(config.finish);
+  const { age, steelFinish } = config.finish;
+  // Wood keeps its grain colour, unless a Form names one (black horn).
+  const form = currentForm(config);
+  const materials = getSwordMaterialRecipes(config.finish, config.finish.gripMaterial === 'wood' && form?.grip === 'wood' && form.gripColor && config.finish.gripColor.toLowerCase() === form.gripColor.toLowerCase() ? form.gripColor : undefined);
+  const gripMetal = { color: materials.hardware.color, roughness: materials.hardware.roughness, tone: (config.finish.hardwareTone === 'brass' || config.finish.hardwareTone === 'bronze' ? 'copper' : 'iron') as 'iron' | 'copper' };
 
   return (
     <group>
-      <group position={[0, bladeY, 0]} rotation={[0, edgeBow > 0 ? Math.PI : 0, 0]}>
-        <Blade
-          archetype={config.archetype}
-          length={config.blade.length}
-          width={config.blade.width}
-          fuller={config.blade.fuller}
-          bodyTaperEnd={bodyTaperEnd}
-          bodyTaperMidWidth={bodyTaperMidWidth}
-          tipShoulderRound={tipShoulderRound}
-          crossSection={crossSection}
-          edgeBow={edgeBow}
-          spineClipT={spineClipT}
-          fullerStart={fullerStart}
-          fullerEnd={fullerEnd}
-          color={materials.blade.color}
-          steelFinish={steelFinish}
-          condition={condition}
-          runes={runes}
-          position={[0, 0, 0]}
-        />
+      {/* A single-edged blade turns its edge to face the same way as the curved guards and the swell. */}
+      <group position={[0, bladeY, 0]} rotation={[0, spec.singleEdged ? Math.PI : 0, 0]}>
+        <Beat scope={config.archetype} k={`${config.blade.profile}|${spec.section}|${spec.ricasso?.cover ?? ''}|${spec.flame}`}>
+          <Blade spec={spec} color={materials.blade.color} steelFinish={steelFinish} age={age} ecusson={hilt.ecusson} />
+        </Beat>
       </group>
+      <Beat scope={config.archetype} k={`${config.guard.style}|${hilt.terminal}|${hilt.rings}|${hilt.ecusson}`}>
       <Crossguard
+        cm={config.guard.cm}
+        wire={config.archetype === 'vikingSword' ? config.guard.wire : undefined}
+        {...hilt}
+        engraved={config.guard.engraved}
+        tone={config.finish.hardwareTone}
         archetype={config.archetype}
         style={config.guard.style}
         color={materials.hardware.color}
@@ -63,7 +56,10 @@ export function Sword() {
         roughness={materials.hardware.roughness}
         position={[0, guardY, 0]}
       />
+      </Beat>
       <HiltDetails
+        ferrules={!messer}
+        tone={config.finish.hardwareTone}
         archetype={config.archetype}
         color={materials.hardware.color}
         emissive={materials.hardware.emissive}
@@ -73,26 +69,48 @@ export function Sword() {
         gripTopY={gripTopY}
         gripBottomY={gripBottomY}
       />
+      {messer ? (
+        <MesserHilt
+          gripTopY={gripTopY}
+          gripBottomY={gripBottomY}
+          guardY={guardY}
+          cap={config.grip.cap ?? 'beak'}
+          material={materials.grip.material}
+          color={materials.grip.color}
+          roughness={materials.grip.roughness}
+          metal={gripMetal}
+        />
+      ) : (
+      <Beat scope={config.archetype} k={`${config.finish.gripMaterial}|${config.grip.shape ?? ''}`} soft={config.finish.gripMaterial !== 'wire'}>
       <Grip
         archetype={config.archetype}
-        length={config.grip.length}
+        length={gripLen}
+        shape={config.grip.shape ?? DEFAULT_GRIP_SHAPE[config.archetype]}
         material={materials.grip.material}
         color={materials.grip.color}
-        metalness={materials.grip.metalness}
-        normalScale={materials.grip.normalScale}
         roughness={materials.grip.roughness}
+        metal={gripMetal}
         position={[0, gripY, 0]}
       />
+      </Beat>
+      )}
+{!messer && (
+      <Beat scope={config.archetype} k={config.pommel.style}>
       <Pommel
-        archetype={config.archetype}
+        engraved={config.pommel.engraved}
+        scale={POMMEL_SCALE[config.archetype] ?? 1}
+        enamel={config.pommel.enamel}
+        wire={config.archetype === 'vikingSword' ? config.guard.wire : undefined}
+        tone={config.finish.hardwareTone}
         style={config.pommel.style}
         color={materials.hardware.color}
         emissive={materials.hardware.emissive}
         emissiveIntensity={materials.hardware.emissiveIntensity}
         roughness={materials.hardware.roughness}
-        gemstone={gemstone}
         position={[0, pommelY, 0]}
       />
+      </Beat>
+      )}
     </group>
   );
 }

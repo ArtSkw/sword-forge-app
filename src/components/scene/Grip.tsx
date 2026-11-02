@@ -1,127 +1,117 @@
 import * as THREE from 'three';
-import { useMemo } from 'react';
-import type { ArchetypeKey, GripLength, GripMaterial } from '../../store/configStore';
+import { useEffect, useMemo } from 'react';
+import type { ArchetypeKey, GripMaterial, GripShape } from '../../store/configStore';
 import { getGripDetailRecipe } from '../../presets/archetypeDetails';
-import { GRIP_LENGTHS } from './dimensions';
+import { surface } from './surface';
+import { woodTexture } from './gripTextures';
+import { LOW_TIER } from '../../lib/tier';
 
-// Core cylinder dimensions
+// The grip, built as one solid whose surface is the wrap itself, so each material reads by its shape:
+// - wood: two halves around the tang, planed and oiled (grain texture, a fine seam on each edge);
+// - leather: a strip wound in a spiral, each turn overlapping the last (a stepped edge running round);
+// - cord: tight turns of cord, every turn a rounded ridge;
+// - wire: twisted wire in tight turns, each turn beaded like a rope, in the fittings' metal.
+// The profile (straight, swelling, waisted or two-stage) is shared by all of them.
+
 const GRIP_RADIUS_TOP = 0.011;
 const GRIP_RADIUS_BOT = 0.014;
-const GRIP_SEGMENTS   = 12;
+export const GRIP_FLATTEN = 0.86;
+const AROUND = LOW_TIER ? 72 : 112, ROWS_PER_TURN = LOW_TIER ? 4 : 6, STRIP_ROWS = LOW_TIER ? 14 : 24;
 
-// Bands sit this far proud of the core surface (1.6mm wrap thickness).
-const BAND_OFFSET = 0.0016;
+type Wrap = { pitch: number; height: number; kind: 'none' | 'strip' | 'cord' | 'wire' };
+const WRAPS: Record<GripMaterial, Wrap> = {
+  wood: { pitch: 0, height: 0, kind: 'none' },
+  leather: { pitch: 0.017, height: 0.00055, kind: 'strip' },   // a strip about 17 mm wide
+  cord: { pitch: 0.0021, height: 0.00052, kind: 'cord' },      // cord about 2 mm thick
+  wire: { pitch: 0.0013, height: 0.00034, kind: 'wire' },      // twisted wire about 1.3 mm
+};
 
-function noise2d(x: number, y: number): number {
-  const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
-  return n - Math.floor(n);
+const smooth = (a: number, b: number, x: number) => { const k = Math.max(0, Math.min(1, (x - a) / (b - a))); return k * k * (3 - 2 * k); };
+
+/** Radius factor along the grip (t = 0 at the pommel, 1 at the guard) for each shape. */
+function shapeAt(shape: GripShape, t: number): number {
+  switch (shape) {
+    case 'straight': return 1;
+    case 'swell': return 1 + 0.05 * Math.sin(Math.PI * t);
+    // Narrow in the middle, swelling toward both hands (late 15th-c. bastard grips).
+    case 'waisted': return 1 + 0.07 * Math.cos(2 * Math.PI * t) - 0.02;
+    // Two grips in one, each swelling, parted by a raised moulding (16th-c. two-handers).
+    case 'twoStage': { const s = t < 0.52 ? t / 0.52 : (t - 0.52) / 0.48; return 1 + 0.06 * Math.sin(Math.PI * s); }
+  }
 }
+const MOULDING_T = 0.52;
 
-function makeGripNormalMap(material: GripMaterial): THREE.CanvasTexture {
-  const W = 256, H = 256;
-  const canvas = document.createElement('canvas');
-  canvas.width = W;
-  canvas.height = H;
-  const ctx = canvas.getContext('2d')!;
-  const img = ctx.createImageData(W, H);
-
-  for (let y = 0; y < H; y++) {
-    const v = y / H;
-    for (let x = 0; x < W; x++) {
-      const u = x / W;
-      const chatter = (noise2d(x, y) + noise2d(x * 0.37, y * 0.61) - 1) * 2.2;
-      let red = 0;
-      let green = 0;
-
-      if (material === 'wood') {
-        const slowGrain = Math.sin((u * 9 + Math.sin(v * Math.PI * 3) * 0.24) * Math.PI * 2) * 3.2;
-        const fineGrain = Math.sin((u * 31 + v * 1.6) * Math.PI * 2) * 1.5;
-        red = slowGrain + fineGrain + chatter * 0.45;
-        green = Math.sin(v * Math.PI * 18 + slowGrain * 0.2) * 0.9;
-      } else if (material === 'cord') {
-        red = Math.sin((u * 42 + v * 12) * Math.PI * 2) * 2.8 + chatter;
-        green = Math.sin(v * Math.PI * 54) * 3.2 + chatter * 0.45;
-      } else if (material === 'wire') {
-        red = Math.sin(u * Math.PI * 48) * 1.2;
-        green = Math.sin(v * Math.PI * 22) * 0.8;
-      } else {
-        red = Math.sin(u * Math.PI * 24 + v * 5) * 2 + chatter;
-        green = Math.sin(v * Math.PI * 32) * 4 + chatter * 0.35;
+function gripGeometry(len: number, rBot: number, rTop: number, material: GripMaterial, shape: GripShape): THREE.BufferGeometry {
+  const w = WRAPS[material];
+  const rows = Math.max(140, Math.ceil(w.pitch ? (len / w.pitch) * (w.kind === 'strip' ? STRIP_ROWS : ROWS_PER_TURN) : 140));
+  const positions: number[] = [], uvs: number[] = [], index: number[] = [];
+  for (let i = 0; i <= rows; i++) {
+    const t = i / rows, y = -len / 2 + t * len;
+    let base = (rBot + (rTop - rBot) * t) * shapeAt(shape, t);
+    // The wrap fades out over the last 3 mm at each end, under the ferrules, and at a two-stage moulding.
+    let wrapOn = smooth(0, 0.003, t * len) * smooth(0, 0.003, (1 - t) * len);
+    if (shape === 'twoStage') {
+      const d = Math.abs(t - MOULDING_T) * len;
+      base += 0.0016 * Math.exp(-((d / 0.0028) ** 2));
+      wrapOn *= smooth(0.003, 0.006, d);
+    }
+    for (let j = 0; j <= AROUND; j++) {
+      const u = j / AROUND, a = u * Math.PI * 2;
+      let r = base;
+      if (w.kind !== 'none' && wrapOn > 0) {
+        // Phase along the helix: one full turn per pitch.
+        const phase = y / w.pitch + u, f = phase - Math.floor(phase);
+        if (w.kind === 'cord') r += w.height * wrapOn * Math.sqrt(Math.max(0, 1 - (2 * f - 1) ** 2));
+        if (w.kind === 'wire') {
+          const bead = 0.5 + 0.5 * Math.cos(a * (LOW_TIER ? 18 : 28));   // the twist of the strands, a whole number per turn (no seam)
+          r += w.height * wrapOn * Math.sqrt(Math.max(0, 1 - (2 * f - 1) ** 2)) * (0.72 + 0.28 * bead);
+        }
+        // Leather strip: thickest at its overlapping edge, then a rounded step down onto the next turn.
+        if (w.kind === 'strip') r += w.height * wrapOn * (f < 0.92 ? 0.35 + 0.65 * (f / 0.92) : 1 - smooth(0.92, 1, f));
       }
-
-      const i = (y * W + x) * 4;
-      img.data[i] = 128 + Math.round(red);
-      img.data[i + 1] = 128 + Math.round(green);
-      img.data[i + 2] = 255;
-      img.data[i + 3] = 255;
+      // Wood: a fine seam where the two halves meet, on each edge of the grip.
+      if (material === 'wood') r -= 0.00018 * (Math.exp(-((Math.cos(a) - 1) ** 2) / 0.0004) + Math.exp(-((Math.cos(a) + 1) ** 2) / 0.0004));
+      positions.push(Math.cos(a) * r, y, Math.sin(a) * r * GRIP_FLATTEN);
+      uvs.push(u, t * len);
     }
   }
-
-  ctx.putImageData(img, 0, 0);
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.magFilter = THREE.LinearFilter;
-  tex.minFilter = THREE.LinearMipmapLinearFilter;
-  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-  if (material === 'wood') {
-    tex.repeat.set(1.5, 2.4);
-  } else if (material === 'cord') {
-    tex.repeat.set(4, 7);
-  } else if (material === 'wire') {
-    tex.repeat.set(5, 4);
-  } else {
-    tex.repeat.set(3, 5);
+  for (let i = 0; i < rows; i++) for (let j = 0; j < AROUND; j++) {
+    const a = i * (AROUND + 1) + j, b = a + 1, c = a + AROUND + 1, d = c + 1;
+    index.push(a, c, b, b, c, d);
   }
-  tex.anisotropy = 8;
-  return tex;
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+  geo.setIndex(index);
+  geo.computeVertexNormals();
+  return geo;
 }
-
-const GRIP_NORMAL_MAPS: Record<GripMaterial, THREE.CanvasTexture> = {
-  leather: makeGripNormalMap('leather'),
-  wood: makeGripNormalMap('wood'),
-  cord: makeGripNormalMap('cord'),
-  wire: makeGripNormalMap('wire'),
-};
 
 type GripProps = {
   archetype: ArchetypeKey;
-  length: GripLength;
+  length: number;          // m
+  shape: GripShape;
   material: GripMaterial;
-  color: string;
-  metalness: number;
-  normalScale: [number, number];
+  color: string;           // the dyed leather or cord, or the wood's tint
   roughness: number;
+  metal: { color: string; roughness: number; tone: 'iron' | 'copper' };   // wire is drawn in the fittings' metal
   position: [number, number, number];
 };
 
-export function Grip({ archetype, length, material, color, metalness, normalScale, roughness, position }: GripProps) {
-  const gripLen = GRIP_LENGTHS[length];
-  const halfH   = gripLen / 2;
+export function Grip({ archetype, length, shape, material, color, roughness, metal, position }: GripProps) {
+  const len = length;
   const recipe = getGripDetailRecipe(archetype);
-  const radiusTop = recipe.coreRadiusTop ?? GRIP_RADIUS_TOP;
-  const radiusBot = recipe.coreRadiusBottom ?? GRIP_RADIUS_BOT;
-  const wrapRadius = (radiusTop + radiusBot) / 2 + BAND_OFFSET;
-  const normalMap = GRIP_NORMAL_MAPS[material];
-  const normalScaleVec = useMemo(() => new THREE.Vector2(normalScale[0], normalScale[1]), [normalScale]);
-
-  const bands = useMemo(() => {
-    const count = recipe.bandCount?.[length] ?? (length === 'short' ? 9 : 14);
-    return Array.from({ length: count }, (_, i) => -halfH + ((i + 0.5) / count) * gripLen);
-  }, [gripLen, halfH, length, recipe.bandCount]);
-
+  const rTop = recipe.coreRadiusTop ?? GRIP_RADIUS_TOP, rBot = recipe.coreRadiusBottom ?? GRIP_RADIUS_BOT;
+  const geo = useMemo(() => gripGeometry(len, rBot, rTop, material, shape), [len, rBot, rTop, material, shape]);
+  useEffect(() => () => geo.dispose(), [geo]);
+  const leather = surface('leather'), wire = surface(metal.tone), wood = surface('wood');
   return (
     <group position={position}>
-      {/* Grip core — slightly recessed so the wrap bands sit proud */}
-      <mesh>
-        <cylinderGeometry args={[radiusTop, radiusBot, gripLen, GRIP_SEGMENTS]} />
-        <meshStandardMaterial color={color} metalness={metalness} roughness={roughness} normalMap={normalMap} normalScale={normalScaleVec} />
+      <mesh geometry={geo}>
+        {material === 'wire' && <meshStandardMaterial key={wire.key} {...wire.props} color={metal.color} metalness={1} roughness={Math.max(0.22, metal.roughness - 0.08)} />}
+        {material === 'wood' && <meshStandardMaterial key={wood.key} {...wood.props} map={woodTexture()} color={color} metalness={0} roughness={Math.max(0.38, roughness - 0.3)} />}
+        {(material === 'leather' || material === 'cord') && <meshStandardMaterial key={leather.key} {...leather.props} color={color} metalness={0} roughness={roughness} />}
       </mesh>
-
-      {bands.map((y, i) => (
-        <mesh key={i} position={[0, y, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[wrapRadius, recipe.bandTube ?? 0.00075, 6, 28]} />
-          <meshStandardMaterial color={color} metalness={metalness} roughness={Math.max(0.22, roughness - 0.05)} normalMap={normalMap} normalScale={normalScaleVec} />
-        </mesh>
-      ))}
     </group>
   );
 }
