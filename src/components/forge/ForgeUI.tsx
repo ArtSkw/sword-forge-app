@@ -96,7 +96,7 @@ function Tooltip({ mode }: { mode: string }) {
   });
   const title = tip?.el.dataset.tip, body = tip?.el.dataset.tipBody;
   return tip ? (
-    <div ref={ref} id="forge-tip" className="tooltip glass" role="tooltip">
+    <div ref={ref} id="forge-tip" className="tooltip glass dense" role="tooltip">
       <b>{title}</b>{body && <span>{body}</span>}
     </div>
   ) : null;
@@ -135,7 +135,7 @@ function Hotspots({ hidden, onOpen }: { hidden: boolean; onOpen: (id: StationId)
     <div className="hots" ref={layer} data-show="false">
       {STATIONS.map((s) => (
         <button key={s.id} ref={(el) => { rings.current[s.id] = el; }} className="hot" aria-label={`Work on the ${s.name.toLowerCase()}`} onClick={() => onOpen(s.id)}>
-          <i /><span className="hlabel glass">{s.name}</span>
+          <i /><span className="hlabel glass dense">{s.name}</span>
         </button>
       ))}
     </div>
@@ -203,7 +203,7 @@ function Inspector({ station, choices }: { station: StationId; choices: StationC
   const sel = choices.cards.find((c) => c.selected);
   const name = STATIONS.find((s) => s.id === station)?.name ?? '';
   return (
-    <aside className="inspector glass" aria-label={`${name} properties`}>
+    <aside className="inspector glass pane" aria-label={`${name} properties`}>
       <div className="insp-head">
         <span className="insp-kicker">{name}</span>
         <h2>{sel?.name}</h2>
@@ -235,7 +235,8 @@ function FormSwitcher() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null), nameRef = useRef<HTMLButtonElement>(null), listRef = useRef<HTMLDivElement>(null);
   const forms = formsOf(config), form = currentForm(config);
-  const close = (refocus: boolean) => { setOpen(false); if (refocus) nameRef.current?.focus({ preventScroll: true }); };
+  // Focus goes back to the name without its tooltip, which would repeat the list folding away under it.
+  const close = (refocus: boolean) => { setOpen(false); if (refocus) { autoFocusing = true; nameRef.current?.focus({ preventScroll: true }); autoFocusing = false; } };
   // The list belongs to the overview: leaving it (edit mode, the account) closes it.
   const [wasBusy, setWasBusy] = useState(busy);
   if (wasBusy !== busy) { setWasBusy(busy); if (busy && open) setOpen(false); }
@@ -272,17 +273,16 @@ function FormSwitcher() {
         <span>{form.name}</span><span className="fs-era">{form.era}</span>{altered && <span className="fs-alt">your variant</span>}
       </button>
       {forms.length > 1 && <button className="fs-step" aria-label="Next form" onClick={() => step(1)}>{ICONS.next}</button>}
-      {open && (
-        <div id="forge-forms" ref={listRef} className="fs-list glass" role="group" aria-label="Forms">
-          {forms.map((f) => (
-            <button key={f.id} aria-current={f.id === form.id} onClick={() => pick(f.id, true)}>
+      {/* Always mounted, so it can unfold from the name and fold back into it; inert while closed. */}
+      <div id="forge-forms" ref={listRef} className="fs-list glass pane" role="group" aria-label="Forms" data-open={open} inert={!open}>
+          {forms.map((f, n) => (
+            <button key={f.id} aria-current={f.id === form.id} onClick={() => pick(f.id, true)} style={{ '--i': n } as React.CSSProperties}>
               <b>{f.name}</b><span className="fs-era">{f.era}</span>
               <span className="fs-note">{f.note}</span>
               <span className="fs-anchor">{f.anchor}</span>
             </button>
           ))}
-        </div>
-      )}
+      </div>
     </div>
   );
 }

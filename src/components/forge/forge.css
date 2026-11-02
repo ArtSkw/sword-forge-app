@@ -1,7 +1,7 @@
 /* Forge UI — "Smith's Eye". Gold on dark glass, one button system, Cinzel + Alegreya. */
 .forge {
   --gold: #C9A961; --gold-hi: #E9D49A; --gold-dim: #8B6F47; --gold-text: #D8C08A; --gold-line: rgba(201, 169, 97, .38);
-  --glass: rgba(18, 13, 9, .74); --ink: #2B2117; --rubric: #7A2A1E;
+  --glass: rgba(24, 15, 8, .5); --gold-meta: #A88B62; --ink: #2B2117; --rubric: #7A2A1E;
   --ease-out: cubic-bezier(.2, 0, 0, 1); --ease-io: cubic-bezier(.65, 0, .35, 1);
   --display: "Cinzel", serif; --text: "Alegreya", serif;
   /* Type scale: nine roles, two families. Cinzel names things (tracked capitals), Alegreya is for reading.
@@ -23,7 +23,7 @@
 .forge button:focus-visible { outline: 1px solid var(--gold-hi); outline-offset: 3px; }
 
 /* Shared surface: dark glass, gold hairline, inner rule */
-.forge .glass { background: var(--glass); border: 1px solid var(--gold-line); box-shadow: inset 0 0 0 3px rgba(18, 13, 9, .74), inset 0 0 0 4px rgba(201, 169, 97, .12), 0 8px 24px rgba(0, 0, 0, .45); }
+.forge .glass { position: relative; background: var(--glass); border: 1px solid var(--gold-line); box-shadow: var(--rim-in), 0 8px 24px rgba(0, 0, 0, .45); }
 
 /* Visibility by mode: overview, focus (edit a part), reading (historical account) */
 .forge .fade { transition: opacity 360ms var(--ease-out), transform 360ms var(--ease-out); }
@@ -35,14 +35,14 @@
 .forge.focus .focus-only { opacity: 1; pointer-events: auto; transform: none; }
 
 /* One button system: text, primary, icon, small */
-.forge .btn { height: 40px; padding: 0 18px 0 16px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; border-radius: 6px; font: var(--type-label); letter-spacing: var(--track-label); color: var(--gold-hi); background: var(--glass); border: 1px solid var(--gold-line); box-shadow: inset 0 0 0 3px rgba(18, 13, 9, .74), inset 0 0 0 4px rgba(201, 169, 97, .12), 0 8px 24px rgba(0, 0, 0, .45); transition: transform 160ms var(--ease-out), border-color 160ms, box-shadow 200ms, color 160ms, opacity 360ms var(--ease-out); user-select: none; white-space: nowrap; }
+.forge .btn { height: 40px; padding: 0 18px 0 16px; display: inline-flex; align-items: center; justify-content: center; gap: 9px; border-radius: 6px; font: var(--type-label); letter-spacing: var(--track-label); color: var(--gold-hi); background: var(--glass); border: 1px solid var(--gold-line); box-shadow: var(--rim-in), 0 8px 24px rgba(0, 0, 0, .45); transition: transform 160ms var(--ease-out), border-color 160ms, box-shadow 200ms, color 160ms, opacity 360ms var(--ease-out); user-select: none; white-space: nowrap; }
 .forge .btn svg { width: 16px; height: 16px; flex: none; }
-.forge .btn:hover { border-color: var(--gold); transform: translateY(-1px); box-shadow: inset 0 0 0 3px rgba(18, 13, 9, .74), inset 0 0 0 4px rgba(201, 169, 97, .2), 0 10px 26px rgba(0, 0, 0, .5), 0 0 18px rgba(233, 212, 154, .14); }
+.forge .btn:hover { transform: translateY(-1px); box-shadow: var(--rim-in), 0 10px 26px rgba(0, 0, 0, .5), 0 0 18px rgba(233, 212, 154, .14); }
 .forge .btn:active { transform: translateY(0) scale(.97); transition-duration: 70ms; }
-.forge .btn.primary { border-color: var(--gold); background: linear-gradient(180deg, rgba(201, 169, 97, .24), rgba(201, 169, 97, .07)), var(--glass); }
+.forge .btn.primary { background: linear-gradient(180deg, rgba(201, 169, 97, .24), rgba(201, 169, 97, .07)), var(--glass); }
 .forge .btn.icon { width: 40px; padding: 0; }
-.forge .btn[aria-disabled="true"] { opacity: .42; cursor: default; transform: none; box-shadow: inset 0 0 0 3px rgba(18, 13, 9, .74), inset 0 0 0 4px rgba(201, 169, 97, .12), 0 8px 24px rgba(0, 0, 0, .45); border-color: var(--gold-line); }
-.forge .btn[aria-pressed="true"] { border-color: var(--gold-hi); color: var(--gold-hi); background: linear-gradient(180deg, rgba(201, 169, 97, .22), rgba(201, 169, 97, .06)), var(--glass); }
+.forge .btn[aria-disabled="true"] { opacity: .42; cursor: default; transform: none; box-shadow: var(--rim-in), 0 8px 24px rgba(0, 0, 0, .45); }
+.forge .btn[aria-pressed="true"] { box-shadow: inset 0 1px 0 rgba(255, 236, 200, .25), inset 0 0 0 1px var(--gold-hi), 0 8px 24px rgba(0, 0, 0, .45); color: var(--gold-hi); background: linear-gradient(180deg, rgba(201, 169, 97, .22), rgba(201, 169, 97, .06)), var(--glass); }
 .forge .corner-l { position: absolute; z-index: 11; left: 24px; bottom: 24px; }
 .forge .corner-r { position: absolute; z-index: 11; right: 24px; bottom: 24px; display: flex; gap: 8px; }
 
@@ -57,16 +57,24 @@
 .forge .fs-step svg { width: 16px; height: 16px; }
 .forge .fs-name { display: flex; align-items: baseline; gap: 10px; padding: 5px 14px; border-radius: 5px; font: var(--type-label-lg); letter-spacing: var(--track-label-lg); color: var(--gold); text-shadow: 0 1px 8px rgba(0, 0, 0, .7); white-space: nowrap; transition: color 160ms, background 160ms; }
 .forge .fs-name:hover, .forge .fs-name[aria-expanded="true"] { color: var(--gold-hi); background: rgba(201, 169, 97, .07); }
-.forge .fs-era { font: var(--type-body); letter-spacing: 0; color: var(--gold-dim); }
-.forge .fs-alt { font: var(--type-meta); letter-spacing: 0; color: var(--gold-dim); opacity: .85; }
+.forge .fs-era { font: var(--type-body); letter-spacing: 0; color: var(--gold-meta); }
+.forge .fs-alt { font: var(--type-meta); letter-spacing: 0; color: var(--gold-meta); opacity: .85; }
 .forge .fs-alt::before { content: "· "; }
-.forge .fs-list { position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%); padding: 6px; display: flex; flex-direction: column; width: 380px; border-radius: 8px; text-align: left; animation: forge-tip 180ms var(--ease-out) both; }
-.forge .fs-list button { width: 100%; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 9px 12px; border-radius: 5px; text-align: left; transition: background 140ms; }
+.forge .fs-list { position: absolute; top: calc(100% + 8px); left: 50%; padding: 6px; display: flex; flex-direction: column; width: 380px; border-radius: 8px; text-align: left; }
+/* The list unfolds out of the Form's name: it grows from its top centre while a clip opens downward, and the
+   rows follow 40 ms apart. Closing folds it back up, faster and all at once. */
+.forge .fs-list { transform-origin: 50% 0; transform: translateX(-50%) translateY(-6px) scale(.96); clip-path: inset(0 0 100% 0 round 8px); opacity: 0; visibility: hidden;
+  transition: transform 160ms var(--ease-out), clip-path 160ms var(--ease-out), opacity 120ms var(--ease-out), visibility 0s linear 160ms; }
+.forge .fs-list[data-open="true"] { transform: translateX(-50%); clip-path: inset(-56px -56px -80px -56px round 8px); opacity: 1; visibility: visible;
+  transition: transform 260ms var(--ease-out), clip-path 300ms var(--ease-out), opacity 160ms var(--ease-out), visibility 0s; }
+.forge .fs-list > button { opacity: 0; transform: translateY(-4px); transition: opacity 120ms var(--ease-out), transform 120ms var(--ease-out), background 140ms; }
+.forge .fs-list[data-open="true"] > button { opacity: 1; transform: none; transition: opacity 220ms var(--ease-out) calc(60ms + var(--i) * 40ms), transform 260ms var(--ease-out) calc(60ms + var(--i) * 40ms), background 140ms; }
+.forge .fs-list button { width: 100%; display: grid; grid-template-columns: 1fr auto; gap: 2px 10px; padding: 9px 12px; border-radius: 5px; text-align: left; }
 .forge .fs-list button:hover { background: rgba(201, 169, 97, .08); }
 .forge .fs-list button[aria-current="true"] { background: rgba(201, 169, 97, .14); }
 .forge .fs-list b { font: var(--type-label-lg); letter-spacing: var(--track-label); color: var(--gold-hi); }
 .forge .fs-list .fs-note { grid-column: 1 / -1; margin-top: 2px; font: var(--type-body); color: var(--gold-text); }
-.forge .fs-list .fs-anchor { grid-column: 1 / -1; font: var(--type-meta); color: var(--gold-dim); }
+.forge .fs-list .fs-anchor { grid-column: 1 / -1; font: var(--type-meta); color: var(--gold-meta); }
 
 /* Hotspots: hidden until the pointer is over the sword; gone while orbiting or zooming */
 .forge .hot { position: absolute; z-index: 8; left: 0; top: 0; width: 44px; height: 44px; margin: -22px 0 0 -22px; display: grid; place-items: center; will-change: transform; }
@@ -93,9 +101,9 @@
 .forge .item .card { position: relative; width: 72px; height: 72px; margin: 0 auto; border-radius: 6px; display: grid; place-items: center; transition: transform 160ms var(--ease-out), border-color 160ms, box-shadow 200ms; color: var(--gold-hi); }
 .forge .item .card svg { width: 64px; height: 64px; }
 .forge .item .nm { display: block; margin-top: 7px; font: var(--type-label-sm); letter-spacing: var(--track-label); color: var(--gold); text-shadow: 0 1px 6px rgba(0, 0, 0, .8); white-space: nowrap; }
-.forge .item:hover .card { transform: translateY(-2px); border-color: var(--gold); }
+.forge .item:hover .card { transform: translateY(-2px); }
 .forge .item:active .card { transform: scale(.97); transition-duration: 70ms; }
-.forge .item[aria-pressed="true"] .card { border-color: var(--gold-hi); box-shadow: inset 0 0 0 3px rgba(18, 13, 9, .74), inset 0 0 0 4px var(--gold), 0 0 18px rgba(233, 212, 154, .25); }
+.forge .item[aria-pressed="true"] .card { box-shadow: inset 0 1px 0 rgba(255, 236, 200, .25), inset 0 0 0 1px var(--gold-hi), 0 0 18px rgba(233, 212, 154, .25); }
 .forge .item[aria-pressed="true"] .nm { color: var(--gold-hi); }
 .forge .item:focus-visible { outline: none; }
 .forge .item:focus-visible .card { outline: 1px solid var(--gold-hi); outline-offset: 3px; }
@@ -109,12 +117,12 @@
 .forge .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .forge .item .count { font: var(--type-heading); letter-spacing: var(--track-heading); color: var(--gold-hi); }
 
-.forge .inspector { position: absolute; z-index: 9; right: 24px; top: 24px; width: 268px; max-height: calc(100% - 112px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--gold-dim) transparent; padding: 18px 18px 6px; border-radius: 8px; animation: forge-panel 280ms var(--ease-out) both; }
-.forge .insp-kicker { display: block; font: var(--type-label-sm); letter-spacing: var(--track-label-sm); color: var(--gold-dim); }
+.forge .inspector { position: absolute; z-index: 9; right: 24px; top: 24px; width: 268px; max-height: calc(100% - 112px); overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--gold-dim) transparent; padding: 18px 18px 6px; border-radius: 8px; animation: forge-panel 280ms var(--ease-out) backwards; }
+.forge .insp-kicker { display: block; font: var(--type-label-sm); letter-spacing: var(--track-label-sm); color: var(--gold-meta); }
 .forge .inspector h2 { margin: 6px 0 0; font: var(--type-subheading); letter-spacing: var(--track-heading); color: var(--gold-hi); }
 .forge .insp-era { display: block; margin-top: 2px; font: var(--type-meta); color: var(--gold); }
 .forge .insp-note { margin: 12px 0 14px; padding-top: 12px; border-top: 1px solid var(--gold-line); font: var(--type-body); color: var(--gold-text); text-wrap: pretty; }
-.forge .insp-after { margin: -6px 0 14px; font: var(--type-meta); color: var(--gold-dim); }
+.forge .insp-after { margin: -6px 0 14px; font: var(--type-meta); color: var(--gold-meta); }
 .forge .insp-after a { color: var(--gold); text-decoration: underline; text-decoration-color: rgba(201, 169, 97, .35); text-underline-offset: 3px; transition: color 160ms, text-decoration-color 160ms; }
 .forge .insp-after a:hover { color: var(--gold-hi); text-decoration-color: var(--gold-hi); }
 .forge .insp-group { padding: 12px 0 14px; border-top: 1px solid var(--gold-line); }
@@ -125,17 +133,17 @@
 .forge .insp-seg { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
 .forge .insp-list { grid-template-columns: 1fr; }
 .forge .insp-seg:not(.insp-list):has(> :nth-child(3):last-child) { grid-template-columns: repeat(3, 1fr); }
-.forge .seg { height: 32px; border-radius: 5px; border: 1px solid var(--gold-line); background: rgba(18, 13, 9, .5); font: var(--type-label-sm); letter-spacing: var(--track-label); color: var(--gold); transition: border-color 160ms, color 160ms, background 160ms, transform 160ms var(--ease-out); }
+.forge .seg { height: 32px; border-radius: 5px; border: 1px solid rgba(201, 169, 97, .26); background: rgba(14, 9, 5, .38); font: var(--type-label-sm); letter-spacing: var(--track-label); color: var(--gold); transition: border-color 160ms, color 160ms, background 160ms, transform 160ms var(--ease-out); }
 .forge .seg:hover { border-color: var(--gold); color: var(--gold-hi); }
 .forge .seg:active { transform: scale(.97); transition-duration: 70ms; }
 .forge .seg[aria-pressed="true"] { border-color: var(--gold-hi); color: var(--gold-hi); background: linear-gradient(180deg, rgba(201, 169, 97, .22), rgba(201, 169, 97, .06)); }
 @keyframes forge-panel { from { opacity: 0; transform: translateX(10px); } }
 
 /* Tooltips */
-.forge .tooltip { position: fixed; z-index: 40; left: -999px; top: -999px; transform: translate(-50%, -100%); width: max-content; max-width: 280px; padding: 8px 12px 9px; border-radius: 6px; pointer-events: none; text-align: center; animation: forge-tip 180ms var(--ease-out) both; }
+.forge .tooltip { position: fixed; z-index: 40; left: -999px; top: -999px; transform: translate(-50%, -100%); width: max-content; max-width: 280px; padding: 8px 12px 9px; border-radius: 6px; pointer-events: none; text-align: center; animation: forge-tip 180ms var(--ease-out) backwards; }
 .forge .tooltip b { display: block; font: var(--type-label-sm); letter-spacing: var(--track-label-sm); color: var(--gold-hi); }
 .forge .tooltip span { display: block; margin-top: 3px; font: var(--type-body); color: var(--gold-text); text-wrap: balance; }
-.forge .tooltip::after { content: ""; position: absolute; left: calc(50% + var(--arrow-x, 0px)); bottom: -5px; width: 8px; height: 8px; margin-left: -4px; transform: rotate(45deg); background: #120d09; border-right: 1px solid var(--gold-line); border-bottom: 1px solid var(--gold-line); }
+.forge .tooltip::after { content: ""; position: absolute; left: calc(50% + var(--arrow-x, 0px)); bottom: -5px; width: 8px; height: 8px; margin-left: -4px; transform: rotate(45deg); background: #120c07; border-right: 1px solid rgba(233, 200, 130, .3); border-bottom: 1px solid rgba(233, 200, 130, .3); }
 .forge .tooltip[data-place="below"] { transform: translate(-50%, 0); animation-name: forge-tip-below; }
 .forge .tooltip[data-place="below"]::after { bottom: auto; top: -5px; transform: rotate(225deg); }
 @keyframes forge-tip { from { opacity: 0; transform: translate(-50%, calc(-100% + 4px)); } }
@@ -179,9 +187,9 @@
 .forge .acard { width: 96px; height: 92px; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transition: transform 150ms var(--ease-out), border-color 150ms, box-shadow 200ms; }
 .forge .acard img { width: 50px; height: 50px; object-fit: contain; }
 .forge .acard span { font: var(--type-label); letter-spacing: var(--track-tight); color: var(--gold); }
-.forge .acard:hover { transform: translateY(-3px); border-color: var(--gold); }
+.forge .acard:hover { transform: translateY(-3px); }
 .forge .acard:active { transform: scale(.97); transition-duration: 70ms; }
-.forge .acard[aria-pressed="true"] { border-color: var(--gold-hi); box-shadow: inset 0 0 0 3px rgba(18, 13, 9, .74), inset 0 0 0 4px var(--gold), 0 0 16px rgba(233, 212, 154, .2); }
+.forge .acard[aria-pressed="true"] { box-shadow: inset 0 1px 0 rgba(255, 236, 200, .25), inset 0 0 0 1px var(--gold-hi), 0 0 16px rgba(233, 212, 154, .2); }
 .forge .acard[aria-pressed="true"] span { color: var(--gold-hi); }
 
 /* Historical account: a scroll that unrolls between two painted rollers. The roller image is
@@ -217,6 +225,40 @@
 .forge .sheet .close { position: absolute; top: calc(var(--roll-h) * .5 + 14px); right: 18px; width: 32px; height: 32px; display: grid; place-items: center; color: #5B4A33; border-radius: 6px; border: 1px solid transparent; transition: color 160ms, border-color 160ms, transform 160ms var(--ease-out); }
 .forge .sheet .close:hover { color: var(--rubric); border-color: rgba(122, 42, 30, .35); }
 .forge .sheet .close:active { transform: scale(.94); }
+
+/* ── Glass: dark amber liquid glass, lit by the forge. Three densities: small surfaces (cards, bars,
+   buttons), panes (inspector, Form list) and dense (tooltips, labels: more fill, so text over the scene stays
+   crisp). A specular rim, brightest at the top left, takes the place of a border; the fire's warm light
+   leaks in from the lower left, and a fine grain keeps the glass from reading as plastic. */
+.forge {
+  --g-blur: blur(16px) saturate(1.7) brightness(.92); --g-pane-blur: blur(26px) saturate(1.9) brightness(.88); --g-dense-blur: blur(18px) saturate(1.5) brightness(.9);
+  --rim-in: inset 0 1px 0 rgba(255, 236, 200, .2), inset 0 -1px 0 rgba(0, 0, 0, .3);
+  --ember: radial-gradient(140% 90% at 0% 100%, rgba(255, 120, 40, .06), transparent 60%);
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .9 0 0 0 0 .75 0 0 0 .05 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* Touch devices and small screens: a lighter blur (the scene behind costs the GPU enough there). */
+@media (pointer: coarse), (max-width: 700px) {
+  .forge { --g-blur: blur(10px) saturate(1.6); --g-pane-blur: blur(14px) saturate(1.8); --g-dense-blur: blur(10px) saturate(1.4); }
+}
+.forge .glass, .forge .btn { -webkit-backdrop-filter: var(--g-blur); backdrop-filter: var(--g-blur); border-color: transparent; }
+.forge .glass { background: var(--grain), var(--ember), var(--glass); }
+.forge .glass::before, .forge .btn::before { content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1px; pointer-events: none;
+  background: linear-gradient(150deg, rgba(255, 244, 222, .9), rgba(233, 200, 130, .42) 22%, rgba(201, 169, 97, .1) 55%, rgba(201, 169, 97, .14) 80%, rgba(255, 228, 180, .5));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
+.forge .btn { position: relative; background: var(--grain), var(--ember), var(--glass); }
+.forge .glass::before, .forge .btn::before { opacity: .75; transition: opacity 160ms var(--ease-out); }
+.forge .btn:hover::before, .forge .btn.primary::before, .forge .item:hover .card::before, .forge .acard:hover::before { opacity: 1; }
+.forge .btn[aria-disabled="true"]::before { opacity: .45; }
+/* Selected: the gold ring is the frame, so the rim steps back. */
+.forge .btn[aria-pressed="true"]::before, .forge .item[aria-pressed="true"] .card::before, .forge .acard[aria-pressed="true"]::before { opacity: 0; }
+.forge .item.more .card, .forge .item.back .card { border-color: var(--gold-line); }
+.forge .item.more .card::before, .forge .item.back .card::before { display: none; }
+.forge .glass.pane { -webkit-backdrop-filter: var(--g-pane-blur); backdrop-filter: var(--g-pane-blur);
+  background: var(--grain), radial-gradient(130% 70% at 0% 100%, rgba(255, 120, 40, .07), transparent 62%), linear-gradient(160deg, rgba(255, 214, 160, .06), rgba(34, 22, 12, .5) 28%, rgba(18, 12, 7, .58) 70%, rgba(12, 8, 4, .64));
+  box-shadow: inset 1px 1px 0 rgba(255, 244, 222, .34), inset 0 0 0 1px rgba(233, 200, 130, .2), inset 0 -1px 0 rgba(0, 0, 0, .4), inset 0 0 22px rgba(255, 200, 140, .06), 0 22px 48px rgba(0, 0, 0, .5); }
+.forge .glass.pane::before { display: none; }
+.forge .glass.dense { -webkit-backdrop-filter: var(--g-dense-blur); backdrop-filter: var(--g-dense-blur);
+  background: var(--grain), linear-gradient(160deg, rgba(40, 27, 15, .86), rgba(16, 11, 6, .9)); }
 
 @media (prefers-reduced-motion: reduce) {
   .forge *, .forge *::before, .forge *::after { animation: none !important; transition-duration: 1ms !important; transition-delay: 0s !important; }

@@ -262,8 +262,9 @@ export function AppShell({ children }: AppShellProps) {
 
       <NoiseOverlay />
 
+      {/* backwards, not both: an animation still filling after it ends cuts the UI's frosted glass off from the 3D scene. */}
       {hasEntered && (
-        <div style={{ position: 'absolute', inset: 0, zIndex: 10, pointerEvents: 'none', animation: 'cc-reveal 0.9s ease 1.6s both' }}>
+        <div style={{ position: 'absolute', inset: 0, zIndex: 10, pointerEvents: 'none', animation: 'cc-reveal 0.9s ease 1.6s backwards' }}>
           <ForgeUI />
         </div>
       )}
