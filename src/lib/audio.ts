@@ -145,10 +145,12 @@ export function makeAudioLayer(src: string, target: number, delayMs: number): ()
   };
 }
 
-// Music: the tracks play one after another and the list loops, each track crossfading into the next over
-// a few seconds, so a long visit hears several pieces instead of one on repeat. Quiet when muted or when the
-// tab is hidden; a browser that blocks autoplay starts it on the first tap. Returns a cleanup function.
-const CROSSFADE_S = 5;
+// Music: the tracks play one after another and the list loops, so a long visit hears several pieces instead
+// of one on repeat. Every track file carries its own soft fades (8 s in, 7 s out, all at one loudness), so the
+// next track simply starts as the last one begins to fade: the two fades overlap into a seamless crossfade.
+// Quiet when muted or when the tab is hidden; a browser that blocks autoplay starts it on the first tap.
+// Returns a cleanup function.
+const OVERLAP_S = 7;
 export function makePlaylist(srcs: string[], target: number, delayMs: number): () => void {
   const players = [new Audio(), new Audio()];
   players.forEach((p) => { p.preload = 'auto'; p.volume = 0; });
@@ -161,16 +163,16 @@ export function makePlaylist(srcs: string[], target: number, delayMs: number): (
     const now = performance.now(), cur = players[active];
     // The first track fades in over 2 s.
     const intro = Math.min(1, (now - startT0) / 2000);
-    // Start the next track a crossfade before this one ends.
-    if (fadeFrom < 0 && cur.duration && cur.currentTime >= cur.duration - CROSSFADE_S) {
+    // Start the next track as this one begins its fade-out; the outgoing one plays on to its end.
+    if (fadeFrom < 0 && cur.duration && cur.currentTime >= cur.duration - OVERLAP_S) {
       fadeFrom = active; active = 1 - active; track++; fadeT0 = now;
       load(players[active], track); play(players[active]);
     }
-    const k = fadeFrom < 0 ? 1 : Math.min(1, (now - fadeT0) / (CROSSFADE_S * 1000));
-    players[active].volume = target * intro * k;
+    players[active].volume = target * intro;
     if (fadeFrom >= 0) {
-      players[fadeFrom].volume = target * (1 - k);
-      if (k >= 1) { players[fadeFrom].pause(); fadeFrom = -1; }
+      const out = players[fadeFrom];
+      out.volume = target;
+      if (out.ended || now - fadeT0 > (OVERLAP_S + 2) * 1000) { out.pause(); fadeFrom = -1; }
     }
   }, 100);
   const begin = () => { if (_muted) return; started = true; startT0 = performance.now(); play(players[active]); };
