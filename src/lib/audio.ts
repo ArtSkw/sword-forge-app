@@ -208,11 +208,11 @@ export const playScroll = (opening: boolean) =>
 // --- The forge strike: one sound for every change to the sword ---
 // Each kind of change has its own recorded strike (ElevenLabs sound effects, chosen by the author): steel
 // rings, iron fittings clink lower, a wooden grip knocks, a leather or cord grip creaks under the hand, a finish is a whetstone
-// stroke. Whole-sword changes (a new Form, Back to default) ring the original anvil, the author's choice after trying generated reforge strikes. A small random variation keeps repeated changes alive.
+// stroke. Whole-sword changes (a new Form, Back to default) ring a crisp, juicy anvil ping: the sword reforged. A small random variation keeps repeated changes alive.
 const SND = `${import.meta.env.BASE_URL}sounds/`;
 export type StrikeVoice = 'reforge' | 'steel' | 'fitting' | 'wood' | 'leather' | 'soft';
 const STRIKES: Record<StrikeVoice, { src: string } & ClingParams> = {
-  reforge: { src: `${SND}anvil.wav`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.34 },
+  reforge: { src: `${SND}reforge.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.34 },
   steel: { src: `${SND}strike-steel.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.3 },
   fitting: { src: `${SND}strike-fitting.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.28 },
   wood: { src: `${SND}strike-wood.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.34 },
