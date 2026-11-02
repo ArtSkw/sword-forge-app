@@ -111,12 +111,15 @@ function DesktopRecommendation({ onDismiss }: { onDismiss: () => void }) {
 
 const ENTRY_EXIT_MS = 520;
 
+// The app's name already says "Forge", so the call to action only says how to go in: tap on touch screens.
+const ENTER_LABEL = typeof window !== 'undefined' && matchMedia('(pointer: coarse)').matches ? 'Tap to enter' : 'Click to enter';
+
 function EntryScreen({ exiting, onEnter }: { exiting: boolean; onEnter: () => void }) {
   return (
     <button
       type="button"
       onClick={onEnter}
-      aria-label="Enter the forge"
+      aria-label={ENTER_LABEL}
       disabled={exiting}
       style={{
         position: 'absolute',
@@ -191,7 +194,7 @@ function EntryScreen({ exiting, onEnter }: { exiting: boolean; onEnter: () => vo
             animation: 'cc-entry-layer 0.95s ease 2.75s both',
           }}
         >
-          Enter the forge
+          {ENTER_LABEL}
         </span>
       </div>
     </button>
