@@ -9,7 +9,7 @@ import { LOW_TIER } from '../../lib/tier';
 
 const ENTRY_EXIT_MS = 520;
 // Music, in playing order (generated with ElevenLabs music, chosen by the author).
-const MUSIC = ['music', 'music-vigil'];
+const MUSIC = ['music', 'music-vigil', 'music-medieval'];
 
 // The app's name already says "Forge", so the call to action only says how to go in: tap on touch screens.
 const ENTER_LABEL = typeof window !== 'undefined' && matchMedia('(pointer: coarse)').matches ? 'Tap to enter' : 'Click to enter';
