@@ -4,6 +4,7 @@ import type { ArchetypeKey, GripMaterial, GripShape } from '../../store/configSt
 import { getGripDetailRecipe } from '../../presets/archetypeDetails';
 import { surface } from './surface';
 import { woodTexture } from './gripTextures';
+import { LOW_TIER } from '../../lib/tier';
 
 // The grip, built as one solid whose surface is the wrap itself, so each material reads by its shape:
 // - wood: two halves around the tang, planed and oiled (grain texture, a fine seam on each edge);
@@ -15,8 +16,6 @@ import { woodTexture } from './gripTextures';
 const GRIP_RADIUS_TOP = 0.011;
 const GRIP_RADIUS_BOT = 0.014;
 export const GRIP_FLATTEN = 0.86;
-// Touch devices and small screens: a lighter mesh (the wrap's ridges keep their pitch, with fewer rows).
-const LOW_TIER = typeof window !== 'undefined' && (matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 700);
 const AROUND = LOW_TIER ? 72 : 112, ROWS_PER_TURN = LOW_TIER ? 4 : 6, STRIP_ROWS = LOW_TIER ? 14 : 24;
 
 type Wrap = { pitch: number; height: number; kind: 'none' | 'strip' | 'cord' | 'wire' };

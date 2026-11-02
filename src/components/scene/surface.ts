@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { LOW_TIER } from '../../lib/tier';
 
 // Surface detail for the sword's materials, from tileable height maps (Codex ImageGen), packed into one
 // RGBA texture (public/textures/surface.webp): R scratches, G corrosion, B forged metal, A leather grain.
@@ -8,7 +9,6 @@ import * as THREE from 'three';
 // how much wear and corrosion shows (its age, see AGE). Until the texture has loaded every layer stays off.
 
 const BASE = import.meta.env.BASE_URL;
-const LOW_TIER = typeof window !== 'undefined' && (matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 700);
 const READY = { value: 0 };
 const MAP = new THREE.TextureLoader().load(`${BASE}textures/surface${LOW_TIER ? '-512' : ''}.webp`, () => { READY.value = 1; }, undefined, () => { READY.value = 0; });
 MAP.wrapS = MAP.wrapT = THREE.RepeatWrapping;

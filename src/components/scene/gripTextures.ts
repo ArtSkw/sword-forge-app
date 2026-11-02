@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import type { GripMaterial } from '../../store/configStore';
+import { LOW_TIER } from '../../lib/tier';
 
 // Procedural normal maps for grip wraps, shared by the grip and the leather-covered ricasso.
 
@@ -74,7 +75,6 @@ export const GRIP_NORMAL_MAPS: Record<GripMaterial, THREE.CanvasTexture> = {
 };
 
 const BASE = import.meta.env.BASE_URL;
-const LOW_TIER = typeof window !== 'undefined' && (matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 700);
 let woodMap: THREE.Texture | null = null;
 /** Oiled ash grain for wooden grips and Messer scales (one tile round the grip, every 9 cm along it). */
 export function woodTexture() {

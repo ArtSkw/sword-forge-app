@@ -230,9 +230,14 @@ function Inspector({ station, choices, embedded = false }: { station: StationId;
 // ── Phones: one sheet at the bottom holds the part steps and its variants; dragged (or tapped) open it adds
 // the part's note and every option, scrolling if they do not fit. Its height follows its content, and is
 // published so the camera frames the sword in the space above it.
-const PHONE_QUERY = '(max-width: 700px)';
-const subscribePhone = (cb: () => void) => { const m = matchMedia(PHONE_QUERY); m.addEventListener('change', cb); return () => m.removeEventListener('change', cb); };
-const usePhone = () => useSyncExternalStore(subscribePhone, () => matchMedia(PHONE_QUERY).matches, () => false);
+// One MediaQueryList per query, made once (a new one per snapshot would be wasted work on every render).
+const queries = new Map<string, MediaQueryList>();
+const mq = (q: string) => { let m = queries.get(q); if (!m) { m = matchMedia(q); queries.set(q, m); } return m; };
+const useMedia = (q: string) => useSyncExternalStore(
+  (cb) => { const m = mq(q); m.addEventListener('change', cb); return () => m.removeEventListener('change', cb); },
+  () => mq(q).matches, () => false);
+const usePhone = () => useMedia('(max-width: 700px)');
+const useNarrow = () => useMedia('(max-width: 1179px)');
 
 function PhoneSheet({ station, choices, onStep, opens }: { station: StationId; choices: StationChoices; onStep: (d: number) => void; opens: number }) {
   const [open, setOpen] = useState(false);
@@ -252,17 +257,21 @@ function PhoneSheet({ station, choices, onStep, opens }: { station: StationId; c
   const prev = STATIONS[(i + STATIONS.length - 1) % STATIONS.length], next = STATIONS[(i + 1) % STATIONS.length];
   // Drag the handle: up opens, down closes; a tap toggles.
   const down = (e: React.PointerEvent) => { drag.current = { y: e.clientY, id: e.pointerId }; e.currentTarget.setPointerCapture(e.pointerId); };
+  // A drag sets the state from its direction and swallows the click that follows; a plain tap, a key or a
+  // screen reader's activation all arrive as the click, which toggles.
+  const dragged = useRef(false);
   const up = (e: React.PointerEvent) => {
     const d = drag.current; drag.current = null;
     if (!d) return;
     const dy = e.clientY - d.y;
-    setOpen(Math.abs(dy) < 8 ? !open : dy < 0);
+    dragged.current = Math.abs(dy) >= 8;
+    if (dragged.current) setOpen(dy < 0);
   };
+  const click = () => { if (dragged.current) { dragged.current = false; return; } setOpen(!open); };
   return (
     <div className="psheet glass pane" ref={ref} data-open={open}>
       <button className="ps-handle" aria-expanded={open} aria-label={open ? 'Show fewer options' : 'Show all options'}
-        onPointerDown={down} onPointerUp={up} onPointerCancel={() => { drag.current = null; }}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(!open); } }}>
+        onPointerDown={down} onPointerUp={up} onPointerCancel={() => { drag.current = null; }} onClick={click}>
         <i className="grab" />
       </button>
       <div className="ps-head">
@@ -354,12 +363,12 @@ function MoreMenu({ muted }: { muted: boolean }) {
   }, [open]);
   const act = (fn: () => void) => () => { fn(); setOpen(false); };
   return (
-    <div className="more phone-only" ref={ref}>
-      <button ref={btn} className="btn icon" aria-label="More actions" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>{ICONS.more}</button>
-      <div className="more-list glass pane" role="menu" data-open={open} inert={!open}>
-        <button role="menuitem" aria-disabled={atDefault} onClick={act(() => { if (!atDefault) { resetSword(); forgeSound(); } })}>{ICONS.reset}<span>Back to default</span></button>
-        <button role="menuitem" onClick={act(() => audioState.toggle())}>{muted ? ICONS.muted : ICONS.sound}<span>{muted ? 'Sound off' : 'Sound on'}</span></button>
-        <button role="menuitem" onClick={act(() => takeScreenshot())}>{ICONS.shot}<span>Screenshot</span></button>
+    <div className="more phone-only" ref={ref} onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setOpen(false); }}>
+      <button ref={btn} className="btn icon" aria-label="More actions" aria-controls="forge-more" aria-expanded={open} onClick={() => setOpen(!open)}>{ICONS.more}</button>
+      <div id="forge-more" className="more-list glass pane" data-open={open} inert={!open}>
+        <button aria-disabled={atDefault} onClick={act(() => { if (!atDefault) { resetSword(); forgeSound(); } })}>{ICONS.reset}<span>Back to default</span></button>
+        <button onClick={act(() => audioState.toggle())}>{muted ? ICONS.muted : ICONS.sound}<span>{muted ? 'Sound off' : 'Sound on'}</span></button>
+        <button onClick={act(() => takeScreenshot())}>{ICONS.shot}<span>Screenshot</span></button>
       </div>
     </div>
   );
@@ -463,7 +472,7 @@ export function ForgeUI() {
     return () => removeEventListener('keydown', onKey);
   }, []);
 
-  const phone = usePhone();
+  const phone = usePhone(), narrow = useNarrow();
   const preset = SWORD_TYPES[config.archetype];
   const mode = `forge${station ? ' focus' : ''}${reading ? ' reading' : ''}`;
   const overviewOff = !!station || reading;
@@ -498,7 +507,7 @@ export function ForgeUI() {
             </button>
           ))}
         </div>
-        <div className="corner-l fade hide-focus" inert={!!station}>
+        <div className="corner-l fade hide-focus" inert={!!station || (reading && narrow)}>
           <button className="btn history" aria-label={reading ? 'Close' : 'History & use'} onClick={() => setReading(!reading)} data-tip={reading ? 'Close' : 'History & use'} data-tip-body={reading ? 'Back to the forge (Esc)' : 'Where this sword comes from, how it was fought and how it handles (H)'}>
             {ICONS.scroll}<span>{reading ? 'Close' : 'History & use'}</span>
           </button>

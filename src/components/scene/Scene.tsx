@@ -9,6 +9,7 @@ import { useConfigStore } from '../../store/configStore';
 import { useViewportSize } from '../../hooks/useViewportSize';
 import { anchors, interaction, publishAnchors } from '../../lib/anchors';
 import { STATIONS, type StationId } from '../../presets/forge';
+import { LOW_TIER } from '../../lib/tier';
 
 // Camera sits at ~65° polar (above + side) for a presentation-angle view.
 const CAMERA_POSITION: [number, number, number] = [1.32, 1.1, 2.2];
@@ -20,8 +21,6 @@ const AUTO_ROTATE_RESUME_MS = 10000;
 const SWORD_INTRO_DELAY = 2.6;
 const SWORD_INTRO_DURATION = 1.2;
 // Reflections: the 2k studio map on desktops, the 1k one on touch devices and small screens (quality tiers
-// grow from here; see the performance step in the plan).
-const LOW_TIER = typeof window !== 'undefined' && (matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 700);
 const STUDIO_HDRI = `${import.meta.env.BASE_URL}hdri/studio_small_03_${LOW_TIER ? '1k' : '2k'}.hdr`;
 // Frames the contact shadow keeps drawing after a re-render (~2 s at 60 fps: covers the intro and a part's swap).
 const SHADOW_FRAMES = 120;
@@ -138,7 +137,7 @@ function SceneContents() {
   }, []);
   const autoRotateOn = useRef(false);
   useEffect(() => { autoRotateOn.current = autoRotate && station === null && !reading && !motionReduced.current; });
-  const lastFramed = useRef<{ station: StationId | null; reading: boolean; reframe: number; geo: string } | null>(null);
+  const lastFramed = useRef<{ station: StationId | null; reading: boolean; reframe: number; geo: string; sheet: number } | null>(null);
   // Edit mode can be turned by hand; a double-click glides back to the part's shot.
   const [reframe, setReframe] = useState(0);
   // Re-frame triggers: double-click (edit mode) or Reset view. In the overview the reset effect below runs
@@ -185,8 +184,9 @@ function SceneContents() {
     const readingView = reading && w >= 1180;
     const last = lastFramed.current;
     const refit = last?.station === station && last?.reading === readingView && last?.reframe === again;
-    const resizeOnly = refit && last?.geo === geoKey;
-    lastFramed.current = { station, reading: readingView, reframe: again, geo: geoKey };
+    // A change of the phone sheet's height glides like a refit; only a resize of the screen snaps.
+    const resizeOnly = refit && last?.geo === geoKey && last?.sheet === sheetPx;
+    lastFramed.current = { station, reading: readingView, reframe: again, geo: geoKey, sheet: sheetPx };
     m.fromTarget.copy(controls.target);
     m.fromDist = camera.position.distanceTo(controls.target);
     m.fromShift = m.shift; m.fromShiftY = m.shiftY;
@@ -340,9 +340,14 @@ export function Scene() {
   const reading = useConfigStore((s) => s.reading);
   const { width } = useViewportSize();
   const hidden = reading && width < 1180;
+  // Hidden behind the scroll, the scene stops rendering once its fade-out ends, and resumes as soon as it
+  // is shown again (before the fade-in).
+  const [faded, setFaded] = useState(false);
   return (
     <Canvas
       dpr={dpr}
+      frameloop={hidden && faded ? 'never' : 'always'}
+      onTransitionEnd={(e) => { if (e.propertyName === 'opacity' && e.target === e.currentTarget) setFaded(hidden); }}
       gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }}
       camera={{ position: CAMERA_POSITION, fov: FOV }}
       onCreated={({ gl }) => {
@@ -352,7 +357,8 @@ export function Scene() {
       }}
       style={{ background: 'transparent', opacity: hidden ? 0 : 1, transition: `opacity ${hidden ? 260 : 420}ms cubic-bezier(.2, 0, 0, 1)` }}
     >
-      <PerformanceMonitor flipflops={4} onFallback={() => setDpr(MIN_DPR)}
+      {/* No fallback: drei counts every incline as a flip, so a fast 120 Hz screen would trip it. */}
+      <PerformanceMonitor
         onDecline={() => setDpr((d) => Math.max(MIN_DPR, +(d - 0.25).toFixed(2)))}
         onIncline={() => setDpr((d) => Math.min(MAX_DPR, +(d + 0.25).toFixed(2)))} />
       <SceneContents />

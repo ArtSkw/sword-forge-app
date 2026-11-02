@@ -5,10 +5,9 @@ import { NoiseOverlay } from './NoiseOverlay';
 import { AtmosphereOverlay } from './AtmosphereOverlay';
 import { ForgeUI } from '../forge/ForgeUI';
 import { makeAudioLayer } from '../../lib/audio';
+import { LOW_TIER } from '../../lib/tier';
 
 const ENTRY_EXIT_MS = 520;
-// Touch devices and small screens show the forge as a still (no 5 MB video to fetch and decode under a blur).
-const LOW_TIER_BG = typeof window !== 'undefined' && (matchMedia('(pointer: coarse)').matches || Math.min(screen.width, screen.height) < 700);
 
 // The app's name already says "Forge", so the call to action only says how to go in: tap on touch screens.
 const ENTER_LABEL = typeof window !== 'undefined' && matchMedia('(pointer: coarse)').matches ? 'Tap to enter' : 'Click to enter';
@@ -135,7 +134,7 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      {LOW_TIER_BG ? (
+      {LOW_TIER ? (
         <img src={`${import.meta.env.BASE_URL}background.webp`} alt="" aria-hidden="true"
           style={{ position: 'fixed', inset: '-16px', width: 'calc(100% + 32px)', height: 'calc(100% + 32px)', objectFit: 'cover', filter: 'blur(10px)', zIndex: -2, pointerEvents: 'none', animation: 'cc-reveal 2s ease both' }} />
       ) : <video
