@@ -33,6 +33,19 @@ const RING_GRACE = 380;  // ms they linger after the pointer leaves, so brushing
 const TIP_DELAY = 450;
 const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// Reliquary picker: each type stands whole in a gilt Gothic niche. Heights follow the swords' overall
+// lengths (cm), compressed so the shortest still reads: a greatsword fills the niche, an arming sword ~80%.
+const RELIC_CM: Record<ArchetypeKey, number> = { armingSword: 95, longsword: 122, bastardSword: 118, vikingSword: 92, falchion: 89, estoc: 160, greatsword: 168 };
+const relicHeight = (k: ArchetypeKey) => Math.round(100 * (0.56 + 0.44 * RELIC_CM[k] / 168));
+const NICHE_FRAME = (
+  <svg className="niche-frame" viewBox="0 0 92 124" aria-hidden="true">
+    <path className="outer" d="M3 123 V44 Q3 4 46 3 Q89 4 89 44 V123" />
+    <path className="inner" d="M8 123 V45 Q8 10 46 8 Q84 10 84 45 V123" />
+    <path className="finial" d="M46 0 l3.2 4.4 -3.2 3 -3.2 -3z" />
+    <path className="sill" d="M1 123.3 H91" />
+  </svg>
+);
+
 const icon = (svg: IconSvgElement) => <HugeiconsIcon icon={svg} size={16} strokeWidth={1.5} />;
 const ICONS = {
   scroll: icon(ScrollTextIcon), reset: icon(ArrowReloadHorizontalIcon), sound: icon(VolumeHighIcon), muted: icon(VolumeMute02Icon),
@@ -360,7 +373,7 @@ export function ForgeUI() {
   useEffect(() => {
     const a = document.activeElement;
     if (a && a !== document.body && !a.closest('[inert]')) return;
-    const target = station ? '.forge .chooser .item[aria-pressed="true"], .forge .chooser .item' : reading ? null : '.forge .acard[aria-pressed="true"]';
+    const target = station ? '.forge .chooser .item[aria-pressed="true"], .forge .chooser .item' : reading ? null : '.forge .relic[aria-pressed="true"]';
     const el = target ? document.querySelector<HTMLElement>(target) : null;
     // Moving focus for the user shouldn't pop a tooltip (the inspector already says the same).
     if (el) { autoFocusing = true; el.focus({ preventScroll: true }); autoFocusing = false; }
@@ -410,10 +423,16 @@ export function ForgeUI() {
 
         <div className="arch fade hide-focus hide-reading" inert={overviewOff}>
           {SWORD_TYPE_ORDER.map((k) => (
-            <button key={k} className="acard glass" aria-pressed={config.archetype === k} aria-label={SWORD_TYPES[k].name}
+            <button key={k} className="relic" aria-pressed={config.archetype === k} aria-label={SWORD_TYPES[k].name}
               data-tip={SWORD_TYPES[k].name} data-tip-body={`${ARCHETYPE_ERA[k]} · ${SWORD_TYPES[k].description}`}
               onClick={() => { if (k !== config.archetype) setArchetype(k); playCling(CLING, CLING_PARAMS[k]); }}>
-              <img src={`${BASE}sword-icons/${k}.png`} alt="" /><span>{SHORT_NAMES[k]}</span>
+              <span className="niche-wrap">
+                <span className="niche">
+                  <img src={`${BASE}sword-relics/${k}.webp`} alt="" style={{ height: `calc(${relicHeight(k) / 100} * (100% - 18px))` }} />
+                </span>
+                {NICHE_FRAME}
+              </span>
+              <span className="plate">{SHORT_NAMES[k]}</span>
             </button>
           ))}
         </div>

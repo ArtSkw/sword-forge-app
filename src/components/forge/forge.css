@@ -182,15 +182,38 @@
 .forge .dot:focus-visible { outline: 1px solid var(--gold-hi); outline-offset: 5px; }
 
 /* Archetypes */
-.forge .arch { position: absolute; z-index: 10; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; }
+.forge .arch { position: absolute; z-index: 10; bottom: 24px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; align-items: flex-end; }
 .forge.focus .arch { transform: translateX(-50%) translateY(16px); }
-.forge .acard { width: 96px; height: 92px; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; transition: transform 150ms var(--ease-out), border-color 150ms, box-shadow 200ms; }
-.forge .acard img { width: 50px; height: 50px; object-fit: contain; }
-.forge .acard span { font: var(--type-label); letter-spacing: var(--track-tight); color: var(--gold); }
-.forge .acard:hover { transform: translateY(-3px); }
-.forge .acard:active { transform: scale(.97); transition-duration: 70ms; }
-.forge .acard[aria-pressed="true"] { box-shadow: inset 0 1px 0 rgba(255, 236, 200, .25), inset 0 0 0 1px var(--gold-hi), 0 0 16px rgba(233, 212, 154, .2); }
-.forge .acard[aria-pressed="true"] span { color: var(--gold-hi); }
+/* Reliquary: each type stands whole in a gilt Gothic niche, lit from above; a brass plate names it. */
+.forge .relic { width: 92px; display: flex; flex-direction: column; align-items: center; gap: 6px; transition: transform 200ms var(--ease-out); }
+.forge .relic .niche-wrap { position: relative; display: block; width: 92px; height: 124px; }
+.forge .relic .niche { position: relative; width: 92px; height: 124px; display: block; clip-path: path('M0 124 V44 Q0 1 46 0 Q92 1 92 44 V124 Z');
+  -webkit-backdrop-filter: var(--g-blur); backdrop-filter: var(--g-blur);
+  background: radial-gradient(70% 42% at 50% 14%, rgba(255, 190, 110, .16), transparent 72%), linear-gradient(180deg, rgba(36, 23, 13, .72), rgba(14, 9, 5, .84) 72%);
+  transition: background 220ms var(--ease-out); }
+.forge .relic img { position: absolute; left: 50%; bottom: 6px; width: auto; max-width: 84px; transform: translateX(-50%); object-fit: contain; filter: drop-shadow(0 0 10px rgba(255, 210, 150, 0)) drop-shadow(0 4px 6px rgba(0, 0, 0, .6)); transition: transform 220ms var(--ease-out), filter 220ms; }
+.forge .niche-frame { position: absolute; inset: 0; width: 100%; height: 100%; fill: none; overflow: visible; pointer-events: none; transition: filter 220ms var(--ease-out); }
+.forge .niche-frame .outer { stroke: var(--gold); stroke-width: 1.4; opacity: .7; transition: stroke 200ms, opacity 200ms; }
+.forge .niche-frame .inner { stroke: rgba(201, 169, 97, .35); stroke-width: 1; }
+.forge .niche-frame .finial { fill: var(--gold-hi); stroke: none; }
+.forge .niche-frame .sill { stroke: var(--gold); stroke-width: 1.6; opacity: .7; }
+/* The plate spans the niche, so every column is the same width; dark text on brass stays above 4.5:1. */
+.forge .relic .plate { width: 100%; padding: 4px 2px 3px; border-radius: 2px; text-align: center; white-space: nowrap; font: var(--type-label-sm); letter-spacing: .05em; text-transform: uppercase; color: #1a1007;
+  background: linear-gradient(180deg, #d6ba79, #b8954f 60%, #9c7a3c); box-shadow: inset 0 1px 0 rgba(255, 240, 200, .45), 0 2px 6px rgba(0, 0, 0, .5); transition: background 200ms; }
+@media (hover: hover) and (pointer: fine) {
+  .forge .relic:hover .niche { background: radial-gradient(70% 48% at 50% 14%, rgba(255, 194, 120, .28), transparent 72%), linear-gradient(180deg, rgba(40, 26, 14, .72), rgba(16, 10, 5, .84) 72%); }
+  .forge .relic:hover img { transform: translateX(-50%) translateY(-3px); }
+  .forge .relic:hover .niche-frame .outer { opacity: 1; }
+}
+.forge .relic:active { transform: scale(.97); transition-duration: 70ms; }
+/* Chosen: the niche glows from within, the frame and the plate brighten. */
+.forge .relic[aria-pressed="true"] .niche { background: radial-gradient(75% 55% at 50% 12%, rgba(255, 196, 120, .42), transparent 74%), linear-gradient(180deg, rgba(46, 30, 16, .74), rgba(18, 11, 6, .84) 72%); }
+.forge .relic[aria-pressed="true"] img { filter: drop-shadow(0 0 10px rgba(255, 210, 150, .25)) drop-shadow(0 4px 6px rgba(0, 0, 0, .6)); }
+.forge .relic[aria-pressed="true"] .niche-frame { filter: drop-shadow(0 0 5px rgba(233, 212, 154, .55)); }
+.forge .relic[aria-pressed="true"] .niche-frame .outer { stroke: var(--gold-hi); stroke-width: 2; opacity: 1; }
+.forge .relic[aria-pressed="true"] .plate { background: linear-gradient(180deg, #f4e1a8, #d4ae5c 60%, #b58f45); }
+.forge .relic:focus-visible { outline: none; }
+.forge .relic:focus-visible .plate { outline: 1px solid var(--gold-hi); outline-offset: 3px; }
 
 /* History & use: a scroll that unrolls between two painted rollers. The roller image is
    sliced in three (handles fixed, rolled vellum stretched), the vellum tiles, the side edges are deckled. */
@@ -247,10 +270,10 @@
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
 .forge .btn { position: relative; background: var(--grain), var(--ember), var(--glass); }
 .forge .glass::before, .forge .btn::before { opacity: .75; transition: opacity 160ms var(--ease-out); }
-.forge .btn:hover::before, .forge .btn.primary::before, .forge .item:hover .card::before, .forge .acard:hover::before { opacity: 1; }
+.forge .btn:hover::before, .forge .btn.primary::before, .forge .item:hover .card::before { opacity: 1; }
 .forge .btn[aria-disabled="true"]::before { opacity: .45; }
 /* Selected: the gold ring is the frame, so the rim steps back. */
-.forge .btn[aria-pressed="true"]::before, .forge .item[aria-pressed="true"] .card::before, .forge .acard[aria-pressed="true"]::before { opacity: 0; }
+.forge .btn[aria-pressed="true"]::before, .forge .item[aria-pressed="true"] .card::before { opacity: 0; }
 .forge .item.more .card, .forge .item.back .card { border-color: var(--gold-line); }
 .forge .item.more .card::before, .forge .item.back .card::before { display: none; }
 .forge .glass.pane { -webkit-backdrop-filter: var(--g-pane-blur); backdrop-filter: var(--g-pane-blur);
@@ -259,6 +282,13 @@
 .forge .glass.pane::before { display: none; }
 .forge .glass.dense { -webkit-backdrop-filter: var(--g-dense-blur); backdrop-filter: var(--g-dense-blur);
   background: var(--grain), linear-gradient(160deg, rgba(40, 27, 15, .86), rgba(16, 11, 6, .9)); }
+
+/* Narrow screens: the niches shrink and the row scrolls sideways, snapping to each sword. */
+@media (max-width: 700px) {
+  .forge .arch { left: 0; right: 0; bottom: 16px; transform: none; overflow-x: auto; padding: 10px 16px 4px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .forge.focus .arch { transform: translateY(16px); }
+  .forge .relic { zoom: .72; scroll-snap-align: center; flex: none; }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .forge *, .forge *::before, .forge *::after { animation: none !important; transition-duration: 1ms !important; transition-delay: 0s !important; }
