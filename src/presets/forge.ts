@@ -219,7 +219,7 @@ export const ARCHETYPE_ERA: Record<ArchetypeKey, string> = {
   vikingSword: '8th–11th centuries', falchion: '13th–16th centuries', estoc: '14th–16th centuries', greatsword: '15th–16th centuries',
 };
 
-// ── The sword's story: opening paragraph and how each type was fought ───────
+// ── History & use: opening paragraph and how each type was fought ───────
 export const ACCOUNT: Record<ArchetypeKey, { title: string; lead: string; fighting: string }> = {
   vikingSword: {
     title: 'The Viking sword',

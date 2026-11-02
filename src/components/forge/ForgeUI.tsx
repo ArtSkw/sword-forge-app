@@ -237,7 +237,7 @@ function FormSwitcher() {
   const forms = formsOf(config), form = currentForm(config);
   // Focus goes back to the name without its tooltip, which would repeat the list folding away under it.
   const close = (refocus: boolean) => { setOpen(false); if (refocus) { autoFocusing = true; nameRef.current?.focus({ preventScroll: true }); autoFocusing = false; } };
-  // The list belongs to the overview: leaving it (edit mode, the story) closes it.
+  // The list belongs to the overview: leaving it (edit mode, History & use) closes it.
   const [wasBusy, setWasBusy] = useState(busy);
   if (wasBusy !== busy) { setWasBusy(busy); if (busy && open) setOpen(false); }
   useEffect(() => {
@@ -366,7 +366,7 @@ export function ForgeUI() {
     if (el) { autoFocusing = true; el.focus({ preventScroll: true }); autoFocusing = false; }
   }, [station, reading]);
 
-  // Keyboard: ←/→ parts, ↑/↓ variants, Esc back, H story (no modifiers, no auto-repeat bursts)
+  // Keyboard: ←/→ parts, ↑/↓ variants, Esc back, H History & use (no modifiers, no auto-repeat bursts)
   const live = useRef({ station, reading, choices, step, open, setReading });
   useLayoutEffect(() => { live.current = { station, reading, choices, step, open, setReading }; });
   useEffect(() => {
@@ -418,8 +418,8 @@ export function ForgeUI() {
           ))}
         </div>
         <div className="corner-l fade hide-focus" inert={!!station}>
-          <button className="btn" onClick={() => setReading(!reading)} data-tip={reading ? 'Close the story' : 'The sword’s story'} data-tip-body={reading ? 'Back to the forge (Esc)' : 'Where it comes from, how it was fought and how it handles (H)'}>
-            {ICONS.scroll}<span>{reading ? 'Close the story' : 'The sword’s story'}</span>
+          <button className="btn" onClick={() => setReading(!reading)} data-tip={reading ? 'Close' : 'History & use'} data-tip-body={reading ? 'Back to the forge (Esc)' : 'Where this sword comes from, how it was fought and how it handles (H)'}>
+            {ICONS.scroll}<span>{reading ? 'Close' : 'History & use'}</span>
           </button>
         </div>
         <div className="corner-r fade hide-focus hide-reading" inert={overviewOff}>

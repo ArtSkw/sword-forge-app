@@ -79,7 +79,7 @@ export function HistoricalScroll() {
   return (
     <div className="scroll" ref={scrollRef} inert={!reading} style={SCROLL_ART}>
       <div className="rod" />
-      <div className="sheet" ref={sheetRef} role="dialog" aria-label="The sword’s story">
+      <div className="sheet" ref={sheetRef} role="dialog" aria-label="History & use">
         <button className="close" aria-label="Close" onClick={() => setReading(false)}>
           <HugeiconsIcon icon={Cancel01Icon} size={16} strokeWidth={1.5} />
         </button>

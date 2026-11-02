@@ -192,7 +192,7 @@
 .forge .acard[aria-pressed="true"] { box-shadow: inset 0 1px 0 rgba(255, 236, 200, .25), inset 0 0 0 1px var(--gold-hi), 0 0 16px rgba(233, 212, 154, .2); }
 .forge .acard[aria-pressed="true"] span { color: var(--gold-hi); }
 
-/* The sword's story: a scroll that unrolls between two painted rollers. The roller image is
+/* History & use: a scroll that unrolls between two painted rollers. The roller image is
    sliced in three (handles fixed, rolled vellum stretched), the vellum tiles, the side edges are deckled. */
 .forge .scroll { --roll-h: 52px; --cap: calc(var(--roll-h) * 216 / 128); position: absolute; z-index: 20; left: calc(14px + var(--cap)); top: 36px; width: min(480px, calc(40vw - var(--cap))); pointer-events: none; filter: drop-shadow(0 14px 22px rgba(0, 0, 0, .5)); }
 .forge .scroll.open { pointer-events: auto; }
