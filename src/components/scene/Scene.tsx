@@ -180,10 +180,13 @@ function SceneContents() {
     group.updateWorldMatrix(true, false);
     phoneSheetPx = sheetPx;
     const m = move.current, w = size.width, h = size.height;
+    // Below 1180 px History & use covers the screen and the sword fades out behind it, so opening or closing
+    // it does not move the camera: the sword fades back exactly where it was.
+    const readingView = reading && w >= 1180;
     const last = lastFramed.current;
-    const refit = last?.station === station && last?.reading === reading && last?.reframe === again;
+    const refit = last?.station === station && last?.reading === readingView && last?.reframe === again;
     const resizeOnly = refit && last?.geo === geoKey;
-    lastFramed.current = { station, reading, reframe: again, geo: geoKey };
+    lastFramed.current = { station, reading: readingView, reframe: again, geo: geoKey };
     m.fromTarget.copy(controls.target);
     m.fromDist = camera.position.distanceTo(controls.target);
     m.fromShift = m.shift; m.fromShiftY = m.shiftY;
@@ -218,7 +221,7 @@ function SceneContents() {
       m.toTarget.set(0, 0, 0);
       const fit = overviewFit(axisOf(layout.total), m.fromSph.phi, w, h);
       m.toDist = refit ? Math.max(m.fromDist, fit) : Math.max(OVERVIEW_DISTANCE, fit);
-      m.toShift = reading ? READING_SHIFT : 0; m.toShiftY = 0;
+      m.toShift = readingView ? READING_SHIFT : 0; m.toShiftY = 0;
     }
     // Zoom is free in every view, within a sensible range around the shot (close enough to inspect, far
     // enough to see the whole sword). A refit keeps a user's zoom only when the length did not change.
