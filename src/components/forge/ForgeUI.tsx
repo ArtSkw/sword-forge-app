@@ -42,7 +42,7 @@ function strikeFor(station: StationId | null, material?: string): StrikeVoice {
   if (station === 'finish') return 'soft';
   return 'steel';
 }
-const forgeSound = (voice: StrikeVoice = 'anvil') => playStrike(voice);
+const forgeSound = (voice: StrikeVoice = 'reforge') => playStrike(voice);
 
 // ── Tooltips: styled, delayed, shared by every element with data-tip ──────────
 // Usage: data-tip="Title" (+ optional data-tip-body="One line"). Shows above the element, or below it near the top edge.

@@ -145,34 +145,72 @@ export function makeAudioLayer(src: string, target: number, delayMs: number): ()
   };
 }
 
-// --- Procedural UI sound (no extra asset): the paper rustle of the historical account ---
-
-async function noiseBurst(dur: number, type: BiquadFilterType, f0: number, f1: number, gain: number, wobbleHz = 0) {
-  if (_muted) return;
-  try {
-    const ctx = await getCtx();
-    const t = ctx.currentTime;
-    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * dur), ctx.sampleRate);
-    const d = buf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (wobbleHz ? 0.6 + 0.4 * Math.sin((i / ctx.sampleRate) * wobbleHz * Math.PI * 2) : 1);
-    const src = ctx.createBufferSource(), filter = ctx.createBiquadFilter(), g = ctx.createGain();
-    src.buffer = buf; filter.type = type;
-    filter.frequency.setValueAtTime(f0, t); filter.frequency.exponentialRampToValueAtTime(f1, t + dur);
-    g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    src.connect(filter).connect(g).connect(ctx.destination); src.start(t);
-  } catch { /* audio unavailable: stay silent */ }
+// Music: the tracks play one after another and the list loops, each track crossfading into the next over
+// a few seconds, so a long visit hears several pieces instead of one on repeat. Quiet when muted or when the
+// tab is hidden; a browser that blocks autoplay starts it on the first tap. Returns a cleanup function.
+const CROSSFADE_S = 5;
+export function makePlaylist(srcs: string[], target: number, delayMs: number): () => void {
+  const players = [new Audio(), new Audio()];
+  players.forEach((p) => { p.preload = 'auto'; p.volume = 0; });
+  let track = 0, active = 0, fadeFrom = -1, fadeT0 = 0, started = false, startT0 = 0;
+  const load = (p: HTMLAudioElement, i: number) => { p.src = srcs[i % srcs.length]; p.currentTime = 0; };
+  load(players[0], 0);
+  const play = (p: HTMLAudioElement) => { if (!_muted && !document.hidden) p.play().catch(() => {}); };
+  const tick = setInterval(() => {
+    if (!started || _muted || document.hidden) return;
+    const now = performance.now(), cur = players[active];
+    // The first track fades in over 2 s.
+    const intro = Math.min(1, (now - startT0) / 2000);
+    // Start the next track a crossfade before this one ends.
+    if (fadeFrom < 0 && cur.duration && cur.currentTime >= cur.duration - CROSSFADE_S) {
+      fadeFrom = active; active = 1 - active; track++; fadeT0 = now;
+      load(players[active], track); play(players[active]);
+    }
+    const k = fadeFrom < 0 ? 1 : Math.min(1, (now - fadeT0) / (CROSSFADE_S * 1000));
+    players[active].volume = target * intro * k;
+    if (fadeFrom >= 0) {
+      players[fadeFrom].volume = target * (1 - k);
+      if (k >= 1) { players[fadeFrom].pause(); fadeFrom = -1; }
+    }
+  }, 100);
+  const begin = () => { if (_muted) return; started = true; startT0 = performance.now(); play(players[active]); };
+  let resume: (() => void) | null = null;
+  let due = false;   // the start delay has passed (a mute before it only postpones the start)
+  const startDelay = setTimeout(() => {
+    due = true;
+    if (_muted) return;
+    players[active].play().then(() => { started = true; startT0 = performance.now(); }).catch(() => {
+      resume = () => { begin(); if (resume) window.removeEventListener('pointerdown', resume); resume = null; };
+      window.addEventListener('pointerdown', resume);
+    });
+  }, delayMs);
+  const both = (fn: (p: HTMLAudioElement) => void) => { fn(players[active]); if (fadeFrom >= 0) fn(players[fadeFrom]); };
+  const unsub = audioState.subscribe((m) => {
+    if (m) both((p) => p.pause());
+    else if (!document.hidden) { if (started) both(play); else if (due) begin(); }
+  });
+  const onVisibility = () => { if (document.hidden) both((p) => p.pause()); else if (started && !_muted) both(play); };
+  document.addEventListener('visibilitychange', onVisibility);
+  return () => {
+    clearTimeout(startDelay); clearInterval(tick);
+    if (resume) window.removeEventListener('pointerdown', resume);
+    unsub(); document.removeEventListener('visibilitychange', onVisibility);
+    players.forEach((p) => p.pause());
+  };
 }
 
-export const playPaper = () => noiseBurst(0.65, 'bandpass', 2600, 1200, 0.06, 18);
+// --- History & use: the vellum rustles as it unrolls and as it rolls up ---
+export const playScroll = (opening: boolean) =>
+  playCling(`${import.meta.env.BASE_URL}sounds/scroll-${opening ? 'open' : 'close'}.mp3`, { playbackRate: 0.97 + Math.random() * 0.06, filterType: 'allpass', filterFreq: 1000, volume: opening ? 0.42 : 0.34 });
 
 // --- The forge strike: one sound for every change to the sword ---
 // Each kind of change has its own recorded strike (ElevenLabs sound effects, chosen by the author): steel
 // rings, iron fittings clink lower, a wooden grip knocks, a leather or cord grip creaks under the hand, a finish is a whetstone
-// stroke. Whole-sword changes (a new Form, Back to default) keep the anvil. A small random variation keeps repeated changes alive.
+// stroke. Whole-sword changes (a new Form, Back to default) sound as the sword being reforged: a hammer blow on hot steel. A small random variation keeps repeated changes alive.
 const SND = `${import.meta.env.BASE_URL}sounds/`;
-export type StrikeVoice = 'anvil' | 'steel' | 'fitting' | 'wood' | 'leather' | 'soft';
+export type StrikeVoice = 'reforge' | 'steel' | 'fitting' | 'wood' | 'leather' | 'soft';
 const STRIKES: Record<StrikeVoice, { src: string } & ClingParams> = {
-  anvil: { src: `${SND}anvil.wav`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.34 },
+  reforge: { src: `${SND}reforge.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.3 },
   steel: { src: `${SND}strike-steel.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.3 },
   fitting: { src: `${SND}strike-fitting.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.28 },
   wood: { src: `${SND}strike-wood.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.34 },
@@ -180,7 +218,7 @@ const STRIKES: Record<StrikeVoice, { src: string } & ClingParams> = {
   soft: { src: `${SND}strike-finish.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.18 },
 };
 let lastStrike = 0;
-export function playStrike(voice: StrikeVoice = 'anvil') {
+export function playStrike(voice: StrikeVoice = 'reforge') {
   // Never two strikes on top of each other (a burst of key presses rings once).
   const now = performance.now();
   if (now - lastStrike < 70) return;

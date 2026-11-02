@@ -6,7 +6,7 @@ import { SWORD_TYPES } from '../../presets/swordTypes';
 import { ACCOUNT, ageLabel, DYES, FITTINGS, GRIPS, GUARDS, POMMELS, STEELS } from '../../presets/forge';
 import { currentForm, currentProfile } from '../../lib/forms';
 import { swordPhysics } from '../../lib/physics';
-import { playPaper } from '../../lib/audio';
+import { playScroll } from '../../lib/audio';
 
 const UNROLL_MS = 750;
 const ROLL_MS = 380;
@@ -61,7 +61,7 @@ export function HistoricalScroll() {
       sc.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-14px)' }], { duration: reduceMotion() ? 1 : LIFT_MS, delay: ms * LIFT_AT, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards' })
         .onfinish = () => { if (!opened.current) sc.classList.remove('open'); };
     }
-    playPaper();
+    playScroll(reading);
   }, [reading]);
 
   const content = useMemo(() => {
