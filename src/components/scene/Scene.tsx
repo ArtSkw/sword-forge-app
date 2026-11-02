@@ -44,10 +44,10 @@ const BLADE_NUDGE = { x: 44, y: 12 };   // px: Blade sits this much right of and
 // Screen space taken by the edit panels: inspector on the right, variant row + nav at the bottom.
 const PANEL_RIGHT = 320, PANEL_BOTTOM = 220, MARGIN_TOP = 56;
 type Panels = { top: number; bottom: number; right: number };
-// Must match forge.css: below 1180 px the type row rises above the corner buttons; on phones (≤ 700 px) the
+// Must match forge.css: on phones (≤ 700 px) the type row is smaller and the
 // inspector spans the top of the screen (at most 42% of it) instead of the right side.
-const NARROW = 1180, PHONE = 700;
-const overviewPanels = (w: number): Panels => ({ top: 110, bottom: w <= PHONE ? 176 : w < NARROW ? 196 : 140, right: 0 });
+const PHONE = 700;
+const overviewPanels = (w: number): Panels => ({ top: 110, bottom: w <= PHONE ? 120 : 140, right: 0 });
 const editPanels = (w: number, h: number): Panels => (w <= PHONE ? { top: Math.round(h * 0.42) + 20, bottom: 252, right: 0 } : { top: MARGIN_TOP, bottom: PANEL_BOTTOM, right: PANEL_RIGHT });
 const PART_SHIFT_Y = 0.07;       // hilt parts: a little above centre (they're small; centred in the free space looked low)
 const FOV = 35;

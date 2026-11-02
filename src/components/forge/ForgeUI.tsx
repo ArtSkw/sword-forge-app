@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { HugeiconsIcon, type IconSvgElement } from '@hugeicons/react';
-import { ArrowLeft01Icon, ArrowReloadHorizontalIcon, ArrowRight01Icon, Camera01Icon, InformationCircleIcon, ScrollTextIcon, VolumeHighIcon, VolumeMute02Icon } from '@hugeicons/core-free-icons';
+import { ArrowLeft01Icon, ArrowReloadHorizontalIcon, ArrowRight01Icon, Camera01Icon, InformationCircleIcon, MoreHorizontalIcon, ScrollTextIcon, VolumeHighIcon, VolumeMute02Icon } from '@hugeicons/core-free-icons';
 import './forge.css';
 import { typeConfig, useConfigStore, type ArchetypeKey } from '../../store/configStore';
 import { SWORD_TYPES, SWORD_TYPE_ORDER } from '../../presets/swordTypes';
@@ -36,7 +36,7 @@ const reduceMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matche
 const icon = (svg: IconSvgElement) => <HugeiconsIcon icon={svg} size={16} strokeWidth={1.5} />;
 const ICONS = {
   scroll: icon(ScrollTextIcon), reset: icon(ArrowReloadHorizontalIcon), sound: icon(VolumeHighIcon), muted: icon(VolumeMute02Icon),
-  shot: icon(Camera01Icon), prev: icon(ArrowLeft01Icon), next: icon(ArrowRight01Icon),
+  shot: icon(Camera01Icon), more: icon(MoreHorizontalIcon), prev: icon(ArrowLeft01Icon), next: icon(ArrowRight01Icon),
   info: <HugeiconsIcon icon={InformationCircleIcon} size={18} strokeWidth={1.5} />,
 };
 
@@ -288,6 +288,34 @@ function FormSwitcher() {
   );
 }
 
+// ── Phones: the overview's actions (back to default, sound, screenshot) folded into one menu button.
+// The menu unfolds from the button, like the Form list; Esc or a tap outside closes it.
+function MoreMenu({ muted }: { muted: boolean }) {
+  const config = useConfigStore((s) => s.config);
+  const resetSword = useConfigStore((s) => s.resetSword);
+  const atDefault = useMemo(() => JSON.stringify(config) === JSON.stringify(typeConfig(config.archetype)), [config]);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null), btn = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: PointerEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const keys = (e: KeyboardEvent) => { if (e.key === 'Escape') { e.stopPropagation(); setOpen(false); btn.current?.focus({ preventScroll: true }); } };
+    addEventListener('pointerdown', away); addEventListener('keydown', keys, true);
+    return () => { removeEventListener('pointerdown', away); removeEventListener('keydown', keys, true); };
+  }, [open]);
+  const act = (fn: () => void) => () => { fn(); setOpen(false); };
+  return (
+    <div className="more phone-only" ref={ref}>
+      <button ref={btn} className="btn icon" aria-label="More actions" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>{ICONS.more}</button>
+      <div className="more-list glass pane" role="menu" data-open={open} inert={!open}>
+        <button role="menuitem" aria-disabled={atDefault} onClick={act(() => { if (!atDefault) { resetSword(); forgeSound(); } })}>{ICONS.reset}<span>Back to default</span></button>
+        <button role="menuitem" onClick={act(() => audioState.toggle())}>{muted ? ICONS.muted : ICONS.sound}<span>{muted ? 'Sound off' : 'Sound on'}</span></button>
+        <button role="menuitem" onClick={act(() => takeScreenshot())}>{ICONS.shot}<span>Screenshot</span></button>
+      </div>
+    </div>
+  );
+}
+
 // ── Back to default: the type as it first opens, and the camera back to its first view.
 // Disabled (with a tooltip saying why) until something has been changed.
 function ResetButton() {
@@ -420,14 +448,15 @@ export function ForgeUI() {
           ))}
         </div>
         <div className="corner-l fade hide-focus" inert={!!station}>
-          <button className="btn" onClick={() => setReading(!reading)} data-tip={reading ? 'Close' : 'History & use'} data-tip-body={reading ? 'Back to the forge (Esc)' : 'Where this sword comes from, how it was fought and how it handles (H)'}>
+          <button className="btn history" aria-label={reading ? 'Close' : 'History & use'} onClick={() => setReading(!reading)} data-tip={reading ? 'Close' : 'History & use'} data-tip-body={reading ? 'Back to the forge (Esc)' : 'Where this sword comes from, how it was fought and how it handles (H)'}>
             {ICONS.scroll}<span>{reading ? 'Close' : 'History & use'}</span>
           </button>
         </div>
         <div className="corner-r fade hide-focus hide-reading" inert={overviewOff}>
-          <ResetButton />
-          <button className="btn icon" aria-label={muted ? 'Unmute' : 'Mute'} data-tip={muted ? 'Sound off' : 'Sound on'} data-tip-body="Forge ambience, music and the clang of the anvil" onClick={() => audioState.toggle()}>{muted ? ICONS.muted : ICONS.sound}</button>
-          <button className="btn icon" aria-label="Screenshot" data-tip="Screenshot" data-tip-body="Save a picture of your sword" onClick={() => takeScreenshot()}>{ICONS.shot}</button>
+          <span className="wide-only"><ResetButton /></span>
+          <button className="btn icon wide-only" aria-label={muted ? 'Unmute' : 'Mute'} data-tip={muted ? 'Sound off' : 'Sound on'} data-tip-body="Forge ambience, music and the clang of the anvil" onClick={() => audioState.toggle()}>{muted ? ICONS.muted : ICONS.sound}</button>
+          <button className="btn icon wide-only" aria-label="Screenshot" data-tip="Screenshot" data-tip-body="Save a picture of your sword" onClick={() => takeScreenshot()}>{ICONS.shot}</button>
+          <MoreMenu muted={muted} />
         </div>
         <div className="corner-r focus-only" inert={!station}>
           <ResetButton />

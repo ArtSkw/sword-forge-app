@@ -271,11 +271,32 @@
 .forge .glass.dense { -webkit-backdrop-filter: var(--g-dense-blur); backdrop-filter: var(--g-dense-blur);
   background: var(--grain), linear-gradient(160deg, rgba(40, 27, 15, .86), rgba(16, 11, 6, .9)); }
 
-/* Below 1180 px the type row no longer fits between the corner buttons: it rises above them. */
-@media (max-width: 1179px) { .forge .arch { bottom: 78px; } }
+/* Phones fold the overview's actions into one menu (see MoreMenu). */
+.forge .phone-only { display: none; }
+.forge span.wide-only { display: contents; }
+.forge .more { position: relative; }
+.forge .more-list { position: absolute; top: calc(100% + 8px); right: 0; z-index: 30; min-width: 196px; padding: 6px; display: flex; flex-direction: column; border-radius: 8px;
+  transform-origin: 100% 0; transform: translateY(-4px) scale(.96); opacity: 0; visibility: hidden;
+  transition: transform 140ms var(--ease-out), opacity 120ms var(--ease-out), visibility 0s linear 140ms; }
+.forge .more-list[data-open="true"] { transform: none; opacity: 1; visibility: visible; transition: transform 220ms var(--ease-out), opacity 160ms var(--ease-out), visibility 0s; }
+.forge .more-list button { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0 12px; border-radius: 5px; font: var(--type-label); letter-spacing: var(--track-label); color: var(--gold-hi); text-align: left; transition: background 140ms; }
+.forge .more-list button svg { width: 18px; height: 18px; color: var(--gold); }
+.forge .more-list button:active { background: rgba(201, 169, 97, .12); }
+.forge .more-list button[aria-disabled="true"] { opacity: .42; }
+/* Below 1180 px the corner buttons move to the top corners, leaving the bottom to the type row. */
+@media (max-width: 1179px) {
+  .forge .corner-l, .forge .corner-r:not(.focus-only) { top: 24px; bottom: auto; }
+}
 /* Narrow screens: the cards shrink and the row scrolls sideways, snapping to each sword. */
 @media (max-width: 700px) {
-  .forge .arch { left: 0; right: 0; bottom: 72px; transform: none; overflow-x: auto; padding: 10px 16px 4px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .forge .title h1 { font: var(--type-heading); letter-spacing: var(--track-title); }
+  .forge .corner-l, .forge .corner-r:not(.focus-only) { top: 14px; }
+  .forge .corner-l { left: 14px; } .forge .corner-r:not(.focus-only) { right: 14px; }
+  .forge .corner-l .btn.history { width: 40px; padding: 0; }
+  .forge .corner-l .btn.history span { display: none; }
+  .forge .phone-only { display: block; }
+  .forge .wide-only { display: none; }
+  .forge .arch { left: 0; right: 0; bottom: 16px; transform: none; overflow-x: auto; padding: 10px 16px 4px; scroll-snap-type: x mandatory; scrollbar-width: none; }
   .forge.focus .arch { transform: translateY(16px); }
   .forge .tcard { zoom: .8; scroll-snap-align: center; flex: none; }
   /* Edit mode on phones: the inspector spans the top of the screen and scrolls; the sword sits below it. */
