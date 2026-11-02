@@ -413,7 +413,7 @@ export function ForgeUI() {
             <button key={k} className="tcard glass" aria-pressed={config.archetype === k} aria-label={SWORD_TYPES[k].name}
               data-tip={SWORD_TYPES[k].name} data-tip-body={`${ARCHETYPE_ERA[k]} · ${SWORD_TYPES[k].description}`}
               onClick={() => { if (k !== config.archetype) setArchetype(k); playCling(CLING, CLING_PARAMS[k]); }}>
-              <img src={`${BASE}sword-icons/${k}.png`} alt="" />
+              <img src={`${BASE}type-cards/${k}.png`} alt="" />
               <span className="plate">{SHORT_NAMES[k]}</span>
             </button>
           ))}
