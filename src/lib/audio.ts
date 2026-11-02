@@ -167,9 +167,8 @@ export const playPaper = () => noiseBurst(0.65, 'bandpass', 2600, 1200, 0.06, 18
 
 // --- The forge strike: one sound for every change to the sword ---
 // Each kind of change has its own recorded strike (ElevenLabs sound effects, chosen by the author): steel
-// rings, iron fittings clink lower, a wooden grip knocks, a finish is a whetstone stroke. Whole-sword changes
-// (a new Form, Back to default) keep the anvil. Leather and cord still use the anvil, voiced down, until
-// their own sound is chosen. A small random variation keeps repeated changes alive.
+// rings, iron fittings clink lower, a wooden grip knocks, a leather or cord grip creaks under the hand, a finish is a whetstone
+// stroke. Whole-sword changes (a new Form, Back to default) keep the anvil. A small random variation keeps repeated changes alive.
 const SND = `${import.meta.env.BASE_URL}sounds/`;
 export type StrikeVoice = 'anvil' | 'steel' | 'fitting' | 'wood' | 'leather' | 'soft';
 const STRIKES: Record<StrikeVoice, { src: string } & ClingParams> = {
@@ -177,7 +176,7 @@ const STRIKES: Record<StrikeVoice, { src: string } & ClingParams> = {
   steel: { src: `${SND}strike-steel.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.3 },
   fitting: { src: `${SND}strike-fitting.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.28 },
   wood: { src: `${SND}strike-wood.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.34 },
-  leather: { src: `${SND}anvil.wav`, playbackRate: 0.74, filterType: 'lowpass', filterFreq: 1300, volume: 0.4 },
+  leather: { src: `${SND}strike-leather.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.3 },
   soft: { src: `${SND}strike-finish.mp3`, playbackRate: 1, filterType: 'allpass', filterFreq: 1000, volume: 0.18 },
 };
 let lastStrike = 0;
