@@ -167,7 +167,20 @@ export function makePlaylist(srcs: string[], target: number, delayMs: number): (
   const players = [new Audio(), new Audio()];
   players.forEach((p) => { p.preload = 'auto'; p.volume = 0; });
   let track = 0, active = 0, fadeFrom = -1, fadeT0 = 0, started = false, startT0 = 0;
-  const load = (p: HTMLAudioElement, i: number) => { p.src = srcs[i % srcs.length]; p.currentTime = 0; };
+  // Shuffled: every pass plays each track once in a new random order, and a pass never starts with the
+  // track the last one ended on.
+  let order: string[] = [];
+  const nextPass = (last?: string) => {
+    const a = [...srcs];
+    for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+    if (a.length > 1 && a[0] === last) [a[0], a[1]] = [a[1], a[0]];
+    return a;
+  };
+  const load = (p: HTMLAudioElement, i: number) => {
+    const k = i % srcs.length;
+    if (k === 0) order = nextPass(order[order.length - 1]);
+    p.src = order[k]; p.currentTime = 0;
+  };
   // A track that will not load is skipped: the next one starts in its place.
   let failures = 0;   // consecutive failed tracks: stop once every track has failed
   const skip = (p: HTMLAudioElement) => () => {
