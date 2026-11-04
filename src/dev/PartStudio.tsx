@@ -24,6 +24,51 @@ function bladeStretch(width: number, length: number): [number, number, number] {
   return [s, 1, 1 + (s - 1) * 0.15];
 }
 
+// Guard cards: the guard with a neutral stand-in grip and blade, so it reads as part of a sword. The
+// stand-ins take one plain material each (no grip choice, no steel choice implied); the view fits the guard.
+const STAND_IN = {
+  blade: new THREE.MeshStandardMaterial({ color: '#56534f', metalness: 0.7, roughness: 0.6 }),
+  grip: new THREE.MeshStandardMaterial({ color: '#3b322b', metalness: 0, roughness: 0.85 }),
+};
+function StandIn({ part, children }: { part: 'blade' | 'grip'; children: React.ReactNode }) {
+  const g = useRef<THREE.Group>(null);
+  useLayoutEffect(() => { g.current?.traverse((o) => { if ((o as THREE.Mesh).isMesh) (o as THREE.Mesh).material = STAND_IN[part]; }); });
+  return <group ref={g}>{children}</group>;
+}
+// Tilted about the guard's own bar first (ZYX), so a guard that bends in plan (S-recurved) shows its curve.
+const CONTEXT_VIEW: [number, number, number] = [0.62, -0.18, 3 * Math.PI / 4];
+function GuardInContext({ tick }: { tick: number }) {
+  const guard = useRef<THREE.Group>(null), inner = useRef<THREE.Group>(null);
+  const { camera, invalidate } = useThree();
+  useLayoutEffect(() => {
+    let id = 0;
+    const fit = () => {
+      const g = guard.current, i = inner.current; if (!g || !i) return;
+      i.position.set(0, 0, 0); i.updateMatrixWorld(true);
+      const box = new THREE.Box3().setFromObject(g);
+      if (box.isEmpty()) { id = requestAnimationFrame(fit); return; }
+      const c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3());
+      i.position.sub(c); // the holder has no rotation of its own here: the view is on the inner group's parent
+      // A long lens from far off: up close, the blade (tilted toward us) swells and the grip shrinks.
+      const cam = camera as THREE.PerspectiveCamera; cam.fov = 5;
+      const r = Math.max(size.x, size.y) / 2 * 1.1, fov = THREE.MathUtils.degToRad(cam.fov / 2);
+      camera.position.set(0, 0, r / Math.tan(fov) + size.z); camera.lookAt(0, 0, 0); camera.updateProjectionMatrix();
+      invalidate();
+    };
+    id = requestAnimationFrame(fit);
+    return () => cancelAnimationFrame(id);
+  });
+  return (
+    <group ref={inner} key={tick}>
+      <group rotation={new THREE.Euler(...((window as unknown as { __view?: Record<string, [number, number, number]> }).__view?.context ?? CONTEXT_VIEW), 'ZYX')}>
+        <group ref={guard}><Sword only="guard" /></group>
+        <StandIn part="blade"><Sword only="blade" /></StandIn>
+        <StandIn part="grip"><Sword only="grip" /></StandIn>
+      </group>
+    </group>
+  );
+}
+
 function Framed({ part, tick }: { part: SwordPart; tick: number }) {
   const spec = bladeSpec(useConfigStore((s) => s.config));
   const holder = useRef<THREE.Group>(null), inner = useRef<THREE.Group>(null);
@@ -34,7 +79,8 @@ function Framed({ part, tick }: { part: SwordPart; tick: number }) {
       g.position.set(0, 0, 0); h.updateMatrixWorld(true);
       const box = new THREE.Box3().setFromObject(g), c = box.getCenter(new THREE.Vector3()), size = box.getSize(new THREE.Vector3());
       g.position.sub(c.clone().applyMatrix4(h.matrixWorld.clone().invert()));
-      const r = Math.max(size.x, size.y) / 2 * 1.08, fov = THREE.MathUtils.degToRad((camera as THREE.PerspectiveCamera).fov / 2);
+      const cam = camera as THREE.PerspectiveCamera; cam.fov = 22; // the lens the other part cards were made with
+      const r = Math.max(size.x, size.y) / 2 * 1.08, fov = THREE.MathUtils.degToRad(cam.fov / 2);
       camera.position.set(0, 0, r / Math.tan(fov) + size.z); camera.lookAt(0, 0, 0); camera.updateProjectionMatrix();
       invalidate();
     });
@@ -48,7 +94,7 @@ function Framed({ part, tick }: { part: SwordPart; tick: number }) {
 }
 
 export default function PartStudio() {
-  const [part, setPart] = useState<SwordPart>('guard');
+  const [part, setPart] = useState<SwordPart | 'context'>('guard');
   const [tick, setTick] = useState(0);
   useEffect(() => { Object.assign(window, { __studio: { setPart, store: useConfigStore, refit: () => setTick((t) => t + 1), lib: { GUARDS_BY_TYPE, POMMELS, STEELS, GRIPS, MESSER_CAPS, profilesOf, profileBlade } } }); }, []);
   return (
@@ -56,7 +102,7 @@ export default function PartStudio() {
       style={{ position: 'fixed', inset: 0, background: 'transparent' }}>
       <Environment files={`${import.meta.env.BASE_URL}hdri/studio_small_03_2k.hdr`} environmentIntensity={1.18} />
       <Lighting inspect />
-      <Framed part={part} tick={tick} />
+      {part === 'context' ? <GuardInContext tick={tick} /> : <Framed part={part} tick={tick} />}
     </Canvas>
   );
 }

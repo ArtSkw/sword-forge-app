@@ -18,6 +18,8 @@ export type GripDetailRecipe = {
   coreRadiusBottom?: number;
   bandCount?: Partial<Record<GripLength, number>>;
   bandTube?: number;
+  // Width of the grip in the blade's plane over its thickness: Viking grips were oval, broader across.
+  sectionX?: number;
 };
 
 export const HILT_DETAIL_RECIPES: Record<ArchetypeKey, HiltDetailRecipe> = {
@@ -123,6 +125,7 @@ export const GRIP_DETAIL_RECIPES: Record<ArchetypeKey, GripDetailRecipe> = {
   vikingSword: {
     coreRadiusTop: 0.013,
     coreRadiusBottom: 0.0135,
+    sectionX: 1.22,   // ~3.2 cm across in the blade's plane, ~2.7 cm thick (a broad Viking blade is ~5.5 cm)
     bandCount: { short: 12, long: 18 },
     bandTube: 0.00075,
   },
