@@ -16,7 +16,12 @@ const scenePromise = import('./components/scene/Scene').catch((err) => {
   throw err;
 });
 
+// Dev only: ?studio renders one sword part alone, for the part cards (see src/dev/PartStudio.tsx).
+const STUDIO = import.meta.env.DEV && new URLSearchParams(location.search).has('studio');
+
 export default function App() {
+  const [Studio, setStudio] = useState<ComponentType | null>(null);
+  useEffect(() => { if (STUDIO) import('./dev/PartStudio').then((m) => setStudio(() => m.default)); }, []);
   const [Scene, setScene] = useState<ComponentType | null>(null);
 
   useEffect(() => {
@@ -30,5 +35,6 @@ export default function App() {
     };
   }, []);
 
+  if (STUDIO) return Studio ? <Studio /> : null;
   return <AppShell>{Scene && <SceneBoundary><Scene /></SceneBoundary>}</AppShell>;
 }

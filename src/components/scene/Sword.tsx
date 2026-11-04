@@ -16,7 +16,10 @@ import { Pommel } from './Pommel';
 import { MesserHilt } from './MesserHilt';
 import { Beat } from './Beat';
 
-export function Sword() {
+// `only` (dev part studio): draw one part alone, for rendering the part cards.
+export type SwordPart = 'blade' | 'guard' | 'grip' | 'pommel';
+export function Sword({ only }: { only?: SwordPart } = {}) {
+  const show = (p: SwordPart) => !only || only === p;
   const config = useConfigStore((s) => s.config);
   const spec = bladeSpec(config);
   const hilt = hiltSpec(config);
@@ -36,12 +39,12 @@ export function Sword() {
   return (
     <group>
       {/* A single-edged blade turns its edge to face the same way as the curved guards and the swell. */}
-      <group position={[0, bladeY, 0]} rotation={[0, spec.singleEdged ? Math.PI : 0, 0]}>
+      {show('blade') && <group position={[0, bladeY, 0]} rotation={[0, spec.singleEdged ? Math.PI : 0, 0]}>
         <Beat scope={config.archetype} k={`${config.blade.profile}|${spec.section}|${spec.ricasso?.cover ?? ''}|${spec.flame}`}>
           <Blade spec={spec} color={materials.blade.color} steelFinish={steelFinish} age={age} ecusson={hilt.ecusson} />
         </Beat>
-      </group>
-      <Beat scope={config.archetype} k={`${config.guard.style}|${hilt.terminal}|${hilt.rings}|${hilt.ecusson}`}>
+      </group>}
+      {show('guard') && <Beat scope={config.archetype} k={`${config.guard.style}|${hilt.terminal}|${hilt.rings}|${hilt.ecusson}`}>
       <Crossguard
         cm={config.guard.cm}
         wire={config.archetype === 'vikingSword' ? config.guard.wire : undefined}
@@ -56,8 +59,8 @@ export function Sword() {
         roughness={materials.hardware.roughness}
         position={[0, guardY, 0]}
       />
-      </Beat>
-      <HiltDetails
+      </Beat>}
+      {!only && <HiltDetails
         ferrules={!messer}
         tone={config.finish.hardwareTone}
         archetype={config.archetype}
@@ -68,8 +71,8 @@ export function Sword() {
         guardY={guardY}
         gripTopY={gripTopY}
         gripBottomY={gripBottomY}
-      />
-      {messer ? (
+      />}
+      {(!only || only === 'grip') && (messer ? (
         <MesserHilt
           gripTopY={gripTopY}
           gripBottomY={gripBottomY}
@@ -93,8 +96,8 @@ export function Sword() {
         position={[0, gripY, 0]}
       />
       </Beat>
-      )}
-{!messer && (
+      ))}
+{!messer && show('pommel') && (
       <Beat scope={config.archetype} k={config.pommel.style}>
       <Pommel
         engraved={config.pommel.engraved}

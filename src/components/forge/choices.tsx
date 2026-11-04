@@ -7,7 +7,7 @@ import { bladeSpec, profileSpec } from '../../lib/bladeSpec';
 import { POMMEL_FORM } from '../../presets/pommelProfiles';
 import { GUARDS_BY_TYPE } from '../../presets/guardShapes';
 import { HILT_OPTIONS, defaultTerminal, hiltSpec } from '../../lib/hilt';
-import { BladeSilhouette, CapSilhouette, GripSwatch, GuardSilhouette, PommelSilhouette, SteelSwatch } from './Silhouettes';
+import { PartArt } from './PartArt';
 
 // The choices offered at each station, as one model shared by the chooser, the inspector and the keyboard.
 
@@ -34,7 +34,7 @@ export function useStationChoices(station: StationId | null): StationChoices | n
   if (station === 'blade') {
     const profiles = profilesOf(config);
     cards = profiles.map((p) => ({ id: p.id, name: p.name, era: p.era, period: true, off: null, selected: (config.blade.profile ?? profiles[0].id) === p.id, note: p.note,
-      art: <BladeSilhouette archetype={arch} profile={p} />, apply: () => update('blade', profileBlade(p)) }));
+      art: <PartArt name={`blade-${arch}-${p.id}`} />, apply: () => update('blade', profileBlade(p)) }));
     // Options on top of the profile. A choice equal to the profile's own is stored as "not changed",
     // so the Form still reads as itself.
     const spec = bladeSpec(config), profile = currentProfile(config), own = profile ? profileSpec(arch, profile) : spec;
@@ -81,13 +81,13 @@ export function useStationChoices(station: StationId | null): StationChoices | n
       if (cur !== 'none') extraNote = `${extraNote} ${WIRE_INLAYS.find((w) => w.id === cur)?.note ?? ''}`.trim();
     }
     engraving('guard', !!config.guard.engraved);
-    cards = GUARDS.filter((g) => GUARDS_BY_TYPE[arch].includes(g.id)).sort((a, b) => GUARDS_BY_TYPE[arch].indexOf(a.id) - GUARDS_BY_TYPE[arch].indexOf(b.id)).map((g) => ({ ...g, period: ofForm(g, form?.guard), off: off(g, form?.guard), selected: config.guard.style === g.id, art: <GuardSilhouette archetype={arch} style={g.id} />, apply: () => update('guard', { style: g.id }) }));
+    cards = GUARDS.filter((g) => GUARDS_BY_TYPE[arch].includes(g.id)).sort((a, b) => GUARDS_BY_TYPE[arch].indexOf(a.id) - GUARDS_BY_TYPE[arch].indexOf(b.id)).map((g) => ({ ...g, period: ofForm(g, form?.guard), off: off(g, form?.guard), selected: config.guard.style === g.id, art: <PartArt name={`guard-${arch}-${g.id}`} />, apply: () => update('guard', { style: g.id }) }));
   }
   if (station === 'pommel' && config.grip.hilt === 'messer') {
     // A Messer has a cap over the grip's end instead of a pommel.
     const own = form?.cap ?? 'beak', cur = config.grip.cap ?? 'beak';
     cards = MESSER_CAPS.map((m) => ({ ...m, period: m.id === own || ofAge(m.years), off: form ? periodNote(m, form, own) : null, selected: cur === m.id,
-      art: <CapSilhouette cap={m.id} />, apply: () => update('grip', { cap: m.id === 'beak' ? undefined : m.id }) }));
+      art: <PartArt name={`cap-${m.id}`} />, apply: () => update('grip', { cap: m.id === 'beak' ? undefined : m.id }) }));
   } else if (station === 'pommel') {
     if (POMMEL_FORM[config.pommel.style].axis === 'z') {
       // The face: plain, engraved, or engraved with its cuts filled with enamel.
@@ -96,11 +96,11 @@ export function useStationChoices(station: StationId | null): StationChoices | n
         apply: () => update('pommel', { engraved: id === 'plain' ? undefined : true, enamel: id === 'azure' || id === 'gules' ? id : undefined }) })) });
       if (p.enamel) extraNote = `${extraNote} ${ENAMEL_NOTE}`.trim();
     }
-    cards = POMMELS.map((g) => ({ ...g, period: ofForm(g, form?.pommel), off: off(g, form?.pommel), selected: config.pommel.style === g.id, art: <PommelSilhouette style={g.id} />, apply: () => update('pommel', { style: g.id }) }));
+    cards = POMMELS.map((g) => ({ ...g, period: ofForm(g, form?.pommel), off: off(g, form?.pommel), selected: config.pommel.style === g.id, art: <PartArt name={`pommel-${g.id}`} />, apply: () => update('pommel', { style: g.id }) }));
   }
   if (station === 'grip') {
     // A Messer's grip is wooden scales, bare or leather-covered.
-    cards = GRIPS.filter((g) => config.grip.hilt !== 'messer' || g.id === 'wood' || g.id === 'leather').map((g) => ({ ...g, period: ofForm(g, form?.grip), off: off(g, form?.grip), selected: config.finish.gripMaterial === g.id, art: <GripSwatch material={g.id} color={config.finish.gripColor} />, apply: () => update('finish', { gripMaterial: g.id }) }));
+    cards = GRIPS.filter((g) => config.grip.hilt !== 'messer' || g.id === 'wood' || g.id === 'leather').map((g) => ({ ...g, period: ofForm(g, form?.grip), off: off(g, form?.grip), selected: config.finish.gripMaterial === g.id, art: <PartArt name={`grip-${g.id}`} bleed />, apply: () => update('finish', { gripMaterial: g.id }) }));
     // Falchion: a sword hilt or the Messer's knife hilt.
     if (arch === 'falchion') {
       const knife = config.grip.hilt === 'messer';
@@ -118,7 +118,7 @@ export function useStationChoices(station: StationId | null): StationChoices | n
     if (config.finish.gripMaterial === 'leather' || config.finish.gripMaterial === 'cord') rows.push({ label: 'Dye', kind: 'dots', items: DYES.map((d) => ({ id: d.id, name: d.name, swatch: d.color ?? natural, selected: (d.color ?? natural).toLowerCase() === current, apply: () => update('finish', { gripColor: d.color ?? preset.defaults.finish.gripColor }) })) });
   }
   if (station === 'finish') {
-    cards = STEELS.map((s) => ({ ...s, period: ofForm(s, form?.steel), off: off(s, form?.steel), selected: config.finish.steelFinish === s.id, art: <SteelSwatch finish={s.id} />, apply: () => update('finish', { steelFinish: s.id }) }));
+    cards = STEELS.map((s) => ({ ...s, period: ofForm(s, form?.steel), off: off(s, form?.steel), selected: config.finish.steelFinish === s.id, art: <PartArt name={`steel-${s.id}`} bleed />, apply: () => update('finish', { steelFinish: s.id }) }));
     rows.push({ label: 'Fittings', kind: 'dots', items: FITTINGS.map((f) => ({ id: f.id, name: f.name, swatch: f.swatch, selected: config.finish.hardwareTone === f.id, apply: () => update('finish', { hardwareTone: f.id }) })) });
     rows.push({ label: 'Age', kind: 'age', value: config.finish.age, set: (v: number) => update('finish', { age: v }), items: [] });
   }
