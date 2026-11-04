@@ -1,15 +1,14 @@
 import { useRef, useState, useCallback, useEffect, type ComponentRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Environment, ContactShadows, OrbitControls, PerformanceMonitor } from '@react-three/drei';
+import { ContactShadows, OrbitControls, PerformanceMonitor } from '@react-three/drei';
 import * as THREE from 'three';
 import { Sword } from './Sword';
 import { getSwordLayout } from './swordLayout';
-import { Lighting } from './Lighting';
+import { ForgeLighting } from './ForgeLighting';
 import { useConfigStore } from '../../store/configStore';
 import { useViewportSize } from '../../hooks/useViewportSize';
 import { anchors, interaction, publishAnchors } from '../../lib/anchors';
 import { STATIONS, type StationId } from '../../presets/forge';
-import { LOW_TIER } from '../../lib/tier';
 
 // Camera sits at ~65° polar (above + side) for a presentation-angle view.
 const CAMERA_POSITION: [number, number, number] = [1.32, 1.1, 2.2];
@@ -20,8 +19,6 @@ const MAX_POLAR = Math.PI * 0.85;
 const AUTO_ROTATE_RESUME_MS = 10000;
 const SWORD_INTRO_DELAY = 2.6;
 const SWORD_INTRO_DURATION = 1.2;
-// Reflections: the 2k studio map on desktops, the 1k one on touch devices and small screens (quality tiers
-const STUDIO_HDRI = `${import.meta.env.BASE_URL}hdri/studio_small_03_${LOW_TIER ? '1k' : '2k'}.hdr`;
 // Frames the contact shadow keeps drawing after a re-render (~2 s at 60 fps: covers the intro and a part's swap).
 const SHADOW_FRAMES = 120;
 // Render resolution: at most 2× (a phone's 3× costs more than it shows), stepping down to 1.25× (1× on
@@ -321,9 +318,8 @@ function SceneContents() {
         onStart={handleStart}
         onEnd={handleEnd}
       />
-      {/* Same CC0 Poly Haven HDRI drei's "studio" preset uses, served locally instead of from a third-party CDN */}
-      <Environment files={STUDIO_HDRI} environmentIntensity={1.18} />
-      <Lighting inspect={station !== null} />
+      {/* The forge in the background plate lights the sword (see ForgeLighting) */}
+      <ForgeLighting inspect={station !== null} />
       {/* The sword never moves under its shadow (only the camera does), so the shadow is drawn for a moment
           after each change, when this component re-renders, not in every frame. */}
       <ContactShadows position={[0, shadowY, 0]} blur={2} opacity={0.4} far={4} frames={SHADOW_FRAMES} />

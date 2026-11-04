@@ -6,6 +6,7 @@ import { AtmosphereOverlay } from './AtmosphereOverlay';
 import { ForgeUI } from '../forge/ForgeUI';
 import { makeAudioLayer, makePlaylist } from '../../lib/audio';
 import { LOW_TIER } from '../../lib/tier';
+import { setFireVideo } from '../../lib/forgeFire';
 
 const ENTRY_EXIT_MS = 520;
 // Music, in playing order (generated with ElevenLabs music, chosen by the author).
@@ -141,6 +142,8 @@ export function AppShell({ children }: AppShellProps) {
         <img src={`${import.meta.env.BASE_URL}background.webp`} alt="" aria-hidden="true"
           style={{ position: 'fixed', inset: '-16px', width: 'calc(100% + 32px)', height: 'calc(100% + 32px)', objectFit: 'cover', filter: 'blur(10px)', zIndex: -2, pointerEvents: 'none', animation: 'cc-reveal 2s ease both' }} />
       ) : <video
+        // The 3D forge light follows the fire in this video (lib/forgeFire.ts).
+        ref={setFireVideo}
         autoPlay
         muted
         loop
