@@ -54,8 +54,28 @@ function refine(per: ProfilePoint[], hard: Set<number>): { pts: ProfilePoint[]; 
   return { pts, crease };
 }
 
+// Rings at t: evenly spaced along the outline rather than along the blade, so where the edge sweeps fast
+// (the point, the clip) there are more of them and the curve stays smooth. Along the straight body the
+// spacing is the base one (length / base).
+function ringStations(s: BladeSpec, base: number): number[] {
+  const F = 4000, arc = [0];
+  let prev = halfWidths(s, 0);
+  for (let k = 1; k <= F; k++) {
+    const w = halfWidths(s, k / F);
+    arc.push(arc[k - 1] + Math.hypot(s.length / F, w.spine - prev.spine, w.edge - prev.edge));
+    prev = w;
+  }
+  const n = Math.ceil(base * arc[F] / s.length), ts: number[] = [];
+  for (let i = 0, k = 0; i <= n; i++) {
+    const target = (i / n) * arc[F];
+    while (k < F - 1 && arc[k + 1] < target) k++;
+    ts.push(i === n ? 1 : (k + (target - arc[k]) / Math.max(1e-12, arc[k + 1] - arc[k])) / F);
+  }
+  return ts;
+}
+
 function buildBladeGeometry(s: BladeSpec, nicks: number): THREE.BufferGeometry {
-  const segments = s.flame ? 360 : 240;
+  const stations = ringStations(s, s.flame ? 360 : 240), segments = stations.length - 1;
   const hard = sectionCreases(s.section, takesFuller(s.section) ? s.fuller : 'none');
   const plainR = refine(sectionPerimeter(s.section, 'none', s.archetype), hard), fullerR = refine(sectionPerimeter(s.section, s.fuller, s.archetype), hard);
   const plain = plainR.pts, fullered = fullerR.pts, crease = plainR.crease;
@@ -66,7 +86,7 @@ function buildBladeGeometry(s: BladeSpec, nicks: number): THREE.BufferGeometry {
   const edgeness = plain.map(([px]) => (s.singleEdged && px > 0 ? 0 : Math.min(1, Math.max(0, (Math.abs(px) - 0.8) / 0.17))));
   const recesses: number[][] = [];
   for (let i = 0; i <= segments; i++) {
-    const t = i / segments, y = (t - 0.5) * s.length;
+    const t = stations[i], y = (t - 0.5) * s.length;
     const { spine, edge, ricasso } = halfWidths(s, t);
     // No nicks on the ricasso: it is unsharpened, and it is where the second hand goes.
     const unworn = 1 - ricasso;
@@ -107,7 +127,7 @@ function buildBladeGeometry(s: BladeSpec, nicks: number): THREE.BufferGeometry {
     for (let j = 0; j < N; j++) {
       const v = ring[j], prev = ring[(j - 1 + N) % N], next = ring[(j + 1) % N];
       along.subVectors(rings[Math.min(segments, i + 1)][j], rings[Math.max(0, i - 1)][j]);
-      const push = (nrm: THREE.Vector3) => { positions.push(v.x, v.y, v.z); normals.push(nrm.x, nrm.y, nrm.z); uvs.push(j / N, i / segments); edgeAttr.push(edgeness[j]); recessAttr.push(recesses[i][j]); };
+      const push = (nrm: THREE.Vector3) => { positions.push(v.x, v.y, v.z); normals.push(nrm.x, nrm.y, nrm.z); uvs.push(j / N, stations[i]); edgeAttr.push(edgeness[j]); recessAttr.push(recesses[i][j]); };
       if (crease[j]) {
         push(facing(around.subVectors(v, prev), v, cx, cz));
         push(facing(around.subVectors(next, v), v, cx, cz));

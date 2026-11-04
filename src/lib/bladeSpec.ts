@@ -65,16 +65,37 @@ export const profileSpec = (archetype: ArchetypeKey, profile: BladeProfile) =>
 
 const smooth = (a: number, b: number, x: number) => { const k = Math.max(0, Math.min(1, (x - a) / (b - a))); return k * k * (3 - 2 * k); };
 
-// The double-edged taper: straight to taperEnd, then to the point, with an optional rounded shoulder.
+// Polished steel shows every break in the curvature of an outline as a kink in its reflections, so corners
+// in the outline are rounded by easing the slope (not the width) from one line to the next: the curvature
+// rises and falls to nothing, the outline stays convex and the lines meet where the sharp corner would.
+// The corner at tc (value vc) between slopes s0 and s1, rounded over tc ± r.
+const MIN_ROUND = 0.025;   // even a "sharp" shoulder is ground round over a couple of centimetres
+function corner(t: number, tc: number, vc: number, s0: number, s1: number, r: number): number {
+  const d = t - tc;
+  if (r <= 0 || d >= r) return vc + (d < 0 ? s0 : s1) * d;
+  if (d <= -r) return vc + s0 * d;
+  const u = (d + r) / (2 * r), area = u ** 4 * (2.5 + u * (u - 3));   // ∫ smootherstep from 0 to u
+  return vc + s0 * d + (s1 - s0) * 2 * r * area;
+}
+
+// The double-edged taper: straight to taperEnd, then straight to the point, the shoulder between rounded.
 function taper(s: BladeSpec, t: number) {
-  const hw = s.halfWidth, body = hw * (1 - (t / s.taperEnd) * (1 - s.midWidth));
-  const tip = hw * s.midWidth * (1 - (t - s.taperEnd) / (1 - s.taperEnd));
-  if (s.shoulder <= 0) return t <= s.taperEnd ? body : tip;
-  const d = (t - s.taperEnd) / s.shoulder;
-  if (d <= -1) return body;
-  if (d >= 1) return tip;
-  const k = smooth(-1, 1, d);
-  return body * (1 - k) + tip * k;
+  const hw = s.halfWidth, te = s.taperEnd, mid = hw * s.midWidth;
+  const r = Math.min(Math.max(s.shoulder, MIN_ROUND), 0.9 * (1 - te), 0.5 * te);
+  return Math.max(0, corner(t, te, mid, -(hw - mid) / te, -mid / (1 - te), r));
+}
+
+// Single-edged blades. The back runs straight and turns down at the clip (rounded like a shoulder); the edge
+// swells to the clip, then sweeps up to meet the back in a point. The sweep, top·(1 − g(u)), starts with the
+// swell's own curvature (the a·u² part) and reaches the point at a finite angle, so the tip is a point.
+const CLIP_ROUND = 0.04, SWEEP = 2.6;
+function singleEdged(s: BladeSpec, t: number): { spine: number; edge: number } {
+  const hw = s.halfWidth, clip = s.clipT, peak = Math.min(clip, 0.92), top = hw * (1 + s.swell);
+  const spine = Math.max(0, corner(t, clip, hw, 0, -hw / (1 - clip), Math.min(CLIP_ROUND, 0.45 * (1 - clip))));
+  if (t <= peak) return { spine, edge: hw + (top - hw) * Math.sin((Math.PI / 2) * (t / peak)) };
+  const a = Math.min(1, ((top - hw) * (Math.PI / (2 * peak)) ** 2 * (1 - peak) ** 2) / (2 * top));
+  const u = Math.min(1, (t - peak) / (1 - peak));
+  return { spine, edge: top * (1 - a * u * u - (1 - a) * u ** SWEEP) };
 }
 
 /**
@@ -83,13 +104,8 @@ function taper(s: BladeSpec, t: number) {
  */
 export function halfWidths(s: BladeSpec, t: number): { spine: number; edge: number; ricasso: number } {
   let spine: number, edge: number;
-  if (s.singleEdged) {
-    const hw = s.halfWidth, peak = Math.min(s.clipT, 0.92);
-    // The back runs straight, then drops to the point; the edge swells toward the clip and sweeps up to meet it.
-    spine = t < s.clipT ? hw : hw * (1 - (t - s.clipT) / (1 - s.clipT));
-    const top = hw * (1 + s.swell);
-    edge = t <= peak ? hw + (top - hw) * Math.sin((Math.PI / 2) * (t / peak)) : top * Math.sqrt(Math.max(0, 1 - ((t - peak) / (1 - peak)) ** 2));
-  } else spine = edge = taper(s, t);
+  if (s.singleEdged) ({ spine, edge } = singleEdged(s, t));
+  else spine = edge = taper(s, t);
   let ricasso = 0;
   if (s.ricasso) {
     ricasso = 1 - smooth(s.ricasso.t, s.ricasso.t + RICASSO_STEP, t);

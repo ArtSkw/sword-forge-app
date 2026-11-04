@@ -9,6 +9,8 @@ import { GUARDS_BY_TYPE } from '../presets/guardShapes';
 import { GRIPS, MESSER_CAPS, POMMELS, STEELS } from '../presets/forge';
 import { profileBlade, profilesOf } from '../lib/forms';
 import { bladeSpec } from '../lib/bladeSpec';
+// The studio HDRI the part cards are lit with (CC0, Poly Haven). Dev only, so it is not shipped with the app.
+import STUDIO_HDRI from './hdri/studio_small_03_2k.hdr?url';
 
 // Dev only (?studio): one part of the sword alone on a transparent background, framed to fill the view,
 // for rendering the part-option cards. Driven from the console / CDP through window.__studio.
@@ -100,7 +102,7 @@ export default function PartStudio() {
   return (
     <Canvas gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }} dpr={2} camera={{ fov: 22, position: [0, 0, 1] }}
       style={{ position: 'fixed', inset: 0, background: 'transparent' }}>
-      <Environment files={`${import.meta.env.BASE_URL}hdri/studio_small_03_2k.hdr`} environmentIntensity={1.18} />
+      <Environment files={STUDIO_HDRI} environmentIntensity={1.18} />
       <Lighting inspect />
       {part === 'context' ? <GuardInContext tick={tick} /> : <Framed part={part} tick={tick} />}
     </Canvas>

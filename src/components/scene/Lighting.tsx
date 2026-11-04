@@ -2,6 +2,9 @@ import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
+// The studio rig the part cards were rendered with (dev/PartStudio.tsx), kept so new cards match the old.
+// The app itself is lit by ForgeLighting.
+
 const PRIMARY_BASE = 3.85;
 const SECONDARY_BASE = 1.45;
 const KEY_BASE = 1.42;
