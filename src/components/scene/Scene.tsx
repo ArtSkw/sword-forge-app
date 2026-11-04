@@ -47,8 +47,8 @@ type Panels = { top: number; bottom: number; right: number };
 // Must match forge.css: on phones (≤ 700 px) the type row is smaller, and in edit mode a sheet at the bottom
 // holds the choices (see PhoneSheet); formerly the inspector spanned the top of the screen (at most 42% of it) instead of the right side.
 const PHONE = 700;
-// The bottom inset clears the row of type cards (108 px tall; 0.8× on phones).
-const overviewPanels = (w: number): Panels => ({ top: 110, bottom: w <= PHONE ? 133 : 156, right: 0 });
+// The bottom inset clears the row of type cards (100 px tall; 0.8× on phones).
+const overviewPanels = (w: number): Panels => ({ top: 110, bottom: w <= PHONE ? 126 : 148, right: 0 });
 // The phone sheet's height (set from the store before each framing; the bar with Done sits below it).
 let phoneSheetPx = 200;
 const editPanels = (w: number, h: number): Panels => (w <= PHONE ? { top: Math.round(h * 0.03), bottom: phoneSheetPx + 80, right: 0 } : { top: MARGIN_TOP, bottom: PANEL_BOTTOM, right: PANEL_RIGHT });

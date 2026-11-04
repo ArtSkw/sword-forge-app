@@ -34,7 +34,7 @@ export function useStationChoices(station: StationId | null): StationChoices | n
   if (station === 'blade') {
     const profiles = profilesOf(config);
     cards = profiles.map((p) => ({ id: p.id, name: p.name, era: p.era, period: true, off: null, selected: (config.blade.profile ?? profiles[0].id) === p.id, note: p.note,
-      art: <PartArt name={`blade-${arch}-${p.id}`} />, apply: () => update('blade', profileBlade(p)) }));
+      art: <PartArt name={`blade-${arch}-${p.id}`} bleed />, apply: () => update('blade', profileBlade(p)) }));
     // Options on top of the profile. A choice equal to the profile's own is stored as "not changed",
     // so the Form still reads as itself.
     const spec = bladeSpec(config), profile = currentProfile(config), own = profile ? profileSpec(arch, profile) : spec;
