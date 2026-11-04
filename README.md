@@ -1,51 +1,53 @@
 # Gustav's Forge
 
-A 3D medieval sword configurator in the browser. Pick one of seven historical sword types, then work on it part by part in a forge lit by firelight.
+![A fifteenth-century Italian longsword turning in a medieval forge, the hearth glowing behind it, with the seven sword types along the bottom](.github/preview.jpg)
 
-**Live demo:** https://artskw.github.io/sword-forge-app/
+A 3D medieval sword configurator in the browser. Pick one of seven historical sword types and
+rework it part by part (blade, guard, grip, pommel and finish) in a forge lit by its own fire.
 
----
+**Live:** https://artskw.github.io/sword-forge-app/
 
-## How it works
+## Highlights
 
-- **Seven sword types:** Arming Sword, Longsword, Bastard Sword, Viking Sword, Falchion, Estoc and Greatsword, chosen from a row of cards at the bottom.
-- **Forms:** each type opens on a documented historical sword (for example the Whittlesea Mere arming sword or an Iberian montante). The name under the title switches between a type's Forms; once you change a part it reads "your variant", and **Back to default** returns to the Form.
-- **Five parts:** blade, guard, grip, pommel and finish. Rest the pointer on the sword and rings mark each part; click one to work on it. Parts from the Form's own period come first, and parts from other ages sit under "Other ages". A small "i" marks a part, an end or a ring that is earlier or later than the Form, and says why.
-- **Inspector:** the panel on the right names the chosen part and its period, links the museum object it follows, and offers the options that apply: blade section and ricasso, guard ends, écusson and side rings, grip shape and dye, fittings, steel finish and age.
-- **Age:** a slider from "From the forge" to "Excavated". Every part ages with it: steel tarnishes and pits, iron and brass darken, leather, cord and wood wear and rot.
-- **History & use:** a parchment scroll with the sword's history, how it was fought, its weight and balance (estimated from the 3D model) and its fittings.
-- **Keyboard:** ←/→ move between parts, ↑/↓ change the variant, Esc goes back, H opens History & use.
-- **Sound:** forge ambience and four music tracks that follow one another; every change makes one sound fitted to it (steel, fittings, wood, leather, a whetstone, an anvil ping), and each sword type has its own blade sound. One button mutes it all.
-- **Screenshot:** saves a picture of the current sword.
+- Seven sword types, from the Viking sword to the two-handed greatsword, each opening on a real,
+  documented sword.
+- Every option belongs to its period: parts from other ages are marked, with the reason why.
+- Age the whole sword from fresh off the anvil to excavated: steel pits, brass darkens, leather rots.
+- A history scroll for each sword: where it came from, how it was fought, its weight and balance.
 
-### Screens
+## Built on museum sources
 
-- **Desktop:** the inspector sits on the right, the part's variants and the part steps at the bottom.
-- **Tablets:** the actions move to the top corners; History & use opens alone in the middle of the screen.
-- **Phones:** a sheet at the bottom holds the part steps and variants; drag it up for every option. History & use opens as a full-screen document.
-- Rendering adapts to the device: the resolution steps down when the frame rate cannot hold, and touch devices get lighter textures, meshes and a still background.
+The swords follow real objects, not fantasy. About 180 museum pieces were studied, and the app
+names the object behind each sword and part, with a link to the museum's page where there is one.
+The most useful collections:
 
-## Tech stack
+- [The Wallace Collection](https://www.wallacecollection.org/), London
+- [The Cleveland Museum of Art](https://www.clevelandart.org/), open access
+- [The Metropolitan Museum of Art](https://www.metmuseum.org/), open access
+- [Kunsthistorisches Museum, Imperial Armoury](https://www.khm.at/), Vienna
+- [Finnish Heritage Agency](https://www.museovirasto.fi/), for Viking-age finds
+- [Portable Antiquities Scheme](https://finds.org.uk/), for excavated parts
 
-- React 19 + TypeScript (strict)
-- Three.js + @react-three/fiber + @react-three/drei, with custom shaders for blade grinds, surface wear and engraving
-- Zustand for state
-- Vite
-- Web Audio API for sound effects; generated sound effects and music (ElevenLabs)
-- Hugeicons for interface icons
-- GitHub Pages for hosting
+Knightly blades follow Ewart Oakeshott's typology, and Viking hilts Jan Petersen's.
 
-## Getting started
+## Under the hood
 
-```bash
+React Three Fiber (three.js), React, TypeScript and Vite. No 3D models: every part is built in code.
+
+- Blades are lofted ring by ring from their cross-sections; guards and pommels are turned and
+  extruded from profiles.
+- Steel grinds, wear and engraving are shaders, so a sword can age without a single texture swap.
+- The light comes from the room in the background: the hearth on the left flickers with the fire
+  in the video, and stays where it is on screen as the sword turns.
+
+```
+src/components/scene/   the sword in 3D: blade, guard, grip, pommel, the forge's light
+src/components/forge/   the editor: type cards, inspector, history scroll
+src/presets/            the catalogue: types, forms, parts and their museum sources
+src/lib/                blade geometry, weight and balance, sound, the fire
+```
+
+```sh
 npm install
 npm run dev
 ```
-
-## Deployment
-
-```bash
-npm run deploy
-```
-
-Builds the app and publishes it to GitHub Pages with `gh-pages`.
