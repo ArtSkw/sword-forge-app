@@ -107,7 +107,7 @@ export function Grip({ archetype, length, shape, material, color, roughness, met
   const leather = surface('leather'), wire = surface(metal.tone), wood = surface('wood');
   return (
     <group position={position}>
-      <mesh geometry={geo}>
+      <mesh geometry={geo} scale={[recipe.sectionX ?? 1, 1, 1]}>
         {material === 'wire' && <meshStandardMaterial key={wire.key} {...wire.props} color={metal.color} metalness={1} roughness={Math.max(0.22, metal.roughness - 0.08)} />}
         {material === 'wood' && <meshStandardMaterial key={wood.key} {...wood.props} map={woodTexture()} color={color} metalness={0} roughness={Math.max(0.38, roughness - 0.3)} />}
         {(material === 'leather' || material === 'cord') && <meshStandardMaterial key={leather.key} {...leather.props} color={color} metalness={0} roughness={roughness} />}
