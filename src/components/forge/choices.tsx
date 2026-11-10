@@ -81,7 +81,7 @@ export function useStationChoices(station: StationId | null): StationChoices | n
       if (cur !== 'none') extraNote = `${extraNote} ${WIRE_INLAYS.find((w) => w.id === cur)?.note ?? ''}`.trim();
     }
     engraving('guard', !!config.guard.engraved);
-    cards = GUARDS.filter((g) => GUARDS_BY_TYPE[arch].includes(g.id)).sort((a, b) => GUARDS_BY_TYPE[arch].indexOf(a.id) - GUARDS_BY_TYPE[arch].indexOf(b.id)).map((g) => ({ ...g, period: ofForm(g, form?.guard), off: off(g, form?.guard), selected: config.guard.style === g.id, art: <PartArt name={`guard-${arch}-${g.id}`} />, apply: () => update('guard', { style: g.id }) }));
+    cards = GUARDS.filter((g) => GUARDS_BY_TYPE[arch].includes(g.id)).sort((a, b) => GUARDS_BY_TYPE[arch].indexOf(a.id) - GUARDS_BY_TYPE[arch].indexOf(b.id)).map((g) => ({ ...g, period: ofForm(g, form?.guard), off: off(g, form?.guard), selected: config.guard.style === g.id, art: <PartArt name={`guard-${arch}-${g.id}`} bleed />, apply: () => update('guard', { style: g.id }) }));
   }
   if (station === 'pommel' && config.grip.hilt === 'messer') {
     // A Messer has a cap over the grip's end instead of a pommel.
