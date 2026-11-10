@@ -11,7 +11,7 @@ export const POMMEL_HALF_HEIGHTS: Record<PommelStyle, number> = {
   disc:         0.027,
   scentStopper: 0.026,
   brazilNut:    0.0135,  // flat against the grip, domed outward (see BRAZIL_NUT)
-  fishtail:     0.022,
+  fishtail:     0.0216,  // its top: the fishtail sits 0.4 mm off centre (spans −0.0224 … 0.0216), and the top meets the grip
   ornate:       0.027,
   pyramid:      0.0245,  // upper guard + crown (see VIKING_POMMELS)
   lobed3:       0.0275,

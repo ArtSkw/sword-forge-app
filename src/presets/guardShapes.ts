@@ -54,6 +54,16 @@ export function guardDef(style: GuardStyle, archetype: ArchetypeKey, cm?: number
   return { ...d, width: d.width * w, tipY: d.tipY * w, recurve: (d.recurve ?? 0) * w, secY: d.secY * s.section, secZ: d.secZ * s.section };
 }
 
+/**
+ * Half the cross's height at its centre, where the blade sits on it and the grip runs up to it. The centre
+ * section is upright, so a straight-armed (linear) cross is cut on a slant there and stands a little taller
+ * (as the arm sections are grown in Crossguard.tsx).
+ */
+export function guardHalfHeight(d: GuardDef): number {
+  const slope = d.linear ? d.tipY / (d.width / 2) : 0;
+  return d.secY * Math.min(1.7, Math.sqrt(1 + slope * slope));
+}
+
 /** The guards each type offers; the first is its default. */
 export const GUARDS_BY_TYPE: Record<ArchetypeKey, GuardStyle[]> = {
   vikingSword: ['vikingBar', 'vikingCurved', 'longBar'],

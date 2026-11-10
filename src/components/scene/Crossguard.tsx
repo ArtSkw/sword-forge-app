@@ -5,8 +5,8 @@ import { useEffect, useMemo } from 'react';
 import { turnedGeometry } from './turned';
 import { guardDef, type GuardDef } from '../../presets/guardShapes';
 
-// Central slot height used by Sword.tsx for assembly positioning.
-export const GUARD_HEIGHT = 0.018;
+// Where the écusson's base sits above the cross's centre line.
+const ECUSSON_Y = 0.0054;
 
 
 // Cross-section: a rectangle with rounded corners (an arc of CORNER_STEPS per corner), so each long face
@@ -196,7 +196,7 @@ export function Crossguard({ tone, engraved, wire, cm, archetype, style, termina
         </group>
       ))}
       {parts.ecusson && [1, -1].map((side) => (
-        <mesh key={side} geometry={parts.ecusson!} position={[0, GUARD_HEIGHT * 0.3, side * 0.0066]} rotation={[0, side < 0 ? Math.PI : 0, 0]}>{mat}</mesh>
+        <mesh key={side} geometry={parts.ecusson!} position={[0, ECUSSON_Y, side * 0.0066]} rotation={[0, side < 0 ? Math.PI : 0, 0]}>{mat}</mesh>
       ))}
       {parts.ring && ([1, -1] as const).slice(0, rings).map((side) => (
         <mesh key={side} geometry={parts.ring!} position={ringC(side)} rotation={[side * tilt, 0, 0]}>{mat}</mesh>
