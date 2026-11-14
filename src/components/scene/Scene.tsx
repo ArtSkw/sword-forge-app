@@ -244,11 +244,6 @@ function SceneContents() {
     timerRef.current = setTimeout(() => setAutoRotate(true), AUTO_ROTATE_RESUME_MS);
   }, []);
 
-  useFrame(({ clock, scene }) => {
-    // Slowly rotate the HDR environment so reflections drift across the blade
-    if (scene.environmentRotation) scene.environmentRotation.y = clock.elapsedTime * 0.04;
-  });
-
   // Camera glide + view offset
   const sph = useRef(new THREE.Spherical());
   useFrame(() => {

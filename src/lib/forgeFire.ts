@@ -6,6 +6,14 @@ import { FIRE_FPS, FIRE_LEVEL, FIRE_WARMTH } from './fireCurve';
 
 // Where the fire sits in the plate (share of the frame; measured on background.mp4 and background.webp).
 export const FIRE_UV = { x: 0.27, y: 0.54 };
+// The hearth for the embers (plate UV, checked on a frame of background.mp4): the canvas covers `region`; sparks
+// leave the coal bed (a segment) and the foot of the flame (a point with a spread). The lower ember pit is left
+// out: its sparks would rise through the stone front of the hearth.
+export const HEARTH = {
+  region: { u0: 0.14, u1: 0.46, v0: 0.22, v1: 0.78 },
+  coalBed: { u0: 0.235, v0: 0.604, u1: 0.335, v1: 0.604 },   // the top of the glowing coals
+  flameFoot: { u: 0.285, v: 0.55, spread: 0.012 },
+} as const;
 const INSET = 16;   // the plate is drawn 16 px past each edge of the viewport (AppShell), then cropped to cover
 
 let video: HTMLVideoElement | null = null;
@@ -28,14 +36,22 @@ export function readFire(): { level: number; warmth: number } {
 }
 
 /**
+ * Where a point of the plate (u, v: share of the frame) lands on a viewport of w × h, in CSS px, and the plate's
+ * height in px (`H`, the unit the embers move in). The plate covers the viewport the way object-fit: cover does,
+ * drawn 16 px past each edge.
+ */
+export function plateToScreen(u: number, v: number, w: number, h: number, aspect = 16 / 9): { x: number; y: number; H: number } {
+  const pw = w + INSET * 2, ph = h + INSET * 2;
+  const H = Math.max(pw / aspect, ph);               // plate height in px once it covers
+  const W = H * aspect;
+  return { x: u * W - (W - pw) / 2 - INSET, y: v * H - (H - ph) / 2 - INSET, H };
+}
+
+/**
  * The fire's position on screen in normalised device coordinates (−1..1, y up), for a viewport of w × h.
- * The plate covers the viewport the way object-fit: cover does, so on a narrow screen the fire moves out
- * past the left edge, and the light swings round to the side with it.
+ * On a narrow screen the fire moves out past the left edge, and the light swings round to the side with it.
  */
 export function fireOnScreen(w: number, h: number, aspect = 16 / 9): { x: number; y: number } {
-  const pw = w + INSET * 2, ph = h + INSET * 2;
-  const scale = Math.max(pw / aspect, ph);           // plate height in px once it covers
-  const plateW = scale * aspect, plateH = scale;
-  const px = FIRE_UV.x * plateW - (plateW - pw) / 2 - INSET, py = FIRE_UV.y * plateH - (plateH - ph) / 2 - INSET;
-  return { x: (px / w) * 2 - 1, y: 1 - (py / h) * 2 };
+  const p = plateToScreen(FIRE_UV.x, FIRE_UV.y, w, h, aspect);
+  return { x: (p.x / w) * 2 - 1, y: 1 - (p.y / h) * 2 };
 }
