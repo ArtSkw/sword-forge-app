@@ -228,7 +228,8 @@ const mq = (q: string) => { let m = queries.get(q); if (!m) { m = matchMedia(q);
 const useMedia = (q: string) => useSyncExternalStore(
   (cb) => { const m = mq(q); m.addEventListener('change', cb); return () => m.removeEventListener('change', cb); },
   () => mq(q).matches, () => false);
-const usePhone = () => useMedia('(max-width: 700px)');
+// Phones edit in the sheet, upright (≤ 700 px wide) or on their side (≤ 500 px tall, docked right; see forge.css).
+const usePhone = () => useMedia('(max-width: 700px), (max-height: 500px) and (orientation: landscape)');
 const useNarrow = () => useMedia('(max-width: 1179px)');
 
 function PhoneSheet({ station, choices, onStep, opens }: { station: StationId; choices: StationChoices; onStep: (d: number) => void; opens: number }) {

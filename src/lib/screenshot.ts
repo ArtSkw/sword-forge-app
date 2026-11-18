@@ -1,3 +1,5 @@
+import { plateShift } from './forgeFire';
+
 // Blur radius matches the CSS applied to the background <video> element in AppShell.
 const BG_BLUR_PX = 10;
 
@@ -39,7 +41,9 @@ export async function takeScreenshot(): Promise<void> {
     const scale = Math.max(W / bg.width, H / bg.height);
     const drawW = bg.width * scale;
     const drawH = bg.height * scale;
-    ctx.drawImage(bg, (W - drawW) / 2, (H - drawH) / 2, drawW, drawH);
+    // Framed as on screen (AppShell): moved right on portrait screens, never past the plate's own edge.
+    const shift = Math.min(plateShift(innerWidth, innerHeight) * (W / innerWidth), (drawW - W) / 2);
+    ctx.drawImage(bg, (W - drawW) / 2 + shift, (H - drawH) / 2, drawW, drawH);
     ctx.filter = 'none';
     backgroundDrawn = true;
   } catch {

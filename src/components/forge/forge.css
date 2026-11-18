@@ -309,7 +309,9 @@
   .forge .corner-l, .forge .corner-r:not(.focus-only) { top: 12px; }
   .forge .arch { left: 0; right: 0; bottom: 16px; transform: none; overflow-x: auto; overflow-y: hidden; touch-action: pan-x; overscroll-behavior-x: contain; padding: 10px 16px 4px; scroll-snap-type: x mandatory; scrollbar-width: none; }
   .forge.focus .arch { transform: translateY(16px); }
-  .forge .tcard { zoom: .8; scroll-snap-align: center; flex: none; }
+  /* Smaller cards, but the names stay readable: 12 px at .9 zoom is ~11 px on screen (it was 8.8 px at .8). */
+  .forge .tcard { zoom: .9; scroll-snap-align: center; flex: none; }
+  .forge .tcard .plate { font-size: 12px; letter-spacing: .01em; }
   /* Edit mode on phones: one bar under the sheet and as wide as it: Back to default as a square icon
      button, Done filling the rest (a wide primary action, its secondary beside it). */
   .forge .corner-r.focus-only { left: 8px; right: 8px; bottom: 12px; display: flex; gap: 8px; }
@@ -327,7 +329,8 @@
 /* What scrolls under the header and the variants melts away under a short fade, not a hard edge. */
 .forge .ps-more > div { -webkit-mask: linear-gradient(transparent, #000 18px); mask: linear-gradient(transparent, #000 18px); }
 .forge .ps-head b { font: var(--type-subheading); letter-spacing: var(--track-label-lg); color: var(--gold-hi); text-transform: uppercase; }
-.forge .ps-head .step { height: 32px; padding: 0 8px; font: var(--type-label-sm); }
+/* The steps hug their names (a grid item would stretch across its column, and so would its hover tint). */
+.forge .ps-head .step { justify-self: start; height: 32px; padding: 0 8px; font: var(--type-label-sm); }
 .forge .ps-head .step:last-child { justify-self: end; }
 .forge .psheet .chooser { position: relative; inset: auto; z-index: 1; flex: none; transform: none; justify-content: flex-start; overflow-x: auto; overflow-y: hidden; touch-action: pan-x; overscroll-behavior-x: contain; padding: 10px 12px 2px; scrollbar-width: none; scroll-snap-type: x proximity; }
 .forge .psheet .chooser .item { flex: none; scroll-snap-align: start; }
@@ -337,6 +340,15 @@
 .forge .inspector.embedded { position: static; width: auto; max-height: none; overflow: visible; padding: 10px 16px 0; animation: none; }
 .forge .inspector.embedded .insp-kicker { display: none; }
 .forge .inspector.embedded h2 { margin-top: 2px; }
+/* A phone on its side: the sheet docks to the right (the camera frames the sword in the space left of it, see
+   SIDE_SHEET in Scene.tsx), the bar with Done under it at the same width; the sheet grows upward when opened. */
+@media (max-height: 500px) and (orientation: landscape) {
+  .forge .psheet { left: auto; right: 8px; bottom: 68px; width: min(46vw, 380px); max-height: calc(100% - 76px); }
+  .forge .corner-r.focus-only { left: auto; right: 8px; bottom: 12px; width: min(46vw, 380px); display: flex; gap: 8px; }
+  .forge .corner-r.focus-only .btn { height: 48px; }
+  .forge .corner-r.focus-only .btn.icon { width: 48px; }
+  .forge .corner-r.focus-only .btn.primary { flex: 1; }
+}
 
 /* Tablets: the room around the scroll is a veil; a tap on it closes the scroll. */
 .forge .scroll-veil { display: none; position: absolute; inset: 0; z-index: 19; background: rgba(5, 3, 2, .38); opacity: 0; pointer-events: none; transition: opacity 260ms var(--ease-out); }
