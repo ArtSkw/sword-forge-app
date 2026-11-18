@@ -3,3 +3,6 @@ dist/
 .DS_Store
 *.local
 .claude/settings.local.json
+.plan/
+.env*
+.claude/worktrees/
