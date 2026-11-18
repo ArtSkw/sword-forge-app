@@ -31,15 +31,36 @@ function fishtail(): THREE.BufferGeometry {
 }
 
 // Viking hilt: the upper guard (a rounded bar, gently domed faces) and the crown riveted beneath it.
-function viking(style: 'pyramid' | 'lobed3' | 'lobed5'): THREE.BufferGeometry {
+// The upper guard's superellipsoid powers per axis, and the pyramid cap's base half-width, half-depth and height.
+const UPPER_POW = { x: 0.42, y: 0.62, z: 0.7 };
+const PYRAMID = { a: 0.025, c: 0.0105, h: 0.031 };
+const crownTop = (style: VikingStyle) => POMMEL_HALF_HEIGHTS[style] - 2 * VIKING_POMMELS[style].upper.halfHeight + 0.0012;   // tucked a little into the guard
+type VikingStyle = 'pyramid' | 'lobed3' | 'lobed5';
+
+/**
+ * Where the wire inlay finds the parts of a Viking pommel (its own coordinates): the upper guard's size, centre and
+ * powers (its underside, and so the seam with the cap, follows from them), and the cap's top, point and taper.
+ */
+export function vikingInlayFrame(style: VikingStyle) {
+  const { halfWidth, halfHeight, halfDepth } = VIKING_POMMELS[style].upper, top = crownTop(style);
+  return {
+    upper: [halfWidth, halfHeight, halfDepth, POMMEL_HALF_HEIGHTS[style] - halfHeight] as const,
+    // |x/w|^px + |z/d|^pz + |y/h|^py = 1 (from d.x² + d.y² + d.z² = 1), and 1/py to solve for y.
+    pow: [2 / UPPER_POW.x, 2 / UPPER_POW.z, UPPER_POW.y / 2] as const,
+    // The pyramid's flat faces run between its two rounded ends: their straight half-length shrinks to the point.
+    crown: (style === 'pyramid' ? [top, top - PYRAMID.h, PYRAMID.a - PYRAMID.c, 0] : [top, top - 0.04, 0, 1]) as [number, number, number, number],
+  };
+}
+
+function viking(style: VikingStyle): THREE.BufferGeometry {
   const v = VIKING_POMMELS[style], half = POMMEL_HALF_HEIGHTS[style], { halfWidth, halfHeight, halfDepth } = v.upper;
-  const upper = paramSolid((d) => new THREE.Vector3(halfWidth * sgnPow(d.x, 0.42), halfHeight * sgnPow(d.y, 0.62), halfDepth * sgnPow(d.z, 0.7)), 96, 48);
+  const upper = paramSolid((d) => new THREE.Vector3(halfWidth * sgnPow(d.x, UPPER_POW.x), halfHeight * sgnPow(d.y, UPPER_POW.y), halfDepth * sgnPow(d.z, UPPER_POW.z)), 96, 48);
   upper.translate(0, half - halfHeight, 0);
-  const top = half - 2 * halfHeight + 0.0012;   // tucked a little into the guard
+  const top = crownTop(style);
   let crown: THREE.BufferGeometry;
   if (style === 'pyramid') {
     // An inverted pyramid with softened edges: a rounded-square base under the guard tapering to a point.
-    const a = 0.025, c = 0.0105, h = 0.031;
+    const { a, c, h } = PYRAMID;
     crown = paramSolid((d) => {
       const th = Math.atan2(d.z, d.x), t = d.y < 0 ? -d.y : 0, s = 1 - t;
       return new THREE.Vector3(a * s * sgnPow(Math.cos(th), 0.5), d.y < 0 ? -t * h : d.y * 0.002, c * s * sgnPow(Math.sin(th), 0.5));
@@ -106,10 +127,3 @@ export function pommelGeometry(style: PommelStyle): THREE.BufferGeometry {
   if (form.axis === 'writhen') return writhen();
   return turnedGeometry(POMMEL_PROFILES[style] ?? [], { axis: form.axis as 'y' | 'z', flatten: form.flatten });
 }
-
-// The tang's end, peened over at the pommel's far end: a small domed button (turned pommels end in
-// their own cap and do not need one).
-export const hasPeen = (style: PommelStyle) => !['y', 'viking', 'writhen'].includes(POMMEL_FORM[style].axis);
-export const peenGeometry = () => turnedGeometry([[0, 0], [0.0036, 0], [0.0042, -0.0012], [0.0034, -0.0027], [0, -0.0034]], { segments: 48, bevel: 0.0004 });
-// The fishtail's tang ends in the hollow between its lobes.
-export const peenY = (style: PommelStyle) => (style === 'fishtail' ? -0.0135 : -POMMEL_HALF_HEIGHTS[style] + 0.0006);

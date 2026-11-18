@@ -3,6 +3,7 @@ import { tokens } from '../../styles/tokens';
 import { ViewportFrame } from './ViewportFrame';
 import { NoiseOverlay } from './NoiseOverlay';
 import { AtmosphereOverlay } from './AtmosphereOverlay';
+import { Embers } from './Embers';
 import { ForgeUI } from '../forge/ForgeUI';
 import { makeAudioLayer, makePlaylist } from '../../lib/audio';
 import { LOW_TIER } from '../../lib/tier';
@@ -164,6 +165,8 @@ export function AppShell({ children }: AppShellProps) {
       </video>}
 
       {hasEntered && <AtmosphereOverlay />}
+      {/* Sparks over the hearth: after the vignette in paint order, before the scene, so the sword covers them. */}
+      {hasEntered && <Embers />}
 
       {hasEntered && <div style={{ position: 'absolute', inset: 0 }}>{children}</div>}
 

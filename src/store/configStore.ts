@@ -42,9 +42,12 @@ export type PommelStyle =
 export type SwordCondition = 'pristine' | 'used' | 'battleWorn' | 'ancient';
 export type SteelFinish = 'polished' | 'satin' | 'patternWelded';
 export type HardwareTone = 'steel' | 'brass' | 'bronze' | 'darkIron' | 'gilt';
-// Viking wire inlay on the guards: silver and copper chequer, silver and brass lozenges, or bands.
-export type WireInlay = 'chequer' | 'lozenge' | 'bands';
+// Viking wire inlay on the guards and the cap (presets/inlayPatterns.ts): silver and copper stripes, or stepped
+// copper rings round silver hearts (lozenges). Only on iron fittings (INLAY_TONES).
+export type WireInlay = 'stripes' | 'lozenge';
 export type GripMaterial = 'leather' | 'wood' | 'cord' | 'wire';
+
+export type GuardMm = { high: [number, number]; deep: [number, number]; point?: number; holdsGrip?: boolean };
 
 export interface SwordConfig {
   archetype: ArchetypeKey;
@@ -55,7 +58,10 @@ export interface SwordConfig {
   blade: { length: BladeLength; width: BladeWidth; fuller: FullerStyle; profile?: string; shape?: BladeShape; section?: Section; ricasso?: 'none' | RicassoCover; flame?: boolean };
   // terminal / ecusson / rings: omitted = the guard style's own (see lib/hilt.ts).
   // cm: the cross tip to tip (omitted = the guard style's own length on this type).
-  guard: { style: GuardStyle; engraved?: boolean; terminal?: GuardTerminal; ecusson?: boolean; rings?: 1 | 2; wire?: WireInlay; cm?: number };
+  // mm: the cross's measured section, its height along the blade and its depth front to back, [centre, ends] in mm,
+  // and the height a hooked end tapers to at its point (omitted = the guard style's own); holdsGrip: the grip runs
+  // straight into this cross, with no collar between (choosing another cross brings the collar back).
+  guard: { style: GuardStyle; engraved?: boolean; terminal?: GuardTerminal; ecusson?: boolean; rings?: 1 | 2; wire?: WireInlay; cm?: number; mm?: GuardMm };
   // shape omitted = the type's own (GRIP_SHAPES); hilt 'messer' = riveted scales, Nagel and cap (falchion).
   // cm: the grip's length (omitted = the type's own, SwordPreset.gripCm).
   grip: { length: GripLength; shape?: GripShape; hilt?: 'messer'; cap?: MesserCap; cm?: number };

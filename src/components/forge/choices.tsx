@@ -1,13 +1,15 @@
 import type { ReactNode } from 'react';
 import { useConfigStore } from '../../store/configStore';
 import { SWORD_TYPES } from '../../presets/swordTypes';
-import { ageLabel, DEFAULT_GRIP_SHAPE, ENAMEL_NOTE, WIRE_INLAYS, HILT_NOTE, MESSER_CAPS, DYES, GRIP_SHAPES, GRIP_SHAPE_OFFERED, ECUSSON_NOTE, ECUSSON_YEARS, RING_CHOICES, TERMINALS, EDGE_CHOICES, FITTINGS, GRIPS, GUARDS, POMMELS, RICASSO_CHOICES, SECTIONS, SECTION_CHOICES, STEELS, type StationId } from '../../presets/forge';
+import { ageLabel, DEFAULT_GRIP_SHAPE, ENAMEL_NOTE, INLAYS, inlayOffered, HILT_NOTE, MESSER_CAPS, dyesFor, dyeSwatch, GRIP_SHAPES, GRIP_SHAPE_OFFERED, ECUSSON_NOTE, ECUSSON_YEARS, RING_CHOICES, TERMINALS, EDGE_CHOICES, FITTINGS, GRIPS, GUARDS, POMMELS, RICASSO_CHOICES, SECTIONS, SECTION_CHOICES, STEELS, type StationId } from '../../presets/forge';
 import { currentForm, currentProfile, overlaps, periodNote, profileBlade, profilesOf, type PeriodNote } from '../../lib/forms';
 import { bladeSpec, profileSpec } from '../../lib/bladeSpec';
 import { POMMEL_FORM } from '../../presets/pommelProfiles';
 import { GUARDS_BY_TYPE } from '../../presets/guardShapes';
 import { HILT_OPTIONS, defaultTerminal, hiltSpec } from '../../lib/hilt';
 import { PartArt } from './PartArt';
+import { offersPatternWelded } from '../../presets/finishCharacter';
+import { ENGRAVED_FACE_NOTE, GUARD_ENGRAVINGS } from '../../presets/engravings';
 
 // The choices offered at each station, as one model shared by the chooser, the inspector and the keyboard.
 
@@ -55,7 +57,7 @@ export function useStationChoices(station: StationId | null): StationChoices | n
       extraNote = [extraNote, cover !== ownCover ? RICASSO_CHOICES.find((r) => r.id === cover)?.note : '', spec.flame ? EDGE_CHOICES[1].note : ''].filter(Boolean).join(' ');
     }
   }
-  // Engraving: a running scroll on the guard's faces, a medallion on the face of a wheel or disc pommel.
+  // Engraving: one motif of the type's own period on each arm of the guard (presets/engravings.ts).
   const engraving = (part: 'guard' | 'pommel', on: boolean) =>
     rows.push({ label: 'Engraving', kind: 'chips', items: [false, true].map((v) => ({ id: v ? 'engraved' : 'plain', name: v ? 'Engraved' : 'Plain', selected: on === v, apply: () => update(part, { engraved: v || undefined }) })) });
   if (station === 'guard') {
@@ -75,13 +77,22 @@ export function useStationChoices(station: StationId | null): StationChoices | n
       rows.push({ label: 'Side rings', kind: 'chips', items: RING_CHOICES.map((r) => ({ id: String(r.id), name: r.name, selected: h.rings === r.id, off: off({ id: String(r.id), years: r.years }, String(own?.rings)), apply: () => update('guard', { rings: r.id || undefined }) })) });
       if (h.rings) extraNote = `${extraNote} ${RING_CHOICES[h.rings].note}`.trim();
     }
-    if (arch === 'vikingSword') {
-      const cur = config.guard.wire ?? 'none';
-      rows.push({ label: 'Wire inlay', kind: 'chips', items: WIRE_INLAYS.map((w) => ({ id: w.id, name: w.name, selected: cur === w.id, apply: () => update('guard', { wire: w.id === 'none' ? undefined : w.id }) })) });
-      if (cur !== 'none') extraNote = `${extraNote} ${WIRE_INLAYS.find((w) => w.id === cur)?.note ?? ''}`.trim();
+    // Wire inlay: on iron fittings only (with brass, bronze or gilt the row hides and the choice rests).
+    const inlay = inlayOffered(config) ? INLAYS.find((w) => w.id === (config.guard.wire ?? 'none')) : undefined;
+    if (inlay) {
+      rows.push({ label: 'Inlay', kind: 'chips', items: INLAYS.map((w) => ({ id: w.id, name: w.name, selected: inlay.id === w.id, apply: () => update('guard', { wire: w.id === 'none' ? undefined : w.id }) })) });
+      if (inlay.note) extraNote = `${extraNote} ${inlay.note}`.trim();
     }
-    engraving('guard', !!config.guard.engraved);
-    cards = GUARDS.filter((g) => GUARDS_BY_TYPE[arch].includes(g.id)).sort((a, b) => GUARDS_BY_TYPE[arch].indexOf(a.id) - GUARDS_BY_TYPE[arch].indexOf(b.id)).map((g) => ({ ...g, period: ofForm(g, form?.guard), off: off(g, form?.guard), selected: config.guard.style === g.id, art: <PartArt name={`guard-${arch}-${g.id}`} bleed />, apply: () => update('guard', { style: g.id }) }));
+    // An inlaid Viking guard is decorated by its inlay: no engraving row (a choice made before rests until the inlay goes).
+    const engraved = !inlay || inlay.id === 'none' ? !!config.guard.engraved : null;
+    if (engraved !== null) engraving('guard', engraved);
+    const motif = engraved ? GUARD_ENGRAVINGS[arch] : null;
+    if (motif) extraNote = `${extraNote} ${motif.note}`.trim();
+    // A measured section belongs to the form's own cross: another style drops it, the form's style brings it back.
+    cards = GUARDS.filter((g) => GUARDS_BY_TYPE[arch].includes(g.id)).sort((a, b) => GUARDS_BY_TYPE[arch].indexOf(a.id) - GUARDS_BY_TYPE[arch].indexOf(b.id)).map((g) => ({ ...g, period: ofForm(g, form?.guard), off: off(g, form?.guard), selected: config.guard.style === g.id, art: <PartArt name={`guard-${arch}-${g.id}`} bleed />, apply: () => update('guard', { style: g.id, mm: g.id === form?.guard ? form.guardMm : undefined }) }));
+    // With an inlay or an engraving chosen, the inspector's "After …" names its own source, as its note does.
+    const source = motif?.anchor ? motif : inlay?.anchor ? inlay : null;
+    if (source) cards = cards.map((c) => (c.selected ? { ...c, anchor: source.anchor, anchorUrl: source.anchorUrl } : c));
   }
   if (station === 'pommel' && config.grip.hilt === 'messer') {
     // A Messer has a cap over the grip's end instead of a pommel.
@@ -94,7 +105,7 @@ export function useStationChoices(station: StationId | null): StationChoices | n
       const p = config.pommel, cur = !p.engraved ? 'plain' : p.enamel ?? 'engraved';
       rows.push({ label: 'Face', kind: 'chips', items: ([['plain', 'Plain'], ['engraved', 'Engraved'], ['azure', 'Blue enamel'], ['gules', 'Red enamel']] as const).map(([id, name]) => ({ id, name, selected: cur === id,
         apply: () => update('pommel', { engraved: id === 'plain' ? undefined : true, enamel: id === 'azure' || id === 'gules' ? id : undefined }) })) });
-      if (p.enamel) extraNote = `${extraNote} ${ENAMEL_NOTE}`.trim();
+      if (p.engraved) extraNote = `${extraNote} ${p.enamel ? ENAMEL_NOTE : ENGRAVED_FACE_NOTE}`.trim();
     }
     cards = POMMELS.map((g) => ({ ...g, period: ofForm(g, form?.pommel), off: off(g, form?.pommel), selected: config.pommel.style === g.id, art: <PartArt name={`pommel-${g.id}`} />, apply: () => update('pommel', { style: g.id }) }));
   }
@@ -115,10 +126,11 @@ export function useStationChoices(station: StationId | null): StationChoices | n
     }
     const natural = preset.defaults.finish.gripColor.toLowerCase(), current = config.finish.gripColor.toLowerCase();
     // Only leather and cord take a dye: wood shows its grain, wire is metal.
-    if (config.finish.gripMaterial === 'leather' || config.finish.gripMaterial === 'cord') rows.push({ label: 'Dye', kind: 'dots', items: DYES.map((d) => ({ id: d.id, name: d.name, swatch: d.color ?? natural, selected: (d.color ?? natural).toLowerCase() === current, apply: () => update('finish', { gripColor: d.color ?? preset.defaults.finish.gripColor }) })) });
+    if (config.finish.gripMaterial === 'leather' || config.finish.gripMaterial === 'cord') rows.push({ label: 'Dye', kind: 'dots', items: dyesFor(preset.defaults.finish.gripColor).map((d) => ({ id: d.id, name: d.name, swatch: dyeSwatch(d.color ?? natural), selected: (d.color ?? natural).toLowerCase() === current, apply: () => update('finish', { gripColor: d.color ?? preset.defaults.finish.gripColor }) })) });
   }
   if (station === 'finish') {
-    cards = STEELS.map((s) => ({ ...s, period: ofForm(s, form?.steel), off: off(s, form?.steel), selected: config.finish.steelFinish === s.id, art: <PartArt name={`steel-${s.id}`} bleed />, apply: () => update('finish', { steelFinish: s.id }) }));
+    // Pattern-welded only where it belongs (Viking; arming sword with the "earlier" badge its Form's years give it).
+    cards = STEELS.filter((s) => s.id !== 'patternWelded' || offersPatternWelded(arch)).map((s) => ({ ...s, period: ofForm(s, form?.steel), off: off(s, form?.steel), selected: config.finish.steelFinish === s.id, art: <PartArt name={`steel-${s.id}`} bleed />, apply: () => update('finish', { steelFinish: s.id }) }));
     rows.push({ label: 'Fittings', kind: 'dots', items: FITTINGS.map((f) => ({ id: f.id, name: f.name, swatch: f.swatch, selected: config.finish.hardwareTone === f.id, apply: () => update('finish', { hardwareTone: f.id }) })) });
     rows.push({ label: 'Age', kind: 'age', value: config.finish.age, set: (v: number) => update('finish', { age: v }), items: [] });
   }

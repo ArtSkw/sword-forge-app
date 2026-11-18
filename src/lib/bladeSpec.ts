@@ -24,6 +24,10 @@ export type BladeSpec = {
   fullerStart: number; fullerEnd: number;
   taperEnd: number; midWidth: number; shoulder: number;
   singleEdged: boolean; swell: number; clipT: number;
+  // A back that runs straight to the point (see singleEdged): widest width and the section's back half (m), and that
+  // half at the hilt (the groove, at a fixed place in it, runs out from the back along the blade).
+  backPoint?: { widest: number; back: number; backHilt: number };
+  grooveAt?: number;            // where the groove lies across the section (−1…1), when placed by measure
   ricasso: { t: number; cover: RicassoCover; hooks: 'lugs' | 'crescent' } | null;
   flame: boolean;
 };
@@ -48,6 +52,13 @@ function build(archetype: ArchetypeKey, profile: BladeProfile | undefined, blade
     singleEdged,
     swell: singleEdged ? profile?.swell ?? preset.swell : 0,
     clipT: singleEdged ? profile?.clip ?? preset.clipT : 1,
+    ...(singleEdged && profile?.backPoint ? {
+      backPoint: {
+        widest: profile.backPoint.widestCm / 100, back: profile.backPoint.backCm / 100,
+        backHilt: (profile.backPoint.backCm * (profile.backPoint.grooveHiltCm ?? profile.backPoint.grooveCm)) / profile.backPoint.grooveCm / 100,
+      },
+      grooveAt: 1 - profile.backPoint.grooveCm / profile.backPoint.backCm,
+    } : {}),
     ricasso: cover ? { t: ricassoT, cover, hooks: profile?.ricasso?.hooks ?? 'lugs' } : null,
     flame: !!blade.flame,
   };
@@ -88,8 +99,25 @@ function taper(s: BladeSpec, t: number) {
 // Single-edged blades. The back runs straight and turns down at the clip (rounded like a shoulder); the edge
 // swells to the clip, then sweeps up to meet the back in a point. The sweep, top·(1 − g(u)), starts with the
 // swell's own curvature (the a·u² part) and reaches the point at a finite angle, so the tip is a point.
-const CLIP_ROUND = 0.04, SWEEP = 2.6;
-function singleEdged(s: BladeSpec, t: number): { spine: number; edge: number } {
+const CLIP_ROUND = 0.04, SWEEP = 2.6, BACK_POINT_ROUND = 0.06, GROOVE_SETTLE = 0.45;
+// A back that runs straight to the point (the Conyers cleaver: Hodges 1892, pl. XX, and the Durham photograph): the
+// width W grows in a nearly straight line from the root to its widest at `clipT`, rounded over BACK_POINT_ROUND into
+// the end, which curves round in one convex sweep, W·(1 − u^SWEEP), to a point on the back's line. The section
+// keeps its own back half (the groove sits at a fixed place in it; the half grows from backHilt to back by
+// GROOVE_SETTLE, so the groove runs out from the back as on the original) as long as the edge side is at least a fifth
+// of the width; the section is moved across (`shift`) so the back stays on one straight line, centred on the tang at
+// the root.
+function backPointEdged(s: BladeSpec & { backPoint: { widest: number; back: number; backHilt: number } }, t: number) {
+  const hw = s.halfWidth, W0 = 2 * hw, Wm = s.backPoint.widest, peak = Math.min(s.clipT, 0.92);
+  const S = s.backPoint.backHilt + (s.backPoint.back - s.backPoint.backHilt) * Math.min(1, t / GROOVE_SETTLE);
+  const u = Math.max(0, (t - peak) / (1 - peak));
+  const W = Math.max(0, corner(t, peak, Wm, (Wm - W0) / peak, 0, Math.min(BACK_POINT_ROUND, 0.45 * (1 - peak))) * (1 - Math.min(1, u) ** SWEEP));
+  const edge = Math.max(W - S, 0.18 * W), spine = W - edge;
+  return { spine, edge, shift: hw - spine };
+}
+
+function singleEdged(s: BladeSpec, t: number): { spine: number; edge: number; shift?: number } {
+  if (s.backPoint) return backPointEdged(s as BladeSpec & { backPoint: { widest: number; back: number; backHilt: number } }, t);
   const hw = s.halfWidth, clip = s.clipT, peak = Math.min(clip, 0.92), top = hw * (1 + s.swell);
   const spine = Math.max(0, corner(t, clip, hw, 0, -hw / (1 - clip), Math.min(CLIP_ROUND, 0.45 * (1 - clip))));
   if (t <= peak) return { spine, edge: hw + (top - hw) * Math.sin((Math.PI / 2) * (t / peak)) };
@@ -100,11 +128,12 @@ function singleEdged(s: BladeSpec, t: number): { spine: number; edge: number } {
 
 /**
  * Half-widths at t (0 = hilt, 1 = point): toward the back/right (`spine`) and toward the edge/left (`edge`),
- * and how far into the ricasso t is (1 = fully, for blunting the edges there).
+ * how far into the ricasso t is (1 = fully, for blunting the edges there), and how far the section's centre lies
+ * off the tang's line toward the back (`shift`, m; 0 but on a back-pointed blade).
  */
-export function halfWidths(s: BladeSpec, t: number): { spine: number; edge: number; ricasso: number } {
-  let spine: number, edge: number;
-  if (s.singleEdged) ({ spine, edge } = singleEdged(s, t));
+export function halfWidths(s: BladeSpec, t: number): { spine: number; edge: number; ricasso: number; shift: number } {
+  let spine: number, edge: number, shift = 0;
+  if (s.singleEdged) ({ spine, edge, shift = 0 } = singleEdged(s, t));
   else spine = edge = taper(s, t);
   let ricasso = 0;
   if (s.ricasso) {
@@ -112,7 +141,7 @@ export function halfWidths(s: BladeSpec, t: number): { spine: number; edge: numb
     const r = s.halfWidth * RICASSO_WIDTH;
     spine += (r - spine) * ricasso; edge += (r - edge) * ricasso;
   }
-  return { spine, edge, ricasso };
+  return { spine, edge, ricasso, shift };
 }
 
 /**

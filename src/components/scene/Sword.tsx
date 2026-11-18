@@ -6,11 +6,15 @@ import { Blade } from './Blade';
 import { bladeSpec } from '../../lib/bladeSpec';
 import { hiltSpec } from '../../lib/hilt';
 import { currentForm } from '../../lib/forms';
-import { DEFAULT_GRIP_SHAPE } from '../../presets/forge';
+import { DEFAULT_GRIP_SHAPE, inlayOffered } from '../../presets/forge';
 import { POMMEL_SCALE } from '../../presets/pommelProfiles';
-import { setSurfaceAge } from './surface';
+import { fitToBlade, guardDef } from '../../presets/guardShapes';
+import { ferruleHalfHeight, getGripDetailRecipe } from '../../presets/archetypeDetails';
+import { bladeDepthAt } from './bladeFace';
+import { setSurfaceAge, setSurfaceFinish } from './surface';
 import { Crossguard } from './Crossguard';
-import { Grip } from './Grip';
+import { Grip, GRIP_FLATTEN } from './Grip';
+import { gripEndReach } from './gripForm';
 import { HiltDetails } from './HiltDetails';
 import { Pommel } from './Pommel';
 import { MesserHilt } from './MesserHilt';
@@ -26,14 +30,26 @@ export function Sword({ only }: { only?: SwordPart } = {}) {
   const messer = config.archetype === 'falchion' && config.grip.hilt === 'messer';
   // Every surface shader reads the sword's age from one shared uniform (set before the frame renders).
   useLayoutEffect(() => { setSurfaceAge(config.finish.age); }, [config.finish.age]);
+  // …and the blade's finish character (sword type × steel) from shared uniforms, so no program is rebuilt.
+  useLayoutEffect(() => { setSurfaceFinish(config, spec.length); }, [config, spec.length]);
   const { gripLen, bladeY, guardY, gripY, pommelY } = getSwordLayout(config);
   const gripTopY = gripY + gripLen / 2;
   const gripBottomY = gripY - gripLen / 2;
+  // The grip's ends sit inside the ferrules, clear of their chamfered outer faces (no edge lies flush with one).
+  // A grip with no collar at the top runs on into the cross, halfway to its centre line, so it seats with no seam.
+  const gripInset = only ? 0 : ferruleHalfHeight(config.archetype) * 0.5;
+  const bareTop = !only && !messer && !!config.guard.mm?.holdsGrip;
+  // …and the cross's centre covers that grip end as it covers the blade (fitToBlade): the most the grip reaches there.
+  const gripEnd = bareTop ? { x: gripEndReach(config.archetype, 'top') * (getGripDetailRecipe(config.archetype).sectionX ?? 1), z: gripEndReach(config.archetype, 'top') * GRIP_FLATTEN } : undefined;
+  const gripTop = bareTop ? (gripTopY + guardY) / 2 : gripTopY - gripInset, gripBottom = gripBottomY + gripInset;
 
   const { age, steelFinish } = config.finish;
   // Wood keeps its grain colour, unless a Form names one (black horn).
   const form = currentForm(config);
-  const materials = getSwordMaterialRecipes(config.finish, config.finish.gripMaterial === 'wood' && form?.grip === 'wood' && form.gripColor && config.finish.gripColor.toLowerCase() === form.gripColor.toLowerCase() ? form.gripColor : undefined);
+  const materials = getSwordMaterialRecipes(config.archetype, config.finish, config.finish.gripMaterial === 'wood' && form?.grip === 'wood' && form.gripColor && config.finish.gripColor.toLowerCase() === form.gripColor.toLowerCase() ? form.gripColor : undefined);
+  // Viking wire inlay, on iron fittings only (the pattern itself reaches the shader as a uniform). An inlaid guard is
+  // decorated by its inlay: an engraving chosen before rests until the inlay is taken off.
+  const inlaid = inlayOffered(config) && !!config.guard.wire;
   const gripMetal = { color: materials.hardware.color, roughness: materials.hardware.roughness, tone: (config.finish.hardwareTone === 'brass' || config.finish.hardwareTone === 'bronze' ? 'copper' : 'iron') as 'iron' | 'copper' };
 
   return (
@@ -47,9 +63,10 @@ export function Sword({ only }: { only?: SwordPart } = {}) {
       {show('guard') && <Beat scope={config.archetype} k={`${config.guard.style}|${hilt.terminal}|${hilt.rings}|${hilt.ecusson}`}>
       <Crossguard
         cm={config.guard.cm}
-        wire={config.archetype === 'vikingSword' ? config.guard.wire : undefined}
+        mm={config.guard.mm}
+        inlaid={inlaid}
         {...hilt}
-        engraved={config.guard.engraved}
+        engraved={config.guard.engraved && !inlaid}
         tone={config.finish.hardwareTone}
         archetype={config.archetype}
         style={config.guard.style}
@@ -58,16 +75,20 @@ export function Sword({ only }: { only?: SwordPart } = {}) {
         emissiveIntensity={materials.hardware.emissiveIntensity}
         roughness={materials.hardware.roughness}
         position={[0, guardY, 0]}
+        blade={spec}
+        gripEnd={gripEnd}
       />
       </Beat>}
       {!only && <HiltDetails
         ferrules={!messer}
+        topFerrule={!bareTop}
         tone={config.finish.hardwareTone}
         archetype={config.archetype}
         color={materials.hardware.color}
         emissive={materials.hardware.emissive}
         emissiveIntensity={materials.hardware.emissiveIntensity}
         roughness={materials.hardware.roughness}
+        guard={fitToBlade(guardDef(config.guard.style, config.archetype, config.guard.cm, config.guard.mm), bladeDepthAt(spec, 0))}
         guardY={guardY}
         gripTopY={gripTopY}
         gripBottomY={gripBottomY}
@@ -87,13 +108,13 @@ export function Sword({ only }: { only?: SwordPart } = {}) {
       <Beat scope={config.archetype} k={`${config.finish.gripMaterial}|${config.grip.shape ?? ''}`} soft={config.finish.gripMaterial !== 'wire'}>
       <Grip
         archetype={config.archetype}
-        length={gripLen}
+        length={gripTop - gripBottom}
         shape={config.grip.shape ?? DEFAULT_GRIP_SHAPE[config.archetype]}
         material={materials.grip.material}
         color={materials.grip.color}
         roughness={materials.grip.roughness}
         metal={gripMetal}
-        position={[0, gripY, 0]}
+        position={[0, (gripTop + gripBottom) / 2, 0]}
       />
       </Beat>
       ))}
@@ -103,7 +124,7 @@ export function Sword({ only }: { only?: SwordPart } = {}) {
         engraved={config.pommel.engraved}
         scale={POMMEL_SCALE[config.archetype] ?? 1}
         enamel={config.pommel.enamel}
-        wire={config.archetype === 'vikingSword' ? config.guard.wire : undefined}
+        inlaid={inlaid}
         tone={config.finish.hardwareTone}
         style={config.pommel.style}
         color={materials.hardware.color}

@@ -1,4 +1,5 @@
 import type { ArchetypeKey, GripLength } from '../store/configStore';
+import { guardHalfHeight, type GuardDef } from './guardShapes';
 
 export type HiltDetailRecipe = {
   guardCollarRadiusTop: number;
@@ -10,6 +11,8 @@ export type HiltDetailRecipe = {
   bottomSpacerRadiusTop: number;
   bottomSpacerRadiusBottom: number;
   spacerHeight: number;
+  // The cross is forged in one piece with no central block on any guard (the guard*Collar* numbers go unused).
+  blockless?: boolean;
 };
 
 
@@ -57,6 +60,9 @@ export const HILT_DETAIL_RECIPES: Record<ArchetypeKey, HiltDetailRecipe> = {
     spacerHeight: 0.006,
   },
   vikingSword: {
+    // Viking crosses are one forged bar (Petersen), the knightly long cross on a late blade too: a block sized for
+    // the heavy Viking guards sat on the slim long cross as a second, overlapping bar.
+    blockless: true,
     guardCollarRadiusTop: 0.022,
     guardCollarRadiusBottom: 0.024,
     guardCollarHeight: 0.014,
@@ -104,6 +110,34 @@ export const HILT_DETAIL_RECIPES: Record<ArchetypeKey, HiltDetailRecipe> = {
 
 
 
+/** Half the height of the turned ferrule at each end of the grip. */
+export const ferruleHalfHeight = (archetype: ArchetypeKey) => HILT_DETAIL_RECIPES[archetype].spacerHeight * 0.7;
+
+// The guard's central block (a short chamfered barrel where the cross sits on the blade) only reads as a
+// block where it stands well proud of the cross: on a slim bar it is a clear boss on each face. On a heavy
+// guard nearly as deep as the block (the Viking guards' elliptical bars, a centre swollen over a very thick
+// blade) it would break through the domed faces as thin crescents, so there the guard itself is the block and
+// none is drawn. Where the arms climb steeply out of the centre (the Highland cross's straight, forward-sloping
+// quillons), they would leave the block through its bottom face at a grazing angle, cutting thin slivers off
+// it: there the block reaches down past the cross's lowest point, so the arms leave through its wall and top.
+const BLOCK_PROUD = 1.35;   // the block must be this many times deeper than the cross's centre section
+const BLOCK_RISE = 0.6;     // arms climbing more than this share of the block's half-height across it are steep
+
+export type GuardBlock = { radius: number; flatten: number; halfHeight: number; bottom: number; shown: boolean; faceZ: number };
+
+/** The central block for this sword type on this guard, and the depth of the face the side rings sit on. */
+export function guardBlock(archetype: ArchetypeKey, guard: Pick<GuardDef, 'secY' | 'secZ' | 'swell' | 'tipY' | 'width' | 'linear' | 'blockless'>): GuardBlock {
+  const r = HILT_DETAIL_RECIPES[archetype];
+  const radius = (r.guardCollarRadiusTop + r.guardCollarRadiusBottom) / 2, halfHeight = r.guardCollarHeight * 0.36;
+  const centre = guard.secZ + (guard.swell ?? 0), u = Math.min(1, radius / (guard.width / 2));
+  const rise = guard.tipY * (guard.linear ? u : u * u);   // the arm's climb at the block's rim (Crossguard's bendAt)
+  const bottom = rise > halfHeight * BLOCK_RISE ? Math.max(halfHeight, guardHalfHeight(guard) + 0.0003) : halfHeight;
+  // A centre swollen over a thick blade keeps its block, rounder (up to a round barrel) to stay proud of it.
+  let flatten = r.guardCollarScaleZ;
+  if (guard.swell && radius * flatten < centre * BLOCK_PROUD) flatten = Math.min(1, (centre * BLOCK_PROUD) / radius);
+  const depth = radius * flatten, shown = !r.blockless && !guard.blockless && depth >= centre * BLOCK_PROUD - 1e-9;
+  return { radius, flatten, halfHeight, bottom, shown, faceZ: shown ? depth : centre };
+}
 
 export const GRIP_DETAIL_RECIPES: Record<ArchetypeKey, GripDetailRecipe> = {
   armingSword: {

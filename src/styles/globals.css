@@ -132,3 +132,9 @@ body::after {
   will-change: transform;
 }
 
+
+/* Reduced motion: the dust holds still (the embers do not mount at all, see Embers.tsx). */
+@media (prefers-reduced-motion: reduce) {
+  .cc-atmosphere__mote,
+  .cc-atmosphere__mote-core { animation: none; }
+}

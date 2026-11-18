@@ -11,6 +11,11 @@ function download(blob: Blob) {
   setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
+// The scene's canvas keeps no copy of its last frame (preserveDrawingBuffer is off), so the frame is rendered again
+// right before the canvas is read, in the same task.
+let renderFrame: (() => void) | null = null;
+export function setScreenshotSource(render: () => void) { renderFrame = render; }
+
 export async function takeScreenshot(): Promise<void> {
   const canvas = document.querySelector<HTMLCanvasElement>('canvas[data-engine]') ?? document.querySelector('canvas');
   if (!canvas) return;
@@ -70,6 +75,7 @@ export async function takeScreenshot(): Promise<void> {
     ctx.fillRect(0, 0, W, H);
   }
 
+  renderFrame?.();
   ctx.drawImage(canvas, 0, 0, W, H);
 
   out.toBlob((blob) => {

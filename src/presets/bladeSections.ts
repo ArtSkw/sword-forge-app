@@ -30,9 +30,38 @@ const WEDGE_UPPER: ProfilePoint[] = [
 const WEDGE_GROOVE_UPPER: ProfilePoint[] = WEDGE_UPPER.map(([x, z], i): ProfilePoint =>
   i === 7 ? [0.36, 0.76] : i === 8 ? [0.47, 0.6] : i === 9 ? [0.58, 0.84] : [x, z]);
 const WEDGE = buildFullProfile(WEDGE_UPPER), WEDGE_GROOVE = buildFullProfile(WEDGE_GROOVE_UPPER);
+// A groove placed by measure instead (the Conyers falchion: an incised groove about 25 mm from the back, Hodges 1892):
+// centred at `at` across the section (−1…1), the three face points nearest it move there on both the plain and the
+// grooved section, so along the blade the groove only deepens in and out.
+const GROOVE_HALF = 0.065, GROOVE_DIP = 0.2;
+const wedgeFaceZ = (x: number) => {
+  let k = 1;
+  while (k < 12 && WEDGE_UPPER[k][0] < x) k++;
+  const [x0, z0] = WEDGE_UPPER[k - 1], [x1, z1] = WEDGE_UPPER[k];
+  return z0 + (z1 - z0) * ((x - x0) / Math.max(1e-6, x1 - x0));
+};
+/** Which three upper points (the first index) a groove at `at` replaces: the closest run that keeps the order. */
+export function wedgeGrooveIndex(at: number): number {
+  const xs = [at - GROOVE_HALF, at, at + GROOVE_HALF];
+  let best = 7, cost = Infinity;
+  for (let i = 3; i <= 9; i++) {
+    if (!(WEDGE_UPPER[i - 1][0] < xs[0] && WEDGE_UPPER[i + 3][0] > xs[2])) continue;
+    const c = xs.reduce((a, x, k) => a + Math.abs(WEDGE_UPPER[i + k][0] - x), 0);
+    if (c < cost) { cost = c; best = i; }
+  }
+  return best;
+}
+function wedgeAt(at: number, grooved: boolean): ProfilePoint[] {
+  const i0 = wedgeGrooveIndex(at), xs = [at - GROOVE_HALF, at, at + GROOVE_HALF];
+  return WEDGE_UPPER.map((p, i): ProfilePoint => {
+    if (i < i0 || i > i0 + 2) return p;
+    const x = xs[i - i0];
+    return [x, wedgeFaceZ(x) - (grooved && i === i0 + 1 ? GROOVE_DIP : 0)];
+  });
+}
 
 /** The perimeter for a section and fuller (sections that take no fuller ignore it). */
-export function sectionPerimeter(section: Section, fuller: FullerStyle, archetype: ArchetypeKey): ProfilePoint[] {
+export function sectionPerimeter(section: Section, fuller: FullerStyle, archetype: ArchetypeKey, grooveAt?: number): ProfilePoint[] {
   switch (section) {
     case 'lenticular':
       return buildFullProfile(archetype === 'vikingSword' && fuller === 'single' ? VIKING_LENTICULAR_SINGLE : PROFILE_FAMILIES.lenticular[fuller]);
@@ -40,7 +69,9 @@ export function sectionPerimeter(section: Section, fuller: FullerStyle, archetyp
     case 'hexagonal': return buildFullProfile(PROFILE_FAMILIES.hexagonal[fuller]);
     case 'hollow': case 'square': return HOLLOW;
     case 'triangular': return TRIANGULAR;
-    case 'wedge': return fuller === 'none' ? WEDGE : WEDGE_GROOVE;
+    case 'wedge':
+      if (grooveAt !== undefined) return buildFullProfile(wedgeAt(grooveAt, fuller !== 'none'));
+      return fuller === 'none' ? WEDGE : WEDGE_GROOVE;
   }
 }
 
@@ -48,13 +79,16 @@ export function sectionPerimeter(section: Section, fuller: FullerStyle, archetyp
 // mirror of upper point j at 28 − j): edges, bevel lines, ridges, shoulders and arrises. Listed by hand,
 // because measured angles miss the shallow ridge of a flat diamond and catch the gentle curve of a lens.
 const both = (js: number[]) => js.flatMap((j) => (j === 0 || j === 14 ? [j] : [j, 28 - j]));
-export function sectionCreases(section: Section, fuller: FullerStyle): Set<number> {
+export function sectionCreases(section: Section, fuller: FullerStyle, grooveAt?: number): Set<number> {
   switch (section) {
     case 'lenticular': return new Set(both([0, 14, 1, 13]));
     case 'diamond': case 'hollow': case 'square': return new Set(both([0, 14, 1, 13, 7]));
     case 'hexagonal': return new Set(both([0, 14, 1, 13, 5, 9]));
     case 'triangular': return new Set([0, 14, 1, 13, 7]);
-    case 'wedge': return new Set([...both([0, 1, 2, 13]), ...(fuller === 'none' ? [] : both([7, 9]))]);
+    case 'wedge': {
+      const g = grooveAt === undefined ? 7 : wedgeGrooveIndex(grooveAt);
+      return new Set([...both([0, 1, 2, 13]), ...(fuller === 'none' ? [] : both([g, g + 2]))]);
+    }
   }
 }
 
