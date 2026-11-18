@@ -35,16 +35,29 @@ export function readFire(): { level: number; warmth: number } {
   return reading;
 }
 
+// A portrait screen shows a narrow slice of the wide plate. Centred, that slice is the dark doorway; it is
+// centred instead on the stone pillar beside the hearth, so more of the forge shows on the left.
+const PORTRAIT_FOCUS_U = 0.46;
+
+/** How far the plate is moved right of its centred (object-fit: cover) place on a viewport of w × h, in CSS px:
+ *  0 on landscape screens, and never so far that its left edge comes into view. */
+export function plateShift(w: number, h: number, aspect = 16 / 9): number {
+  if (h <= w) return 0;
+  const pw = w + INSET * 2, ph = h + INSET * 2;
+  const W = Math.max(pw / aspect, ph) * aspect;
+  return Math.max(0, Math.min((0.5 - PORTRAIT_FOCUS_U) * W, (W - pw) / 2));
+}
+
 /**
  * Where a point of the plate (u, v: share of the frame) lands on a viewport of w × h, in CSS px, and the plate's
  * height in px (`H`, the unit the embers move in). The plate covers the viewport the way object-fit: cover does,
- * drawn 16 px past each edge.
+ * drawn 16 px past each edge, moved right by plateShift.
  */
 export function plateToScreen(u: number, v: number, w: number, h: number, aspect = 16 / 9): { x: number; y: number; H: number } {
   const pw = w + INSET * 2, ph = h + INSET * 2;
   const H = Math.max(pw / aspect, ph);               // plate height in px once it covers
   const W = H * aspect;
-  return { x: u * W - (W - pw) / 2 - INSET, y: v * H - (H - ph) / 2 - INSET, H };
+  return { x: u * W - (W - pw) / 2 - INSET + plateShift(w, h, aspect), y: v * H - (H - ph) / 2 - INSET, H };
 }
 
 /**

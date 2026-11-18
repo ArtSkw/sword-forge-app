@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react';
 import { tokens } from '../../styles/tokens';
 import { ViewportFrame } from './ViewportFrame';
 import { NoiseOverlay } from './NoiseOverlay';
@@ -7,7 +7,8 @@ import { Embers } from './Embers';
 import { ForgeUI } from '../forge/ForgeUI';
 import { makeAudioLayer, makePlaylist } from '../../lib/audio';
 import { LOW_TIER } from '../../lib/tier';
-import { setFireVideo } from '../../lib/forgeFire';
+import { plateShift, setFireVideo } from '../../lib/forgeFire';
+import { useViewportSize } from '../../hooks/useViewportSize';
 
 const ENTRY_EXIT_MS = 520;
 // Music, in playing order (generated with ElevenLabs music, chosen by the author).
@@ -103,6 +104,26 @@ function EntryScreen({ exiting, onEnter }: { exiting: boolean; onEnter: () => vo
   );
 }
 
+// The background plate, drawn 16 px past each edge (its blur would darken them) and framed by plateShift, which the
+// embers and the forge light also follow. maxWidth: Tailwind's base caps images and videos at 100 %, which cut the
+// overhang on the right and left a dark band down that edge. Its own component, so a resize re-renders only it.
+function Plate() {
+  const { width, height } = useViewportSize();
+  const style: CSSProperties = {
+    position: 'fixed', inset: '-16px', width: 'calc(100% + 32px)', height: 'calc(100% + 32px)', maxWidth: 'none',
+    objectFit: 'cover', objectPosition: `calc(50% + ${plateShift(width, height).toFixed(1)}px) 50%`,
+    filter: 'blur(10px)', zIndex: -2, pointerEvents: 'none', animation: 'cc-reveal 2s ease both',
+  };
+  return LOW_TIER ? (
+    <img src={`${import.meta.env.BASE_URL}background.webp`} alt="" aria-hidden="true" style={style} />
+  ) : (
+    // The 3D forge light follows the fire in this video (lib/forgeFire.ts).
+    <video ref={setFireVideo} autoPlay muted loop playsInline style={style}>
+      <source src={`${import.meta.env.BASE_URL}background.mp4`} type="video/mp4" />
+    </video>
+  );
+}
+
 type AppShellProps = { children: ReactNode };
 
 export function AppShell({ children }: AppShellProps) {
@@ -139,30 +160,7 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      {LOW_TIER ? (
-        <img src={`${import.meta.env.BASE_URL}background.webp`} alt="" aria-hidden="true"
-          style={{ position: 'fixed', inset: '-16px', width: 'calc(100% + 32px)', height: 'calc(100% + 32px)', objectFit: 'cover', filter: 'blur(10px)', zIndex: -2, pointerEvents: 'none', animation: 'cc-reveal 2s ease both' }} />
-      ) : <video
-        // The 3D forge light follows the fire in this video (lib/forgeFire.ts).
-        ref={setFireVideo}
-        autoPlay
-        muted
-        loop
-        playsInline
-        style={{
-          position: 'fixed',
-          inset: '-16px',
-          width: 'calc(100% + 32px)',
-          height: 'calc(100% + 32px)',
-          objectFit: 'cover',
-          filter: 'blur(10px)',
-          zIndex: -2,
-          pointerEvents: 'none',
-          animation: 'cc-reveal 2s ease both',
-        }}
-      >
-        <source src={`${import.meta.env.BASE_URL}background.mp4`} type="video/mp4" />
-      </video>}
+      <Plate />
 
       {hasEntered && <AtmosphereOverlay />}
       {/* Sparks over the hearth: after the vignette in paint order, before the scene, so the sword covers them. */}
