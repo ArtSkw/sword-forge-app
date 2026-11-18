@@ -1,14 +1,19 @@
-import { useRef, useState, useCallback, useEffect, type ComponentRef } from 'react';
+import { useRef, useState, useCallback, useEffect, useMemo, type ComponentRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { ContactShadows, OrbitControls, PerformanceMonitor } from '@react-three/drei';
+import { ContactShadows, OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { Sword } from './Sword';
+import { warmPrograms } from './warmPrograms';
+import { setScreenshotSource } from '../../lib/screenshot';
+import { createGovernor, resolutionLadder } from '../../lib/quality';
 import { getSwordLayout } from './swordLayout';
 import { ForgeLighting } from './ForgeLighting';
 import { useConfigStore } from '../../store/configStore';
 import { useViewportSize } from '../../hooks/useViewportSize';
 import { anchors, interaction, publishAnchors } from '../../lib/anchors';
 import { STATIONS, type StationId } from '../../presets/forge';
+import { HILT_OPTIONS } from '../../lib/hilt';
+import type { ArchetypeKey } from '../../store/configStore';
 
 // Camera sits at ~65° polar (above + side) for a presentation-angle view.
 const CAMERA_POSITION: [number, number, number] = [1.32, 1.1, 2.2];
@@ -19,12 +24,13 @@ const MAX_POLAR = Math.PI * 0.85;
 const AUTO_ROTATE_RESUME_MS = 10000;
 const SWORD_INTRO_DELAY = 2.6;
 const SWORD_INTRO_DURATION = 1.2;
+const WARM_DELAY_MS = 600;
 // Frames the contact shadow keeps drawing after a re-render (~2 s at 60 fps: covers the intro and a part's swap).
 const SHADOW_FRAMES = 120;
-// Render resolution: at most 2× (a phone's 3× costs more than it shows), stepping down to 1.25× (1× on
-// ordinary screens) when the frame rate cannot hold, and back up when it can.
-const MAX_DPR = typeof window !== 'undefined' ? Math.min(window.devicePixelRatio || 1, 2) : 1;
-const MIN_DPR = Math.min(MAX_DPR, 1.25);
+// Render resolution: at most 2× (a phone's 3× costs more than it shows), stepping down when the frame rate cannot
+// hold 60 fps and back up when it can (lib/quality.ts). The first seconds (loading, the sword's fade-in) do not count.
+const LADDER = resolutionLadder(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1);
+const GOVERN_AFTER_MS = 5000;
 const SWORD_ROTATION: [number, number, number] = [0.08, 0, -0.80];
 
 // Edit mode: how close the camera comes to each hilt part (Blade and Finish are fitted, see below),
@@ -57,6 +63,9 @@ const OVERVIEW_MS = 650;
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const easeInOut = (x: number) => (x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2);
+// The current frame's time: the same for every callback in a frame and paced by the display (the document timeline
+// advances once per frame). performance.now() read inside a callback drifts by however long the work before it took.
+const frameTime = () => { const t = document.timeline?.currentTime; return typeof t === 'number' ? t : performance.now(); };
 
 function useShadowY() {
   const config = useConfigStore((s) => s.config);
@@ -76,7 +85,13 @@ function anchorY(id: StationId, layout: ReturnType<typeof getSwordLayout>) {
 
 // Edit mode looks straight at the blade's flat (its local +Z), so the sword lies flat in the screen
 // at its usual diagonal, with no twist.
-const FLAT_NORMAL = new THREE.Vector3(0, 0, 1);
+const FLAT_NORMAL = new THREE.Vector3(0, 0, 1), SWORD_AXIS = new THREE.Vector3(0, 1, 0);
+// Where a station's choices differ only in depth (a second side ring right behind the first, the estoc's three- or
+// four-sided blade), that station's shot on the types that offer them turns about the sword's own axis by this
+// much, so the far side shows. Set per station and type, so picking an option never moves the camera.
+const DEPTH_TURN = THREE.MathUtils.degToRad(40);
+const stationTurn = (station: StationId | null, archetype: ArchetypeKey) =>
+  (station === 'guard' && HILT_OPTIONS[archetype].rings) || (station === 'blade' && archetype === 'estoc') ? DEPTH_TURN : 0;
 const WORLD_UP = new THREE.Vector3(0, 1, 0);
 
 // Distance at which the whole sword fits the free area of the screen, seen from `viewDir`
@@ -129,6 +144,7 @@ function SceneContents() {
   const geoKey = `${fitLayout.total.toFixed(3)}|${fitLayout.bladeLen.toFixed(3)}`;
   const dir = useRef(new THREE.Vector3());
   const motionReduced = useRef(reducedMotion());
+  const turn = stationTurn(station, config.archetype);
   useEffect(() => {
     const mq = matchMedia('(prefers-reduced-motion: reduce)'), on = () => { motionReduced.current = mq.matches; };
     mq.addEventListener('change', on); return () => mq.removeEventListener('change', on);
@@ -192,7 +208,7 @@ function SceneContents() {
     // Leaving edit mode, or re-fitting, keeps the current direction.
     m.turn = station !== null && !refit;
     m.fromSph.setFromVector3(dir.current.subVectors(camera.position, controls.target));
-    const faceDir = new THREE.Vector3().copy(FLAT_NORMAL).transformDirection(group.matrixWorld);
+    const faceDir = new THREE.Vector3().copy(FLAT_NORMAL).applyAxisAngle(SWORD_AXIS, turn).transformDirection(group.matrixWorld);
     m.toSph.setFromVector3(faceDir);
     m.toSph.theta = m.fromSph.theta + Math.atan2(Math.sin(m.toSph.theta - m.fromSph.theta), Math.cos(m.toSph.theta - m.fromSph.theta));
     const layout = getSwordLayout(config);
@@ -225,10 +241,12 @@ function SceneContents() {
     // enough to see the whole sword). A refit keeps a user's zoom only when the length did not change.
     controls.minDistance = station ? Math.max(0.18, m.toDist * 0.35) : Math.min(1.5, m.toDist * 0.8);
     controls.maxDistance = station ? Math.max(m.toDist * 2.2, 1.6) : Math.max(6, m.toDist * 1.1);
-    m.t0 = performance.now(); m.ms = motionReduced.current || resizeOnly ? 1 : refit ? REFIT_MS : station ? FOCUS_MS : OVERVIEW_MS; m.active = true;
+    // The glide's clock starts on its first frame (t0 < 0): the frame that carries the click's own work (the panels
+    // mounting) can come late, and must not make the camera jump ahead.
+    m.t0 = -1; m.ms = motionReduced.current || resizeOnly ? 1 : refit ? REFIT_MS : station ? FOCUS_MS : OVERVIEW_MS; m.active = true;
     // The config is read through geoKey: only a change of the sword's length re-fits, not every part swap.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [station, reading, camera, sizeKey, again, geoKey, sheetPx]);
+  }, [station, reading, camera, sizeKey, again, geoKey, sheetPx, turn]);
 
   const handleStart = useCallback(() => {
     interaction.dragging = true; interaction.touchUntil = 0;
@@ -248,14 +266,20 @@ function SceneContents() {
   const sph = useRef(new THREE.Spherical());
   useFrame(() => {
     const m = move.current, controls = orbitRef.current, cam = camera as THREE.PerspectiveCamera;
+    interaction.gliding = m.active;
     if (m.active && controls) {
-      const k = easeInOut(Math.min(1, (performance.now() - m.t0) / m.ms));
+      const now = frameTime();
+      if (m.t0 < 0) m.t0 = now;
+      const k = m.ms <= 1 ? 1 : easeInOut(Math.min(1, (now - m.t0) / m.ms));
       if (m.turn) {
         sph.current.set(1, m.fromSph.phi + (m.toSph.phi - m.fromSph.phi) * k, m.fromSph.theta + (m.toSph.theta - m.fromSph.theta) * k);
         dir.current.setFromSpherical(sph.current);
       } else dir.current.subVectors(cam.position, controls.target).normalize();
       controls.target.lerpVectors(m.fromTarget, m.toTarget, k);
       cam.position.copy(controls.target).addScaledVector(dir.current, m.fromDist + (m.toDist - m.fromDist) * k);
+      // Aim from where the camera is now. The orbit controls aim it at the start of each frame, from the last frame's
+      // place: left to them, the view trails the glide by a frame, which shows as a wobble while it turns.
+      cam.lookAt(controls.target);
       m.shift = m.fromShift + (m.toShift - m.fromShift) * k;
       m.shiftY = m.fromShiftY + (m.toShiftY - m.fromShiftY) * k;
       if (k >= 1) m.active = false;
@@ -268,10 +292,10 @@ function SceneContents() {
 
   // Project each part to screen for the DOM overlay
   const v = useRef(new THREE.Vector3());
+  const layout = useMemo(() => getSwordLayout(config), [config]);
   useFrame(() => {
     const group = swordGroupRef.current;
     if (!group) return;
-    const layout = getSwordLayout(config);
     for (const { id } of STATIONS) {
       v.current.set(0, anchorY(id, layout), 0).applyMatrix4(group.matrixWorld).project(camera);
       const a = anchors[id];
@@ -282,7 +306,7 @@ function SceneContents() {
     publishAnchors();
   });
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock, gl, scene, camera }) => {
     if (introRef.current.done || !swordGroupRef.current) return;
     const elapsed = clock.elapsedTime;
     const progress = Math.min(1, Math.max(0, (elapsed - SWORD_INTRO_DELAY) / SWORD_INTRO_DURATION));
@@ -293,9 +317,20 @@ function SceneContents() {
         mat.opacity = progress;
       }
     });
-    if (progress >= 1) introRef.current.done = true;
+    if (progress >= 1) {
+      introRef.current.done = true;
+      // The sword is in: build the programs of every other choice in the background (see warmPrograms).
+      setTimeout(() => warmPrograms(gl, scene, camera), WARM_DELAY_MS);
+    }
   });
 
+  // The sword reads the store itself: a station change, a drag or a glide re-renders this component, never the sword.
+  const sword = useMemo(() => <Sword />, []);
+  // The sword never moves under its shadow (only the camera does), so the shadow is drawn for a moment after the
+  // sword changes (drei's ContactShadows counts its frames from its last render), not in every frame of a glide.
+  const shadow = useMemo(() => <ContactShadows position={[0, shadowY, 0]} blur={2} opacity={0.4} far={4} frames={SHADOW_FRAMES} />,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [shadowY, config]);
   return (
     <>
       <OrbitControls
@@ -315,19 +350,32 @@ function SceneContents() {
       />
       {/* The forge in the background plate lights the sword (see ForgeLighting) */}
       <ForgeLighting inspect={station !== null} />
-      {/* The sword never moves under its shadow (only the camera does), so the shadow is drawn for a moment
-          after each change, when this component re-renders, not in every frame. */}
-      <ContactShadows position={[0, shadowY, 0]} blur={2} opacity={0.4} far={4} frames={SHADOW_FRAMES} />
+      {shadow}
       {/* Presentation tilt: ~23° lean so blade reads as diagonal, not vertical */}
       <group ref={swordGroupRef} rotation={SWORD_ROTATION}>
-        <Sword />
+        {sword}
       </group>
     </>
   );
 }
 
+// Feeds each frame's interval to the governor and applies its resolution.
+// A change waits while the camera glides: resizing the canvas mid-move would show as a hitch in it.
+function AdaptiveResolution({ onChange }: { onChange: (dpr: number) => void }) {
+  const governor = useMemo(() => createGovernor(LADDER.length, GOVERN_AFTER_MS), []);
+  const last = useRef(0), pending = useRef<number | null>(null);
+  useFrame(() => {
+    const now = performance.now(), dt = last.current ? now - last.current : 0;
+    last.current = now;
+    const level = dt ? governor.frame(dt, now) : null;
+    if (level !== null) pending.current = level;
+    if (pending.current !== null && !interaction.gliding) { onChange(LADDER[pending.current]); pending.current = null; }
+  });
+  return null;
+}
+
 export function Scene() {
-  const [dpr, setDpr] = useState(MAX_DPR);
+  const [dpr, setDpr] = useState(LADDER[0]);
   // Tablets and phones: History & use takes the whole stage, so the sword fades out behind it.
   const reading = useConfigStore((s) => s.reading);
   const { width } = useViewportSize();
@@ -340,19 +388,19 @@ export function Scene() {
       dpr={dpr}
       frameloop={hidden && faded ? 'never' : 'always'}
       onTransitionEnd={(e) => { if (e.propertyName === 'opacity' && e.target === e.currentTarget) setFaded(hidden); }}
-      gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }}
+      // The drawing buffer is not preserved (that costs a full-screen copy every frame): a screenshot renders the
+      // frame again right before it reads the canvas (lib/screenshot.ts).
+      gl={{ alpha: true, antialias: true, preserveDrawingBuffer: false }}
       camera={{ position: CAMERA_POSITION, fov: FOV }}
-      onCreated={({ gl }) => {
+      onCreated={({ gl, scene, camera }) => {
         gl.toneMapping = THREE.ACESFilmicToneMapping;
         gl.toneMappingExposure = 1.03;
         gl.outputColorSpace = THREE.SRGBColorSpace;
+        setScreenshotSource(() => gl.render(scene, camera));
       }}
       style={{ background: 'transparent', opacity: hidden ? 0 : 1, transition: `opacity ${hidden ? 260 : 420}ms cubic-bezier(.2, 0, 0, 1)` }}
     >
-      {/* No fallback: drei counts every incline as a flip, so a fast 120 Hz screen would trip it. */}
-      <PerformanceMonitor
-        onDecline={() => setDpr((d) => Math.max(MIN_DPR, +(d - 0.25).toFixed(2)))}
-        onIncline={() => setDpr((d) => Math.min(MAX_DPR, +(d + 0.25).toFixed(2)))} />
+      <AdaptiveResolution onChange={setDpr} />
       <SceneContents />
     </Canvas>
   );

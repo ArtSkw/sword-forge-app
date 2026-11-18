@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, type ReactNode, type RefObject } from 'react';
 import { createPortal, useFrame, useThree } from '@react-three/fiber';
 import { Lightformer } from '@react-three/drei';
 import * as THREE from 'three';
@@ -128,6 +128,12 @@ function makeWorkshop() {
   const boxes = WORKSHOP_BOXES.map((b) => new THREE.MeshBasicMaterial({ ...fade, side: THREE.DoubleSide, color: new THREE.Color(b.color).multiplyScalar(b.intensity) }));
   return { geo: g, dome, boxes };
 }
+// Shows the workshop at k (0–1) in the steady part of the room, for its captures.
+function setWorkshopCover(k: number) {
+  const w = getWorkshop();
+  w.dome.opacity = k * WORKSHOP_COVER;
+  w.boxes.forEach((m) => { m.opacity = k; });
+}
 function Workshop({ w }: { w: ReturnType<typeof makeWorkshop> }) {
   // Drawn after the forge (renderOrder): the dome first, the softboxes inside it on top.
   return (
@@ -144,8 +150,11 @@ function Workshop({ w }: { w: ReturnType<typeof makeWorkshop> }) {
 // its glow on the wall, the warm pool on the floor, the fire-lit side of the room) and the rest (windows, daylight,
 // the hall, the workshop). Polished steel is mostly a mirror of the room, so the fire lives on it through these
 // reflections, not through lamps: the fire part is scaled by the fire's level before the sum, so the fire-lit
-// reflections breathe with the video while the windows hold steady. Each part is captured once (the steady part
-// every frame while the workshop fades); the sum is one full-screen pass over the PMREM atlas, nothing is read back.
+// reflections breathe with the video while the windows hold steady. The steady part is captured twice, once without
+// the workshop and once with it, and the sum crossfades the two as the workshop fades in or out: a capture is a cube
+// render plus a PMREM pass (some 80 draws and 20 blur passes), far too much to repeat in every frame of a camera glide.
+// The crossfade matches the fade itself (PMREM is linear), except where a softbox lies over the dome, where mid-fade
+// differs by a few percent. The sum is one full-screen pass over the PMREM atlas, nothing is read back.
 
 // One PMREM generator per renderer, kept for its lifetime (a recreated canvas gets its own, never a dead context's).
 const pmremByRenderer = new WeakMap<THREE.WebGLRenderer, THREE.PMREMGenerator>();
@@ -155,52 +164,61 @@ const getPmrem = (gl: THREE.WebGLRenderer) => {
   return p;
 };
 const SUM = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
-  uniforms: { steady: { value: null }, fire: { value: null }, gain: { value: new THREE.Color(1, 1, 1) } },
+  uniforms: { steady: { value: null }, workshop: { value: null }, fire: { value: null }, gain: { value: new THREE.Color(1, 1, 1) }, cover: { value: 0 } },
   vertexShader: 'void main() { gl_Position = vec4(position.xy, 0.0, 1.0); }',
-  fragmentShader: `uniform sampler2D steady, fire; uniform vec3 gain;
-    void main() { ivec2 p = ivec2(gl_FragCoord.xy); gl_FragColor = texelFetch(steady, p, 0) + vec4(gain, 1.0) * texelFetch(fire, p, 0); }`,
+  fragmentShader: `uniform sampler2D steady, workshop, fire; uniform vec3 gain; uniform float cover;
+    void main() { ivec2 p = ivec2(gl_FragCoord.xy); gl_FragColor = mix(texelFetch(steady, p, 0), texelFetch(workshop, p, 0), cover) + vec4(gain, 1.0) * texelFetch(fire, p, 0); }`,
   depthTest: false, depthWrite: false,
 }));
 SUM.frustumCulled = false;
 const SUM_CAMERA = new THREE.Camera();
 
-function SplitEnvironment({ fire, steady, resolution, live, gain, captureKey }: {
+function SplitEnvironment({ fire, steady, resolution, gain, cover, setWorkshop, captureKey }: {
   fire: ReactNode; steady: ReactNode; resolution: number;
-  live: boolean;                      // capture the steady part every frame (the workshop is fading)
   gain: RefObject<THREE.Color>;       // the fire part's scale per channel, set every frame by ForgeLighting
-  captureKey: string;                 // a change recaptures both parts
+  cover: RefObject<number>;           // how far the workshop has faded in (0–1), set every frame by ForgeLighting
+  setWorkshop: (k: number) => void;   // shows the workshop in the steady part at k, for its two captures
+  captureKey: string;                 // a change recaptures every part
 }) {
   const get = useThree((s) => s.get);
-  // Per part (fire, steady): a virtual scene, a cube camera, and the PMREM atlas made from its capture.
+  // Per part (fire, steady): a virtual scene and a cube camera. Atlases (PMREM): fire, steady, steady with the workshop.
   const parts = useMemo(() => [0, 1].map(() => {
     const cube = new THREE.WebGLCubeRenderTarget(resolution, { type: THREE.HalfFloatType });
     return { scene: new THREE.Scene(), cube, camera: new THREE.CubeCamera(0.1, 1000, cube) };
   }), [resolution]);
-  const atlas = useRef<(THREE.WebGLRenderTarget | null)[]>([null, null]);
+  const atlas = useRef<(THREE.WebGLRenderTarget | null)[]>([null, null, null]);
   const sum = useRef<THREE.WebGLRenderTarget | null>(null);
-  const dirty = useRef({ fire: true, steady: true, gain: new THREE.Color(-1, -1, -1) });
-  useLayoutEffect(() => { dirty.current.fire = dirty.current.steady = true; }, [captureKey, parts]);
+  const dirty = useRef({ fire: true, steady: true, workshop: true, gain: new THREE.Color(-1, -1, -1), cover: -1 });
+  useLayoutEffect(() => { const d = dirty.current; d.fire = d.steady = d.workshop = true; }, [captureKey, parts]);
   useEffect(() => () => {
     parts.forEach((p) => p.cube.dispose());
-    atlas.current.forEach((a) => a?.dispose()); atlas.current = [null, null];
+    atlas.current.forEach((a) => a?.dispose()); atlas.current = [null, null, null];
     const sc = get().scene;
     if (sc.environment === sum.current?.texture) sc.environment = null;
     sum.current?.dispose(); sum.current = null;
   }, [parts, get]);
 
   useFrame(({ gl, scene }) => {
-    const d = dirty.current, k = gain.current;
-    const capture = (i: number) => {
+    const d = dirty.current, k = gain.current, c = cover.current;
+    const capture = (i: number, slot: number) => {
       const p = parts[i], autoClear = gl.autoClear;
       gl.autoClear = true;
       p.camera.update(gl, p.scene);
       gl.autoClear = autoClear;
-      atlas.current[i] = getPmrem(gl).fromCubemap(p.cube.texture, atlas.current[i]);
+      atlas.current[slot] = getPmrem(gl).fromCubemap(p.cube.texture, atlas.current[slot]);
     };
-    const captured = d.fire || d.steady || live;
-    if (d.fire) { capture(0); d.fire = false; }
-    if (d.steady || live) { capture(1); d.steady = false; }
-    const [fireAtlas, steadyAtlas] = atlas.current;
+    // The room the sword shows first is captured at once; the workshop's version a frame later (until then the steady
+    // atlas stands in for it), so no single frame carries all three captures.
+    let captured = false;
+    if (d.fire || d.steady) {
+      if (d.fire) { capture(0, 0); d.fire = false; }
+      if (d.steady) { setWorkshop(0); capture(1, 1); d.steady = false; }
+      captured = true;
+    } else if (d.workshop) {
+      setWorkshop(1); capture(1, 2); setWorkshop(0); d.workshop = false;
+      captured = true;
+    }
+    const [fireAtlas, steadyAtlas, workshopAtlas] = atlas.current;
     if (!fireAtlas || !steadyAtlas) return;
     if (!sum.current || sum.current.width !== steadyAtlas.width || sum.current.height !== steadyAtlas.height) {
       sum.current?.dispose();
@@ -209,10 +227,11 @@ function SplitEnvironment({ fire, steady, resolution, live, gain, captureKey }: 
       sum.current.texture.name = 'forge.sum';
       d.gain.setRGB(-1, -1, -1);
     }
-    if (!captured && d.gain.equals(k)) return;
-    d.gain.copy(k);
+    if (!captured && d.gain.equals(k) && d.cover === c) return;
+    d.gain.copy(k); d.cover = c;
     const m = SUM.material as THREE.ShaderMaterial;
     m.uniforms.steady.value = steadyAtlas.texture; m.uniforms.fire.value = fireAtlas.texture; m.uniforms.gain.value.copy(k);
+    m.uniforms.workshop.value = (workshopAtlas ?? steadyAtlas).texture; m.uniforms.cover.value = c;
     const target = gl.getRenderTarget();
     gl.setRenderTarget(sum.current);
     gl.render(SUM, SUM_CAMERA);
@@ -238,19 +257,15 @@ export function ForgeLighting({ inspect = false }: { inspect?: boolean }) {
   const fireGain = useRef(new THREE.Color(1, 1, 1));
   const tmp = useMemo(() => ({ dir: new THREE.Vector3(), lift: new THREE.Vector3(), sway: new THREE.Vector3(), at: new THREE.Vector3() }), []);
   const workshop = getWorkshop();
-  // While the workshop fades in or out (the mode has not settled yet), the steady part of the environment is
-  // captured every frame; otherwise once.
-  const [settled, setSettled] = useState(inspect);
-  const fading = settled !== inspect;
+  // The workshop's share of the room: the environment crossfades its two captures by it (see SplitEnvironment).
+  const cover = useRef(0);
 
   useFrame(({ clock, scene, camera }, delta) => {
     const s = state.current, t = clock.elapsedTime;
     const target = inspect ? 1 : 0;
     s.mix += (target - s.mix) * Math.min(1, delta * 4);
-    if (Math.abs(target - s.mix) < 0.004) { s.mix = target; if (fading) setSettled(inspect); }
-    const w = getWorkshop();
-    w.dome.opacity = s.mix * WORKSHOP_COVER;
-    w.boxes.forEach((m) => { m.opacity = s.mix; });
+    if (Math.abs(target - s.mix) < 0.004) s.mix = target;
+    cover.current = s.mix;
     // The fire: read from the video, eased so its 24 fps samples flow; a synthetic breath where there is no
     // video (paler as it swells), steady when motion is reduced.
     let level = 1, warmth = 0;
@@ -300,10 +315,10 @@ export function ForgeLighting({ inspect = false }: { inspect?: boolean }) {
 
   return (
     <>
-      {/* Captured once (again after a resize moves the fire, the steady part every frame while the workshop
-          fades); summed every frame with the fire's level; turned with the view above. */}
+      {/* Captured once (again after a resize moves the fire); summed every frame with the fire's level and the
+          workshop's share; turned with the view above. */}
       <SplitEnvironment
-        resolution={LOW_TIER ? 128 : 256} live={fading} gain={fireGain} captureKey={`${fx}|${fy}`}
+        resolution={LOW_TIER ? 128 : 256} gain={fireGain} cover={cover} setWorkshop={setWorkshopCover} captureKey={`${fx}|${fy}`}
         fire={<>
           <Room hearth={hearth} part="fire" />
           {/* The hearth itself, deep in the room where it shows on screen */}
