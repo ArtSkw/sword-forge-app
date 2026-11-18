@@ -1,4 +1,4 @@
-import type { ArchetypeKey, GuardStyle, GuardTerminal } from '../store/configStore';
+import type { ArchetypeKey, GuardMm, GuardStyle, GuardTerminal } from '../store/configStore';
 
 // The guards (crosses) a sword can carry, each after the research's museum objects, as plain numbers so the
 // UI can draw silhouettes without the 3D bundle. Lengths in metres; the section is the bar's half-height
@@ -7,12 +7,18 @@ import type { ArchetypeKey, GuardStyle, GuardTerminal } from '../store/configSto
 export type GuardDef = {
   width: number;          // tip to tip
   tipScale: number;       // section at the tips relative to the centre
+  tipScaleZ?: number;     // its depth (front to back) at the tips, where that scales apart from the height
+  pointScale?: number;    // a hooked end tapering to a point: its height there relative to the centre
+  blockless?: boolean;    // no central block: the bar's own centre holds the blade (a measured cross, drawn as recorded)
   tipY: number;           // how far the tips bend toward the blade
   linear?: boolean;       // bend in a straight line (forward slope) instead of a curve
   recurve?: number;       // arms bend in opposite directions seen from above (front-back, at the tips)
   secY: number; secZ: number; round: number;
   terminal: GuardTerminal;
   scales?: boolean;       // grows with the sword (false for guards whose length is already a two-hander's)
+  // Swelling of the centre front to back where the blade enters (fitToBlade, below): the cross stands
+  // proud of a thick blade. Extra half-depth at the centre, easing to nothing at ±swellWidth.
+  swell?: number; swellWidth?: number;
 };
 
 export const GUARD_DEFS: Record<GuardStyle, GuardDef> = {
@@ -48,10 +54,15 @@ const SIZE: Record<ArchetypeKey, { width: number; section: number }> = {
 };
 
 /** The guard's numbers on this sword type. */
-export function guardDef(style: GuardStyle, archetype: ArchetypeKey, cm?: number): GuardDef {
-  // A measured cross (cm, tip to tip) sets the length; the bend grows with it.
+export function guardDef(style: GuardStyle, archetype: ArchetypeKey, cm?: number, mm?: GuardMm): GuardDef {
+  // A measured cross (cm, tip to tip) sets the length; the bend grows with it. A measured section (mm, [centre, ends])
+  // sets its height and depth, and the cross is drawn as recorded: its own centre, no block added.
   const d = GUARD_DEFS[style], s = SIZE[archetype], w = cm ? cm / 100 / d.width : d.scales === false ? 1 : s.width;
-  return { ...d, width: d.width * w, tipY: d.tipY * w, recurve: (d.recurve ?? 0) * w, secY: d.secY * s.section, secZ: d.secZ * s.section };
+  const sec = mm
+    ? { secY: mm.high[0] / 2000, secZ: mm.deep[0] / 2000, tipScale: mm.high[1] / mm.high[0], tipScaleZ: mm.deep[1] / mm.deep[0],
+        pointScale: mm.point === undefined ? undefined : mm.point / mm.high[0], blockless: true }
+    : { secY: d.secY * s.section, secZ: d.secZ * s.section };
+  return { ...d, width: d.width * w, tipY: d.tipY * w, recurve: (d.recurve ?? 0) * w, ...sec };
 }
 
 /**
@@ -59,9 +70,47 @@ export function guardDef(style: GuardStyle, archetype: ArchetypeKey, cm?: number
  * section is upright, so a straight-armed (linear) cross is cut on a slant there and stands a little taller
  * (as the arm sections are grown in Crossguard.tsx).
  */
-export function guardHalfHeight(d: GuardDef): number {
+export function guardHalfHeight(d: Pick<GuardDef, 'secY' | 'tipY' | 'width' | 'linear'>): number {
   const slope = d.linear ? d.tipY / (d.width / 2) : 0;
   return d.secY * Math.min(1.7, Math.sqrt(1 + slope * slope));
+}
+
+/** Extra half-depth of the cross at x (m from the centre) from its swelling over the blade. */
+export function swellAt(d: Pick<GuardDef, 'swell' | 'swellWidth'>, x: number): number {
+  if (!d.swell || !d.swellWidth || Math.abs(x) >= d.swellWidth) return 0;
+  const k = 1 - (x / d.swellWidth) ** 2;
+  return d.swell * k * k;
+}
+
+// The cross stands at least this far proud of the blade's faces where the blade enters it, so a thick blade
+// (the estoc's square and triangular sections) never shows past the cross. Chosen above the écusson's
+// thickness, so a plate on the blade never lies flush with the cross's face.
+const BLADE_COVER = 0.0015;
+const SWELL_REACH = 1.3;   // the swelling eases out this far past the blade's edges (× the blade's half-width)
+const GRIP_COVER = 0.0003;  // a grip that runs straight into the cross is covered with this to spare (as a collar is)
+
+/**
+ * The cross on this blade: where the blade (`face`: its depth at x across its width, the deeper of its two
+ * faces; 0 off the blade) is thicker than the bar allows, the centre swells front to back — a smooth forged
+ * swelling that eases into the arms, not a box — until the cross covers the blade with BLADE_COVER to spare.
+ * A grip that runs straight into the cross with no collar (`grip`: the most its end reaches, half-width x and
+ * half-depth z, an oval) is held the same way, with GRIP_COVER to spare.
+ */
+export function fitToBlade(d: GuardDef, face: (x: number) => number, grip?: { x: number; z: number }): GuardDef {
+  const need: [number, number][] = [];
+  let reach = 0;
+  for (let x = 0; x <= 0.06; x += 0.0005) {
+    const z = Math.max(face(x), face(-x));
+    if (z > 0) { need.push([x, z + BLADE_COVER]); reach = x; }
+    if (grip && x < grip.x) need.push([x, grip.z * Math.sqrt(1 - (x / grip.x) ** 2) + GRIP_COVER]);
+  }
+  const width = Math.max(reach, grip?.x ?? 0, 0.001) * SWELL_REACH, half = d.width / 2;
+  let swell = 0;
+  for (const [x, z] of need) {
+    const bar = d.secZ * (1 - (x / half) * (1 - (d.tipScaleZ ?? d.tipScale))), k = (1 - (x / width) ** 2) ** 2;   // the bar's own taper
+    swell = Math.max(swell, (z - bar) / k);
+  }
+  return swell > 0 ? { ...d, swell, swellWidth: width } : d;
 }
 
 /** The guards each type offers; the first is its default. */

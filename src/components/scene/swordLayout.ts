@@ -16,7 +16,7 @@ const JOIN = 0.0005;
 export function getSwordLayout(config: SwordConfig) {
   const bladeLen    = bladeSpec(config).length;
   const gripLen     = gripLengthM(config);
-  const guardHalf   = guardHalfHeight(guardDef(config.guard.style, config.archetype, config.guard.cm));
+  const guardHalf   = guardHalfHeight(guardDef(config.guard.style, config.archetype, config.guard.cm, config.guard.mm));
   // A Messer ends in a short cap over the grip instead of a pommel.
   const pommelHalfH = config.archetype === 'falchion' && config.grip.hilt === 'messer' ? MESSER_CAP_HALF : POMMEL_HALF_HEIGHTS[config.pommel.style] * (POMMEL_SCALE[config.archetype] ?? 1);
   const total       = bladeLen + guardHalf * 2 + gripLen + pommelHalfH * 2 - JOIN * 3;

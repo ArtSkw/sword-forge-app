@@ -1,6 +1,6 @@
 import type {
-  ArchetypeKey, BladeLength, BladeWidth, FullerStyle, GripLength, GripMaterial, GripShape, GuardStyle, GuardTerminal, MesserCap,
-  HardwareTone, PommelStyle, SteelFinish, SwordCondition,
+  ArchetypeKey, BladeLength, BladeWidth, FullerStyle, GripLength, GripMaterial, GripShape, GuardMm, GuardStyle, GuardTerminal, MesserCap,
+  HardwareTone, PommelStyle, SteelFinish, SwordCondition, SwordConfig, WireInlay,
 } from '../store/configStore';
 import type { Section } from './bladeSections';
 
@@ -34,6 +34,10 @@ export type BladeProfile = {
   section?: Section;            // omitted = the sword type's section
   swell?: number;               // single-edged blades: how much the edge widens toward the clip (× half-width)
   clip?: number;                // single-edged blades: where the back starts to drop to the point (0–1)
+  // Single-edged blades whose back runs straight to the point (the Conyers cleaver): the widest the blade gets (at
+  // `clip`), the section's back half (back to the tang's line), and the groove's distance from the back, all in cm;
+  // grooveHiltCm: nearer the back at the hilt, the groove running out to grooveCm by mid-blade.
+  backPoint?: { widestCm: number; backCm: number; grooveCm: number; grooveHiltCm?: number };
   fullerSpan?: [number, number];  // fuller start and end along the blade (0–1); omitted = the type's
   ricasso?: { cm: number; cover: RicassoCover; hooks: 'lugs' | 'crescent' };
   note: string;
@@ -90,14 +94,19 @@ export const MESSER_CAPS: { id: MesserCap; name: string; era: string; years: [nu
   { id: 'beak', name: 'Bird’s beak', era: '15th–16th c.', years: [1400, 1600], note: 'A metal cap over the grip’s end, bent sideways into a beak toward the edge.' },
   { id: 'cylinder', name: 'Plain cap', era: 'c. 1500', years: [1480, 1530], note: 'A short, flat-topped metal cap over the grip’s end.' },
 ];
-// Viking wire inlay (research: viking-arming, Petersen H and V): wire hammered into fine furrows.
-export const WIRE_INLAYS: { id: 'none' | 'chequer' | 'lozenge' | 'bands'; name: string; note: string }[] = [
+// Viking wire inlay (Petersen types H and V; patterns in inlayPatterns.ts): wires hammered flush into close-set furrows
+// across the guards and the cap. A treatment of iron hilts: with brass, bronze or gilt fittings it is not offered.
+export const INLAYS: { id: 'none' | WireInlay; name: string; note: string; anchor?: string; anchorUrl?: string }[] = [
   { id: 'none', name: 'None', note: '' },
-  { id: 'chequer', name: 'Chequer', note: 'Silver and copper wire hammered into fine furrows in a chequerboard, 24 wires to the centimetre (Finnish Heritage Agency KM 18402:1).' },
-  { id: 'lozenge', name: 'Lozenges', note: 'Silver and brass wire in a diamond pattern, 28 to the centimetre (KM 15175:1, Petersen type V).' },
-  { id: 'bands', name: 'Bands', note: 'Alternating bands of silver and copper wire across the guard.' },
+  { id: 'stripes', name: 'Stripes', note: 'Silver and copper wires hammered side by side into fine furrows, one silver to two copper, 24 to the centimetre: the commonest inlay of Petersen’s type H. New, it shows as one rose-silver sheen; wear opens it into fine stripes.',
+    anchor: 'Petersen, De Norske Vikingesverd, type H', anchorUrl: 'https://id33158.securedata.net/svaerd/petersen/ptsn089h.html' },
+  { id: 'lozenge', name: 'Lozenges', note: 'Small stepped copper rings round silver hearts: the lozenge lattice of Petersen’s type V, 28 wires to the centimetre (KM 15175:1).',
+    anchor: 'Finnish Heritage Agency KM 15175:1' },
 ];
-export const ENAMEL_NOTE = 'The medallion’s cuts filled with coloured enamel, fired hard and polished flush (champlevé).';
+export const INLAY_TONES: HardwareTone[] = ['steel', 'darkIron'];
+/** Wire inlay is offered on Viking swords with iron fittings only. */
+export const inlayOffered = (config: Pick<SwordConfig, 'archetype' | 'finish'>) => config.archetype === 'vikingSword' && INLAY_TONES.includes(config.finish.hardwareTone);
+export const ENAMEL_NOTE = 'The medallion’s field cut away round the cross and filled with coloured enamel, fired hard and polished flush (champlevé).';
 export const ECUSSON_NOTE = 'A small leaf-shaped plate at the centre of the cross, lying over the blade on both faces.';
 export const ECUSSON_YEARS: [number, number] = [1420, 1600];
 // Side rings appear on European hilts only from about 1480 (research: none on longswords before then).
@@ -132,9 +141,10 @@ export type Form = {
   gripLength?: GripLength;     // omitted = the type's own
   gripCm?: number;             // the object's grip, where recorded (else the type's own)
   guardCm?: number;            // the object's cross tip to tip, where recorded
+  guardMm?: GuardMm;           // the object's cross section, [centre, ends] in mm, where recorded
   hilt?: 'messer';
   cap?: MesserCap;
-  wire?: 'chequer' | 'lozenge' | 'bands';
+  wire?: WireInlay;
   enamel?: 'azure' | 'gules';
   ecusson?: boolean;
   rings?: 1 | 2;
@@ -180,9 +190,9 @@ export const GRIPS: Variant<GripMaterial>[] = [
   { id: 'wire', name: 'Wire', era: '12th–16th c.', years: [1150, 1600], note: 'Twisted wire wound in tight turns, in the same metal as the fittings.' },
 ];
 export const STEELS: Variant<SteelFinish>[] = [
-  { id: 'satin', name: 'Satin', years: [700, 1600], note: 'A plain hand polish, the everyday finish.' },
+  { id: 'satin', name: 'Satin', years: [700, 1600], note: 'A hand-ground finish: the strokes of the stone still show.' },
   { id: 'polished', name: 'Polished', years: [700, 1600], note: 'Mirror-bright: a lord’s sword.' },
-  { id: 'patternWelded', name: 'Pattern-welded', years: [500, 1100], note: 'Twisted rods forge-welded into a serpent-skin pattern.' },
+  { id: 'patternWelded', name: 'Pattern-welded', years: [500, 1100], note: 'Twisted rods forge-welded into the core, lightly etched so the pattern shows grey on grey.' },
 ];
 export const FITTINGS: { id: HardwareTone; name: string; swatch: string }[] = [
   { id: 'darkIron', name: 'Dark iron', swatch: 'radial-gradient(circle at 35% 30%, #8a857e, #3c3b38 60%, #1d1c1a)' },
@@ -206,15 +216,42 @@ export function ageLabel(raw: number): { stop: (typeof AGE_STOPS)[number]; betwe
   const i = AGE_STOPS.findIndex((s) => s.at > age);
   return { stop, between: [AGE_STOPS[i - 1].name, AGE_STOPS[i].name] };
 }
-// Historical dyes for leather and cord; "natural" keeps the archetype's own colour.
+// Historical dyes for leather and cord; "natural" keeps the archetype's own colour. Spread apart in lightness and
+// hue (at least ΔE 18 between any two), so each still reads as its own colour on an aged grip.
 export const DYES: { id: string; name: string; color: string | null }[] = [
   { id: 'natural', name: 'Natural', color: null },
-  { id: 'oxblood', name: 'Oxblood', color: '#5a221c' },
+  { id: 'oxblood', name: 'Oxblood', color: '#6b1e19' },
   { id: 'black', name: 'Black', color: '#1f1b18' },
-  { id: 'oak', name: 'Oak gall', color: '#4a3a28' },
-  { id: 'umber', name: 'Umber', color: '#3d2a1d' },
-  { id: 'bottle', name: 'Bottle green', color: '#26301f' },
+  { id: 'tan', name: 'Tan', color: '#8c6a45' },
+  { id: 'umber', name: 'Umber', color: '#5a3c20' },
+  { id: 'bottle', name: 'Bottle green', color: '#22442b' },
 ];
+// A dye this close to the type's own colour (CIELAB ΔE76 of the swatches) would look the same on the grip: not offered.
+const DYE_MIN_DE = 17;
+/** CIELAB (D65) of an sRGB hex colour. */
+function hexLab(hex: string): [number, number, number] {
+  const n = parseInt(hex.slice(1), 16), lin = (v: number) => { const c = v / 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+  const r = lin((n >> 16) & 255), g = lin((n >> 8) & 255), b = lin(n & 255);
+  const f = (t: number) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116);
+  const x = f((0.4124 * r + 0.3576 * g + 0.1805 * b) / 0.95047), y = f(0.2126 * r + 0.7152 * g + 0.0722 * b), z = f((0.0193 * r + 0.1192 * g + 0.9505 * b) / 1.08883);
+  return [116 * y - 16, 500 * (x - y), 200 * (y - z)];
+}
+/**
+ * A dye's swatch as a lit chip of leather, like the Fittings swatches: under the forge light the grip reads lighter
+ * than its dye and a little greyed by its sheen (sampled on Forge captures: about +45 on each sRGB channel where it
+ * faces the light), darker where it turns away.
+ */
+export function dyeSwatch(hex: string): string {
+  const n = parseInt(hex.slice(1), 16), ch = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  const at = (add: number, mul: number) => `#${ch.map((c) => Math.max(0, Math.min(255, Math.round(c * mul + add))).toString(16).padStart(2, '0')).join('')}`;
+  return `radial-gradient(circle at 35% 30%, ${at(62, 1.1)}, ${at(34, 1.05)} 55%, ${at(0, 0.7)})`;
+}
+export const colourDistance = (a: string, b: string) => { const p = hexLab(a), q = hexLab(b); return Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]); };
+/** The dyes offered on a type whose own (natural) grip colour is `natural`: those that would look like it are left out. */
+export const dyesFor = (natural: string) => DYES.filter((d) => !d.color || colourDistance(d.color, natural) >= DYE_MIN_DE);
+if (import.meta.env.DEV) {
+  for (const a of DYES) for (const b of DYES) if (a.color && b.color && a !== b && colourDistance(a.color, b.color) < 18) console.error(`forge: dyes ${a.id} and ${b.id} are too alike`);
+}
 
 // ── Archetype eras (shown in the type tooltips) ──────────────────────────────
 export const ARCHETYPE_ERA: Record<ArchetypeKey, string> = {

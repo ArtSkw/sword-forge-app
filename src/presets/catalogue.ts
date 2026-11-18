@@ -2,7 +2,7 @@ import type { ArchetypeKey } from '../store/configStore';
 import type { BladeProfile, Form } from './forge';
 
 // The per-type catalogue: named blade profiles (Geibig / Oakeshott) and Forms, each Form anchored to a
-// surviving object verified in the research (.plan/research/). Forms use only the parts that exist
+// surviving museum object. Forms use only the parts that exist
 // today; Forms that need parts we do not have yet are listed at the end of this file.
 
 const NBSP = ' ';
@@ -79,9 +79,15 @@ export const BLADE_PROFILES: Record<ArchetypeKey, BladeProfile[]> = {
       story: 'The Toledo two-hander of the later sixteenth century: a very long, straight blade with a short ricasso of about 17 to 20 cm.' },
   ],
   falchion: [
-    { id: 'cleaver', name: 'Cleaver', era: c('1250–1350'), length: 'medium', width: 'wide', cm: 74, widthCm: 4.8, fuller: 'single', swell: 2.5, clip: 0.82, shape: { bodyTaperEnd: 0.78, bodyTaperMidWidth: 0.92, tipShoulderRound: 0.04 },  // 'single' = the groove near the back
-      note: 'A nearly straight back and a belly that widens toward a short, diagonal clip at the point.',
-      story: 'The Conyers type: a thin, light blade whose convex edge swells toward the tip before a short clip runs back to the spine. In place of a fuller it has a narrow groove about 25 mm from the back.' },
+    // Measured on the Conyers falchion (Hodges 1892, Archaeologia Aeliana 2/XV, and the Durham
+    // photograph): 74 cm, ~3.8 cm at the hilt widening almost straight to 10.8 cm at 0.8 of the
+    // length (10.85 before its corner is rounded), then one convex sweep to a point on the straight back; an incised
+    // groove from the cross to nine tenths of the length, 1.8 cm from the back at the hilt running out to 2.5 cm
+    // (about 1 in, Hodges) by mid-blade, as measured on the photograph.
+    { id: 'cleaver', name: 'Cleaver', era: c('1250–1350'), length: 'medium', width: 'wide', cm: 74, widthCm: 3.8, fuller: 'single', clip: 0.8, fullerSpan: [0, 0.9],
+      backPoint: { widestCm: 10.85, backCm: 3.1, grooveCm: 2.5, grooveHiltCm: 1.8 }, shape: { bodyTaperEnd: 0.78, bodyTaperMidWidth: 0.92, tipShoulderRound: 0.04 },  // 'single' = the groove near the back
+      note: 'A straight back to the point and an edge that widens toward a broad, rounded end.',
+      story: 'The Conyers type: a thin, light blade whose edge widens from about 4 cm at the hilt to 11 cm near the end, then curves round in one sweep to a point on the straight back. In place of a fuller it has a narrow groove about 25 mm from the back.' },
     { id: 'narrow', name: 'Narrow', era: c('1275–1350'), length: 'medium', width: 'narrow', cm: 80, widthCm: 4.8, fuller: 'single', swell: 0.33, clip: 0.85, shape: { bodyTaperEnd: 0.82, bodyTaperMidWidth: 0.85, tipShoulderRound: 0 },  // Thorpe: 48 → 56 mm; its fuller is on one face only, shown here as a groove
       note: 'Narrow, widening only slightly toward a clipped point.',
       story: 'The Thorpe type of the late thirteenth and early fourteenth centuries: 48 mm wide at the hilt and 56 mm at its widest, with a false edge bevelled like the true one.' },
@@ -112,8 +118,8 @@ export const FORMS: Record<ArchetypeKey, Form[]> = {
       anchor: 'After Finnish Heritage Agency KM 18402:1',
       anchorUrl: 'https://museovirasto.finna.fi/Record/museovirasto.FE4D68B51D0D5FEE17E1354056773CBA',
       note: 'A wide, domed upper guard under a small three-sided cap, over an Ulfberht-type blade.',
-      story: 'Petersen’s type H, the commonest hilt in Viking Norway: elliptical guards with gently domed faces and a small pyramidal cap riveted to the upper guard. This sword, found in Finland, has a blade of 78.2 cm signed +VLFBERHT+, a guard of 10.6 cm and an upper guard of 8.5 cm, and weighs 1340 g. Its guards are inlaid with silver and copper wire in a chequerboard, 24 wires to the centimetre.',
-      blade: 'ulfberht', guard: 'vikingBar', pommel: 'pyramid', grip: 'leather', steel: 'satin', fittings: 'darkIron', wire: 'chequer', guardCm: 10.6 },
+      story: 'Petersen’s type H, the commonest hilt in Viking Norway: elliptical guards with gently domed faces and a small pyramidal cap riveted to the upper guard. This sword, found in Finland, has a blade of 78.2 cm signed +VLFBERHT+, a guard of 10.6 cm and an upper guard of 8.5 cm, and weighs 1340 g. Its guards are inlaid with silver and copper wire in a chequerboard, 24 wires to the centimetre, shown here as stripes.',
+      blade: 'ulfberht', guard: 'vikingBar', pommel: 'pyramid', grip: 'leather', steel: 'satin', fittings: 'darkIron', wire: 'stripes', guardCm: 10.6 },
     { id: 'frankishFive', name: 'Frankish five-lobe', era: '9th–10th c.', years: [800, 1000],
       anchor: 'After Wallace Collection A456',
       anchorUrl: 'https://artsandculture.google.com/asset/sword-detail-unknown/SgEJJIhsBWl9YA',
@@ -224,9 +230,12 @@ export const FORMS: Record<ArchetypeKey, Form[]> = {
     { id: 'conyers', name: 'Conyers', era: c('1260'), years: [1250, 1272],
       anchor: 'After the Conyers falchion, Durham Cathedral',
       anchorUrl: 'https://www.durhamcathedral.co.uk/explore/treasures-collections/our-most-famous-items/the-conyers-falchion',
-      note: 'A bronze cross hooked toward the blade, a bronze disc pommel and a broad cleaver blade.',
-      story: 'Made before 1272 and kept at Durham Cathedral, where it was presented to each new Bishop of Durham. The bronze cross is engraved with winged dragons, and its tips hook sharply toward the blade. The bronze disc pommel shows the arms of England in red enamel on one face and a black eagle on the other.',
-      blade: 'cleaver', guard: 'arched', pommel: 'disc', grip: 'wood', steel: 'satin', fittings: 'bronze', terminal: 'hooked', guardCm: 16.8 },
+      note: 'A straight bronze cross with down-turned tips, a bronze disc pommel and a broad cleaver blade.',
+      story: 'Made before 1272 and kept at Durham Cathedral, where it was presented to each new Bishop of Durham. The straight bronze cross is engraved with winged dragons, and its tips turn down toward the blade. The bronze disc pommel shows the arms of England in red enamel on one face and a black eagle on the other.',
+      blade: 'cleaver', guard: 'longBar', pommel: 'disc', grip: 'wood', steel: 'satin', fittings: 'bronze', terminal: 'hooked', guardCm: 16.8,
+      // Hodges 1892: ¾ in high at the centre widening to 1 in toward the ends, ¾ in thick round the blade thinning to
+      // ¼ in; the turned-down ends taper to points (pl. XXI–XXII); the grip meets the cross with no collar.
+      guardMm: { high: [19, 25], deep: [19, 6], point: 6, holdsGrip: true } },
     { id: 'thorpe', name: 'Thorpe', era: c('1320'), years: [1300, 1340],
       anchor: 'After the Thorpe falchion, Norwich Castle Museum',
       anchorUrl: 'https://nhe.esdm.co.uk/Monument/MNF9645',

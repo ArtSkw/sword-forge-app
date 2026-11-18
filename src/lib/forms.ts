@@ -35,7 +35,7 @@ export function applyForm(config: SwordConfig, form: Form): SwordConfig {
     ...config,
     form: form.id,
     blade: { ...config.blade, ...(profile ? profileBlade(profile) : {}) },
-    guard: { ...config.guard, style: form.guard, terminal: form.terminal, ecusson: form.ecusson, rings: form.rings, wire: form.wire, cm: form.guardCm },
+    guard: { ...config.guard, style: form.guard, terminal: form.terminal, ecusson: form.ecusson, rings: form.rings, wire: form.wire, cm: form.guardCm, mm: form.guardMm },
     grip: { ...config.grip, length: form.gripLength ?? preset.defaults.grip.length, hilt: form.hilt, cap: form.cap, cm: form.gripCm },
     pommel: { ...config.pommel, style: form.pommel, enamel: form.enamel, engraved: form.enamel ? true : config.pommel.engraved },
     finish: {
